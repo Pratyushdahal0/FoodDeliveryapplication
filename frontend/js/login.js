@@ -60,7 +60,7 @@ function handleLogin() {
         successBox.innerText = data;
 
         setTimeout(() => {
-          // ✅ Redirect to dashboard.html inside the same pages folder
+          //Redirect to dashboard.html inside the same pages folder
           window.location.href = "dashboard.html";
         }, 1000);
 
