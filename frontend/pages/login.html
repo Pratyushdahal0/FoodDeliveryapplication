@@ -25,8 +25,19 @@
       <div class="auth-card">
         <!-- Tabs -->
         <div class="auth-tabs">
-          <div class="auth-tab active" id="loginTab">
+          <div
+            class="auth-tab active"
+            id="loginTab"
+            onclick="switchTab('login')"
+          >
             Sign In
+          </div>
+          <div
+            class="auth-tab"
+            id="registerTab"
+            onclick="switchTab('register')"
+          >
+            Sign Up
           </div>
         </div>
 
@@ -75,47 +86,97 @@
             </label>
           </div>
           <button class="submit-btn" onclick="handleLogin()">Sign In →</button>
+          <p class="auth-switch">
+            Don't have an account?
+            <a href="#" onclick="switchTab('register')">Sign Up</a>
+          </p>
         </div>
 
-          <!-- Code verification (shown after email sent) -->
-          <div id="resetCodeSection" style="display: none; margin-top: 20px">
-            <div class="form-group">
-              <label for="resetCode">Reset Code</label>
-              <div class="input-wrapper">
-                <span class="input-icon">🔑</span>
-                <input
-                  type="text"
-                  id="resetCode"
-                  placeholder="Enter 6-digit code"
-                  maxlength="6"
-                />
-              </div>
+        <!-- ===== REGISTER FORM ===== -->
+        <div id="registerForm" style="display: none">
+          <h2>Create Account</h2>
+          <div class="form-group">
+            <label for="regName">Full Name</label>
+            <div class="input-wrapper">
+              <span class="input-icon">👤</span>
+              <input
+                type="text"
+                id="regName"
+                placeholder="John Doe"
+                autocomplete="name"
+              />
             </div>
-            <div class="form-group">
-              <label for="newPassword">New Password</label>
-              <div class="input-wrapper">
-                <span class="input-icon">🔒</span>
-                <input
-                  type="password"
-                  id="newPassword"
-                  placeholder="Minimum 6 characters"
-                />
-                <button
-                  class="toggle-password"
-                  type="button"
-                  onclick="togglePassword('newPassword', this)"
-                >
-                  👁️
-                </button>
-              </div>
-            </div>
-            <button class="submit-btn" onclick="handleResetPassword()">
-              Reset Password →
-            </button>
           </div>
-
-          <p class="auth-switch" style="margin-top: 16px">
-            <a href="#" onclick="switchTab('login')">← Back to Sign In</a>
+          <div class="form-group">
+            <label for="regEmail">Email Address</label>
+            <div class="input-wrapper">
+              <span class="input-icon">✉️</span>
+              <input
+                type="email"
+                id="regEmail"
+                placeholder="john.doe@example.com"
+                autocomplete="email"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Password</label>
+            <div class="input-wrapper">
+              <span class="input-icon">🔒</span>
+              <input
+                type="password"
+                id="regPassword"
+                placeholder="Minimum 6 characters"
+                autocomplete="new-password"
+              />
+              <button
+                class="toggle-password"
+                type="button"
+                onclick="togglePassword('regPassword', this)"
+              >
+                👁️
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="regPhone">Phone Number</label>
+            <div class="input-wrapper">
+              <span class="input-icon">📱</span>
+              <input
+                type="tel"
+                id="regPhone"
+                placeholder="10-digit phone number"
+                autocomplete="tel"
+                maxlength="10"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="regAddress">Address</label>
+            <div class="input-wrapper">
+              <span class="input-icon">📍</span>
+              <input
+                type="text"
+                id="regAddress"
+                placeholder="Your delivery address"
+                autocomplete="street-address"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="regRole">Register As</label>
+            <select class="role-select" id="regRole">
+              <option value="customer">Customer</option>
+              <option value="restaurant">Restaurant Owner</option>
+              <option value="rider">Delivery Rider</option>
+            </select>
+          </div>
+          <button class="submit-btn" onclick="handleRegister()">
+            Create Account →
+          </button>
+          <p class="auth-switch">
+            Already have an account?
+            <a href="#" onclick="switchTab('login')">Sign In</a>
           </p>
         </div>
       </div>
