@@ -17,9 +17,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $email = $_POST['email'] ?? '';
         $password = $_POST['password'] ?? '';
 
+        if (empty($email) || empty($password)) {
+            echo "Email and password are required";
+            exit;
+        }
+
         $result = $user->login($email, $password);
 
-        echo $result ? "Login successful" : "Invalid credentials";
+        if ($result) {
+            echo "Login successful";
+        } else {
+            echo "Invalid email or password";
+        }
     }
 
     // REGISTER
