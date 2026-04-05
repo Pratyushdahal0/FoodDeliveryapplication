@@ -1,0 +1,376 @@
+/* ══════════════════════════════════════
+   food.css  —  Food / Menu Page Styles
+   Usage: <link rel="stylesheet" href="food.css">
+══════════════════════════════════════ */
+
+/* ══════════════════════════
+   HERO SECTION
+══════════════════════════ */
+.food-hero {
+  background: linear-gradient(160deg, #fce4ec 0%, #fff8e1 55%, #fffde7 100%);
+  padding: 72px 48px 60px;
+  text-align: center;
+}
+
+.food-hero h1 {
+  font-size: 52px;
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 14px;
+  line-height: 1.1;
+}
+
+.food-hero h1 span {
+  color: #e53935;
+}
+
+.food-hero p {
+  font-size: 17px;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+/* Hero search bar */
+.hero-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 50px;
+  padding: 14px 24px;
+  max-width: 560px;
+  margin: 0 auto 28px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.hero-search svg {
+  color: #aaa;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.hero-search input {
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #555;
+  font-family: 'Inter', sans-serif;
+  width: 100%;
+  background: transparent;
+}
+
+.hero-search input::placeholder {
+  color: #bbb;
+}
+
+/* ── Diet filter pills ── */
+.diet-filters {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.diet-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  border-radius: 50px;
+  border: 1.5px solid #e0e0e0;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  color: #444;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.diet-pill:hover {
+  border-color: #e53935;
+  color: #e53935;
+}
+
+.diet-pill.active {
+  background: #e53935;
+  color: #fff;
+  border-color: #e53935;
+}
+
+/* ══════════════════════════
+   CATEGORY SECTION
+══════════════════════════ */
+.category-section {
+  background: #fdf5f0;
+  padding: 32px 48px 40px;
+}
+
+/* Category tabs pill bar */
+.category-tabs {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 50px;
+  padding: 6px;
+  max-width: 700px;
+  margin: 0 auto 36px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  gap: 2px;
+}
+
+.cat-tab {
+  flex: 1;
+  text-align: center;
+  padding: 11px 20px;
+  border-radius: 50px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.cat-tab:hover {
+  color: #e53935;
+}
+
+.cat-tab.active {
+  background: #e53935;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ══════════════════════════
+   MENU CARDS GRID
+══════════════════════════ */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+/* ── Single card ── */
+.menu-card {
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.07);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.menu-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.13);
+}
+
+/* Card image */
+.card-img {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.menu-card:hover .card-img img {
+  transform: scale(1.05);
+}
+
+/* Popular badge */
+.badge-popular {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #e53935;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+/* Diet badge */
+.badge-diet {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.badge-diet.veggie { background: #4caf50; color: #fff; }
+.badge-diet.vegan  { background: #2196f3; color: #fff; }
+
+/* Wishlist heart button */
+.wishlist-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.92);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  color: #bbb;
+  backdrop-filter: blur(4px);
+  transition: color 0.2s, transform 0.15s;
+}
+
+.wishlist-btn:hover { color: #e53935; transform: scale(1.1); }
+.wishlist-btn.liked { color: #e53935; }
+
+/* Card body */
+.card-body {
+  padding: 16px 18px 18px;
+}
+
+.card-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 5px;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+/* Meta row: rating / time / calories */
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: #777;
+  margin-bottom: 14px;
+}
+
+.card-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-star { color: #f59e0b; }
+
+.meta-icon {
+  width: 14px;
+  height: 14px;
+  stroke: #999;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Price + Add button row */
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-price {
+  font-size: 20px;
+  font-weight: 800;
+  color: #e53935;
+}
+
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #e53935;
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.btn-add:hover { background: #c62828; transform: scale(1.04); }
+
+.btn-add svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+/* ══════════════════════════
+   SPECIAL OFFERS BANNER
+══════════════════════════ */
+.offers-wrapper {
+  background: #fdf5f0;
+  padding: 0 0 56px;
+}
+
+.special-offers {
+  margin: 48px 48px 0;
+  background: linear-gradient(135deg, #e53935 0%, #ff7043 100%);
+  border-radius: 24px;
+  padding: 56px 48px;
+  text-align: center;
+  color: #fff;
+}
+
+.special-offers h2 {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.special-offers p {
+  font-size: 15px;
+  opacity: 0.88;
+  margin-bottom: 30px;
+}
+
+.btn-offers {
+  background: #fff;
+  color: #e53935;
+  border: none;
+  border-radius: 50px;
+  padding: 14px 40px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-offers:hover { opacity: 0.92; transform: scale(1.03); }

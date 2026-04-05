@@ -3,141 +3,308 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FoodExpress</title>
+    <title>FoodExpress - Dashboard</title>
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/dashboard.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
 
-    <link rel="stylesheet" href="../css/index.css" />
+    <!-- Font Awesome -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"
       rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
   </head>
   <body>
-    <!-- NAVBAR -->
+    <!-- ===== NAVBAR ===== -->
     <nav class="navbar">
-      <h2 class="logo">FoodExpress</h2>
+      <div class="container">
+        <div class="navbar-brand">FoodExpress</div>
 
-      <ul class="nav-links">
-        <li class="active">Home</li>
-        <li>About</li>
-        <li>Shop</li>
-        <li>Food</li>
-        <li>Recipes</li>
-        <li>Contact</li>
-      </ul>
+        <div class="navbar-nav">
+          <a href="dashboard.html" class="nav-link">Home</a>
+          <a href="shop.html" class="nav-link">Shop</a>
+          <a href="food.html" class="nav-link">Food</a>
+          <a href="loggedContact.html" class="nav-link">Contact</a>
+        </div>
 
-      <div class="nav-right">
-        <input type="text" placeholder="Search food..." />
-        <button class="login-btn">Login</button>
+        <div class="navbar-right">
+          <div class="search-box">
+            <i
+              class="fa-solid fa-magnifying-glass"
+              style="color: #9ca3af; font-size: 0.85rem"
+            ></i>
+            <input type="text" placeholder="Search food..." />
+          </div>
+          <div class="hamburger" id="hamburger">
+            <span></span><span></span><span></span>
+          </div>
+          <a href="landingpage.html">
+            <button class="login-btn">
+              <i class="fa-regular fa-user"></i>
+              Log out
+            </button>
+          </a>
+        </div>
       </div>
     </nav>
 
-    <!-- MAIN -->
-    <div class="container">
-      <!-- Welcome -->
+    <!-- ===== DASHBOARD ===== -->
+    <div class="dashboard-container">
+      <!-- WELCOME CARD -->
       <div class="welcome-card">
-        <div class="avatar">JD</div>
-
-        <div>
-          <h2>Welcome back, <span>John Doe</span>!</h2>
-          <p>john.doe@example.com</p>
+        <div class="avatar">
+          JD
+          <div class="avatar-online"></div>
         </div>
 
-        <div class="stats">
-          <div>
+        <div class="welcome-info">
+          <h2>Welcome back, <span>Pratyush</span>!</h2>
+          <p class="email">pratyushdahal33@gmail.com</p>
+        </div>
+
+        <div class="welcome-stats">
+          <div class="stat">
             <h3>127</h3>
             <p>Orders</p>
           </div>
-          <div>
+          <div class="stat">
             <h3>850</h3>
             <p>Points</p>
           </div>
-          <div>
+          <div class="stat">
             <h3>$25</h3>
             <p>Saved</p>
           </div>
         </div>
       </div>
 
-      <!-- GRID -->
-      <div class="grid">
-        <!-- LEFT -->
-        <div>
-          <!-- Rewards -->
-          <div class="card rewards">
-            <h3>Rewards Program</h3>
-            <p>You’re 150 points away from a free meal!</p>
-
-            <div class="progress">
+      <!-- MAIN GRID -->
+      <div class="dashboard-grid">
+        <!-- ===== LEFT COLUMN ===== -->
+        <div class="left-col">
+          <!-- REWARDS -->
+          <div class="rewards-card">
+            <div class="rewards-header">
+              <h3>Rewards Program</h3>
+              <span class="rewards-icon">🎁</span>
+            </div>
+            <p>You're 150 points away from a free meal!</p>
+            <div class="progress-bar">
               <div class="progress-fill"></div>
             </div>
-
-            <button>View Rewards</button>
+            <div class="rewards-footer">
+              <span>850 / 1000 points</span>
+              <button class="rewards-btn">View Rewards</button>
+            </div>
           </div>
 
-          <!-- Orders -->
-          <div class="card orders">
+          <!-- ORDERS -->
+          <div class="orders-card">
             <div class="tabs">
-              <button class="active">Recent Orders</button>
-              <button>Favorites</button>
+              <button class="tab-btn active">
+                <i class="fa-solid fa-bag-shopping"></i> Recent Orders
+              </button>
+              <button class="tab-btn">
+                <i class="fa-regular fa-heart"></i> Favorites
+              </button>
             </div>
 
-            <div class="order">
-              <img src="images/burger.jpg" />
-              <div>
+            <!-- Order 1 -->
+            <div class="order-item">
+              <img
+                class="order-img"
+                src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=120&q=80"
+                alt="Burger"
+              />
+              <div class="order-info">
                 <h4>Gourmet Burger & Fries</h4>
-                <p>Burger Place</p>
+                <p class="restaurant">Burger Place</p>
+                <p class="time">
+                  <i class="fa-regular fa-clock"></i> Today, 2:30 PM
+                </p>
               </div>
-              <span>$24.99</span>
+              <div class="order-right">
+                <span class="order-price">$24.99</span>
+                <button class="reorder-icon">
+                  <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button class="reorder-btn">Reorder</button>
+              </div>
             </div>
 
-            <div class="order">
-              <img src="images/pizza.jpg" />
-              <div>
+            <!-- Order 2 -->
+            <div class="order-item">
+              <img
+                class="order-img"
+                src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=120&q=80"
+                alt="Pizza"
+              />
+              <div class="order-info">
                 <h4>Margherita Pizza</h4>
-                <p>Italian Bistro</p>
+                <p class="restaurant">Italian Bistro</p>
+                <p class="time">
+                  <i class="fa-regular fa-clock"></i> Yesterday, 7:15 PM
+                </p>
               </div>
-              <span>$18.99</span>
+              <div class="order-right">
+                <span class="order-price">$18.99</span>
+                <button class="reorder-icon">
+                  <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button class="reorder-btn">Reorder</button>
+              </div>
             </div>
 
-            <div class="order">
-              <img src="images/sushi.jpg" />
-              <div>
+            <!-- Order 3 -->
+            <div class="order-item">
+              <img
+                class="order-img"
+                src="https://images.unsplash.com/photo-1553621042-f6e147245754?w=120&q=80"
+                alt="Sushi"
+              />
+              <div class="order-info">
                 <h4>Sushi Platter</h4>
-                <p>Tokyo Sushi</p>
+                <p class="restaurant">Tokyo Sushi</p>
+                <p class="time">
+                  <i class="fa-regular fa-clock"></i> Apr 2, 6:45 PM
+                </p>
               </div>
-              <span>$32.99</span>
+              <div class="order-right">
+                <span class="order-price">$32.99</span>
+                <button class="reorder-icon">
+                  <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button class="reorder-btn">Reorder</button>
+              </div>
             </div>
 
-            <button class="view-all">View All Orders</button>
+            <button class="view-all-btn">
+              View All Orders <i class="fa-solid fa-chevron-right"></i>
+            </button>
           </div>
         </div>
 
-        <!-- RIGHT -->
-        <div>
-          <div class="card actions">
+        <!-- ===== RIGHT COLUMN ===== -->
+        <div class="right-col">
+          <!-- QUICK ACTIONS -->
+          <div class="card quick-actions">
             <h3>Quick Actions</h3>
-            <div class="action">Browse Menu</div>
-            <div class="action">Track Order</div>
-            <div class="action">Redeem Points</div>
+
+            <div class="action-item">
+              <div class="action-icon red">🛒</div>
+              <span
+                class="action-label"
+                onclick="window.location.href = 'food.html'"
+                >Browse Menu</span
+              >
+              <i class="fa-solid fa-chevron-right action-arrow"></i>
+            </div>
+
+            <div class="action-item">
+              <div class="action-icon dark">
+                <i class="fa-solid fa-box"></i>
+              </div>
+              <span class="action-label">Track Order</span>
+              <i class="fa-solid fa-chevron-right action-arrow"></i>
+            </div>
+
+            <div class="action-item">
+              <div class="action-icon dark">
+                <i class="fa-solid fa-gift"></i>
+              </div>
+              <span class="action-label">Redeem Points</span>
+              <i class="fa-solid fa-chevron-right action-arrow"></i>
+            </div>
           </div>
 
-          <div class="card account">
+          <!-- ACCOUNT -->
+          <div class="card account-card">
             <h3>Account</h3>
-            <p>Edit Profile</p>
-            <p>Addresses</p>
-            <p>Payment Methods</p>
-            <p>Notifications</p>
-            <p>Settings</p>
-            <p class="logout">Log Out</p>
+
+            <div class="account-item">
+              <i class="fa-regular fa-user"></i>
+              Edit Profile
+            </div>
+            <div class="account-item">
+              <i class="fa-solid fa-location-dot"></i>
+              Addresses
+            </div>
+            <div class="account-item">
+              <i class="fa-regular fa-credit-card"></i>
+              Payment Methods
+            </div>
+            <div class="account-item">
+              <i class="fa-regular fa-bell"></i>
+              Notifications
+            </div>
+            <div class="account-item">
+              <i class="fa-solid fa-gear"></i>
+              Settings
+            </div>
+            <div class="account-item logout">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              Log Out
+            </div>
           </div>
 
-          <div class="card offer">
+          <!-- SPECIAL OFFER -->
+          <div class="offer-card">
+            <div class="offer-icon">📈</div>
             <h3>Special Offer!</h3>
-            <p>Get 20% off your next order</p>
-            <button>Claim Offer</button>
+            <p>Get 20% off your next order with code FOOD20</p>
+            <button class="offer-btn">Claim Offer</button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- ===== FOOTER ADDED HERE ===== -->
+    <footer>
+      <div class="footer-grid">
+        <div>
+          <div class="footer-logo">FoodExpress</div>
+          <p class="footer-desc">
+            Delivering happiness to your doorstep, one meal at a time.
+          </p>
+          <div class="footer-socials">
+            <a href="#"><i class="fa-brands fa-facebook"></i></a>
+            <a href="#"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="#"><i class="fa-brands fa-instagram"></i></a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="landingpage.html">Home</a></li>
+            <li><a href="shop.html">Our Menu</a></li>
+            <li><a href="food.html">Food</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <div class="contact-item">📍 <span>Kathmandu, Nepal</span></div>
+          <div class="contact-item">📞 <span>+977-9841223344</span></div>
+          <div class="contact-item">
+            ✉️
+            <span><a href="mailto:lovely@gmail.com">lovely@gmail.com</a></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
+    </footer>
   </body>
 </html>

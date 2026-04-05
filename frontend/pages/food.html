@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FoodExpress — Our Menu</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Shared nav + footer styles -->
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/food.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
+  </head>
+  <body>
+    <!-- ══════════════════ NAVBAR ══════════════════ -->
+    <nav class="navbar" id="navbar">
+      <div class="container">
+        <div class="navbar-brand">FoodExpress</div>
+
+        <div class="navbar-nav">
+          <a href="dashboard.html" class="nav-link">Home</a>
+          <a href="shop.html" class="nav-link">Shop</a>
+          <a href="#" class="nav-link">Food</a>
+          <a href="#" class="nav-link">Contact</a>
+        </div>
+
+        <div class="navbar-right">
+          <div class="search-box">
+            <input type="text" placeholder="Search food..." />
+          </div>
+          <div class="hamburger" id="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <a href="landingpage.html">
+            <button class="login-btn">
+              <i class="fa-regular fa-user"></i>
+              Log out
+            </button>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ══════════════════ HERO ══════════════════ -->
+    <section class="food-hero">
+      <h1>Our <span>Menu</span></h1>
+      <p>Explore our delicious selection of freshly prepared dishes</p>
+
+      <div class="hero-search">
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <input type="text" id="dishSearch" placeholder="Search dishes..." />
+      </div>
+
+      <div class="diet-filters">
+        <button class="diet-pill active" onclick="setDiet(this, 'all')">
+          All Items
+        </button>
+        <button class="diet-pill" onclick="setDiet(this, 'veggie')">
+          🌿 Vegetarian
+        </button>
+        <button class="diet-pill" onclick="setDiet(this, 'vegan')">
+          🌍 Vegan
+        </button>
+      </div>
+    </section>
+
+    <!-- ══════════════════ CATEGORIES + CARDS ══════════════════ -->
+    <section class="category-section">
+      <div class="category-tabs">
+        <button class="cat-tab active" onclick="setCategory(this, 'breakfast')">
+          Breakfast
+        </button>
+        <button class="cat-tab" onclick="setCategory(this, 'lunch')">
+          Lunch
+        </button>
+        <button class="cat-tab" onclick="setCategory(this, 'dinner')">
+          Dinner
+        </button>
+        <button class="cat-tab" onclick="setCategory(this, 'desserts')">
+          Desserts
+        </button>
+        <button class="cat-tab" onclick="setCategory(this, 'beverages')">
+          Beverages
+        </button>
+      </div>
+
+      <div class="menu-grid" id="menuGrid">
+        <!-- ── BREAKFAST ── -->
+        <div class="menu-card" data-category="breakfast" data-diet="veggie">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=600&h=400&fit=crop"
+              alt="Fluffy Pancakes"
+            />
+            <span class="badge-popular">Popular</span>
+            <span class="badge-diet veggie">Veggie</span>
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">Fluffy Pancakes</div>
+            <div class="card-desc">
+              Stack of 3 fluffy pancakes with maple syrup
+            </div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.8</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                12 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                420</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$9.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-card" data-category="breakfast" data-diet="veggie">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=600&h=400&fit=crop"
+              alt="Avocado Toast"
+            />
+            <span class="badge-diet veggie">Veggie</span>
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">Avocado Toast</div>
+            <div class="card-desc">Fresh avocado on artisan bread with egg</div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.7</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                8 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                310</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$10.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-card" data-category="breakfast" data-diet="none">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=600&h=400&fit=crop"
+              alt="Breakfast Burrito"
+            />
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">Breakfast Burrito</div>
+            <div class="card-desc">Eggs, cheese, beans, and salsa wrapped</div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.6</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                15 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                580</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$12.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-card" data-category="breakfast" data-diet="veggie">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=600&h=400&fit=crop"
+              alt="French Toast"
+            />
+            <span class="badge-diet veggie">Veggie</span>
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">French Toast</div>
+            <div class="card-desc">Brioche bread with berries and cream</div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.9</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                15 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                520</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$11.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-card" data-category="breakfast" data-diet="none">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1608039829572-78524f79c4c7?w=600&h=400&fit=crop"
+              alt="Eggs Benedict"
+            />
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">Eggs Benedict</div>
+            <div class="card-desc">Poached eggs with hollandaise sauce</div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.8</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                20 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                640</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$13.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-card" data-category="breakfast" data-diet="vegan">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=600&h=400&fit=crop"
+              alt="Acai Bowl"
+            />
+            <span class="badge-diet vegan">Vegan</span>
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">Acai Bowl</div>
+            <div class="card-desc">
+              Superfood bowl with fresh fruits &amp; granola
+            </div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.7</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                8 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                350</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$12.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── LUNCH ── -->
+        <div class="menu-card" data-category="lunch" data-diet="none">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=400&fit=crop"
+              alt="Classic Burger"
+            />
+            <span class="badge-popular">Popular</span>
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">Classic Burger</div>
+            <div class="card-desc">
+              Juicy beef patty with lettuce and tomato
+            </div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.9</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                20 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                720</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$14.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-card" data-category="lunch" data-diet="veggie">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&h=400&fit=crop"
+              alt="Caesar Salad"
+            />
+            <span class="badge-diet veggie">Veggie</span>
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">Caesar Salad</div>
+            <div class="card-desc">
+              Crispy romaine with parmesan and croutons
+            </div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.5</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                10 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                280</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$11.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-card" data-category="lunch" data-diet="none">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=600&h=400&fit=crop"
+              alt="Pasta Carbonara"
+            />
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">Pasta Carbonara</div>
+            <div class="card-desc">Creamy pasta with pancetta and egg yolk</div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.9</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                25 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                650</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$17.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── DINNER ── -->
+        <div class="menu-card" data-category="dinner" data-diet="none">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&h=400&fit=crop"
+              alt="Margherita Pizza"
+            />
+            <span class="badge-popular">Popular</span>
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">Margherita Pizza</div>
+            <div class="card-desc">
+              Classic tomato base with fresh mozzarella
+            </div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.8</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                30 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                800</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$13.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-card" data-category="dinner" data-diet="none">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=600&h=400&fit=crop"
+              alt="Sushi Rolls"
+            />
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">Sushi Rolls</div>
+            <div class="card-desc">
+              Fresh salmon and tuna with seasoned rice
+            </div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.9</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                20 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                390</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$16.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-card" data-category="dinner" data-diet="vegan">
+          <div class="card-img">
+            <img
+              src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&h=400&fit=crop"
+              alt="Buddha Bowl"
+            />
+            <span class="badge-diet vegan">Vegan</span>
+            <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+          </div>
+          <div class="card-body">
+            <div class="card-name">Buddha Bowl</div>
+            <div class="card-desc">
+              Quinoa, roasted veggies and tahini dressing
+            </div>
+            <div class="card-meta">
+              <span><span class="meta-star">★</span> 4.6</span>
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                18 min</span
+              >
+              <span
+                ><svg class="meta-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"
+                  />
+                </svg>
+                420</span
+              >
+            </div>
+            <div class="card-footer">
+              <span class="card-price">$14.99</span>
+              <button class="btn-add" onclick="addToCart(this)">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path
+                    d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+                  />
+                </svg>
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- end .menu-grid -->
+    </section>
+
+    <!-- ══════════════════ SPECIAL OFFERS ══════════════════ -->
+    <div class="offers-wrapper">
+      <div class="special-offers">
+        <h2>Special Offers</h2>
+        <p>
+          Get 20% off on orders above $50 &nbsp;•&nbsp; Free delivery on first
+          order
+        </p>
+        <button class="btn-offers">View All Offers</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════ FOOTER ══════════════════ -->
+    <footer>
+      <div class="footer-grid">
+        <div>
+          <div class="footer-logo">FoodExpress</div>
+          <p class="footer-desc">
+            Delivering happiness to your doorstep, one meal at a time.
+          </p>
+          <div class="footer-socials">
+            <a href="#">f</a>
+            <a href="#">𝕏</a>
+            <a href="#">◎</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="home.html">Home</a></li>
+            <li><a href="shop.html">Our Menu</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <div class="contact-item">📍 <span>Kathmandu, Nepal</span></div>
+          <div class="contact-item">📞 <span>+977 - 9841223344</span></div>
+          <div class="contact-item">✉️ <span>Lovely@gmail.com</span></div>
+        </div>
+      </div>
+      <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
+    </footer>
+
+    <!-- Food page script — must be last -->
+    <script src="food.js"></script>
+  </body>
+</html>

@@ -4,49 +4,41 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FoodExpress — Shop</title>
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/shop.css" />
   </head>
   <body>
     <!-- ══════════════════ NAVBAR ══════════════════ -->
-    <nav>
-      <a class="nav-logo" href="home.html">FoodExpress</a>
-      <ul class="nav-links">
-        <li id="nav-home"><a href="index.html">Home</a></li>
-        <li id="nav-about"><a href="#">About</a></li>
-        <li id="nav-shop"><a href="shop.html">Shop</a></li>
-        <li id="nav-food"><a href="#">Food</a></li>
-        <li id="nav-recipes"><a href="#">Recipes</a></li>
-        <li id="nav-contact"><a href="#">Contact</a></li>
-      </ul>
-      <div class="nav-search">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
-        <input type="text" placeholder="Search food..." />
+    <nav class="navbar" id="navbar">
+      <div class="container">
+        <div class="navbar-brand">FoodExpress</div>
+
+        <div class="navbar-nav">
+          <a href="dashboard.html" class="nav-link">Home</a>
+          <a href="shop.html" class="nav-link">Shop</a>
+          <a href="food.html" class="nav-link">Food</a>
+          <a href="loggedContact.html" class="nav-link">Contact</a>
+        </div>
+
+        <div class="navbar-right">
+          <div class="search-box">
+            <input type="text" placeholder="Search food..." />
+          </div>
+          <div class="hamburger" id="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <a href="landingpage.html">
+            <button class="login-btn">
+              <i class="fa-regular fa-user"></i>
+              Log out
+            </button>
+          </a>
+        </div>
       </div>
-      <button class="btn-login">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-        Login
-      </button>
     </nav>
 
     <!-- ══════════════════ SHOP PAGE ══════════════════ -->
@@ -280,9 +272,7 @@
           <h4>Quick Links</h4>
           <ul>
             <li><a href="home.html">Home</a></li>
-            <li><a href="#">About Us</a></li>
             <li><a href="shop.html">Our Menu</a></li>
-            <li><a href="#">Recipes</a></li>
           </ul>
         </div>
         <div class="footer-col">
@@ -291,16 +281,14 @@
             <li><a href="#">Help Center</a></li>
             <li><a href="#">Privacy Policy</a></li>
             <li><a href="#">Terms of Service</a></li>
-            <li><a href="#">Contact Us</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
           </ul>
         </div>
         <div class="footer-col">
           <h4>Contact</h4>
-          <div class="contact-item">
-            📍 <span>123 Food Street, Culinary City, FC 12345</span>
-          </div>
-          <div class="contact-item">📞 <span>(555) 123-4567</span></div>
-          <div class="contact-item">✉️ <span>hello@foodexpress.com</span></div>
+          <div class="contact-item">📍 <span>Kathmandu, Nepal</span></div>
+          <div class="contact-item">📞 <span>+977 - 9841223344</span></div>
+          <div class="contact-item">✉️ <span>Lovely@gmail.com</span></div>
         </div>
       </div>
       <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>

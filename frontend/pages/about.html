@@ -4,34 +4,42 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>About - FoodExpress</title>
-
-    <!-- FONT -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/about.css" />
   </head>
   <body>
     <!-- NAVBAR -->
-    <header class="navbar">
-      <div class="logo">FoodExpress</div>
+    <nav class="navbar" id="navbar">
+      <div class="container">
+        <div class="navbar-brand">FoodExpress</div>
 
-      <nav>
-        <a href="landingpage.html">Home</a>
-        <a class="active" href="#">About</a>
-        <a href="#">Shop</a>
-        <a href="#">Food</a>
-        <a href="#">Recipes</a>
-        <a href="contact.html">Contact</a>
-      </nav>
+        <div class="navbar-nav">
+          <a href="landingpage.html" class="nav-link">Home</a>
+          <a href="about.html" class="nav-link">About</a>
+          <a href="login.html" class="nav-link">Shop</a>
+          <a href="login.html" class="nav-link">Food</a>
+          <a href="contact.html" class="nav-link">Contact</a>
+        </div>
 
-      <div class="nav-right">
-        <input type="text" placeholder="Search food..." />
-        <button class="login-btn">Login</button>
+        <div class="navbar-right">
+          <div class="search-box">
+            <input type="text" placeholder="Search food..." />
+          </div>
+          <div class="hamburger" id="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <a href="login.html">
+            <button class="login-btn">
+              <i class="fa-regular fa-user"></i>
+              Login
+            </button>
+          </a>
+        </div>
       </div>
-    </header>
+    </nav>
 
     <!-- HERO -->
     <section class="hero">

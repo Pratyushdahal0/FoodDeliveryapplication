@@ -2,91 +2,17 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: Arial;
 }
 
 body {
   background: #f6f6f6;
 }
 
-/* NAVBAR */
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  padding: 15px 60px;
-
-  background: white;
-}
-
-.logo {
-  font-size: 24px;
-  font-weight: bold;
-  color: #ff2e2e;
-}
-
-.nav-links a {
-  margin: 0 12px;
-
-  text-decoration: none;
-
-  color: #444;
-}
-
-/* RIGHT NAVBAR */
-
-.nav-right {
-  display: flex;
-  align-items: center;
-
-  gap: 15px;
-}
-
-/* SEARCH */
-
-.search-box {
-  padding: 8px 15px;
-
-  width: 180px;
-
-  border-radius: 20px;
-
-  border: 1px solid #ddd;
-
-  background: #f5f5f5;
-}
-
-/* LOGIN BUTTON */
-
-.login-btn {
-  display: flex;
-
-  align-items: center;
-
-  gap: 6px;
-
-  background: #ff2e2e;
-
-  color: white;
-
-  padding: 8px 18px;
-
-  border: none;
-
-  border-radius: 25px;
-
-  cursor: pointer;
-}
-
 /* HERO */
 
 .hero {
   text-align: center;
-
   padding: 70px;
-
   background: #eee6df;
 }
 
@@ -130,16 +56,12 @@ body {
   gap: 10px;
 }
 
-input,
-textarea {
+.form-box input,
+.form-box textarea {
   width: 100%;
-
   padding: 12px;
-
   margin: 10px 0;
-
   border-radius: 10px;
-
   border: 1px solid #ddd;
 }
 
