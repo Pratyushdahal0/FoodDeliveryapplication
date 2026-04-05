@@ -1,54 +1,63 @@
 <?php
-    //class user to insert user who have registerd into db and fetch the user for login process.
-    class User{
-        private $conn;
+class User {
+    private $conn;
 
-        public function _construct($db){
-            $this->conn = $db;
+    //correct constructor
+    public function __construct($db){
+        $this->conn = $db;
+    }
+
+    //REGISTER FUNCTION
+    public function register($name, $email, $password, $phone, $address, $role = 'customer'){
+
+        //check if email exists
+        $checkSql = "SELECT id FROM users WHERE email = ?";
+        $stmt = $this->conn->prepare($checkSql);
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows > 0) {
+            return "Email already exists";
         }
 
-        // SIGNUP FUNCTION
-         public function createUser($name, $email, $password, $phone, $address, $role = 'customer'){
-            //hashing the password
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        //hash password
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-            //writing SQL query
-            $sql = "INSERT INTO users (name, email, password, phone, address, role)
+        $sql = "INSERT INTO users (name, email, password, phone, address, role)
                 VALUES (?, ?, ?, ?, ?, ?)";
 
-            //prepare the query to insert into db form sql injection
-            $stmt = $this->conn->prepare($sql);
+        $stmt = $this->conn->prepare($sql);
 
-             //Execute with values
-            $result = $stmt->execute([
-            $name,
-            $email,
-            $hashedPassword,
-            $phone,
-            $address,
-            $role
-        ]);
+        if (!$stmt) {
+            return "Prepare failed: " . $this->conn->error;
+        }
 
-            //return result (true/false) of inserting into db.
-            return $result;
+        $stmt->bind_param("ssssss", $name, $email, $hashedPassword, $phone, $address, $role);
 
-         }
+        if ($stmt->execute()) {
+            return "Registered successfully";
+        } else {
+            return "Error: " . $stmt->error;
+        }
+    }
 
-        // *********** LOGIN FUNCTION
-        public function getUserByEmail($email) {
-        //SQL query
+    //LOGIN FUNCTION
+    public function login($email, $password){
+
         $sql = "SELECT * FROM users WHERE email = ? LIMIT 1";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $user;
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        $user = $result->fetch_assoc();
+
+        if ($user && password_verify($password, $user['password'])) {
+            return true;
+        }
+
+        return false;
     }
-
-
-
-    }
-
-
-
-
+}
 ?>
