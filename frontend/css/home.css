@@ -1,5 +1,74 @@
 /* ===== HOME CSS - Landing Page Styles ===== */
+/* NAVBAR */
 
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 15px 60px;
+
+  background: white;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff2e2e;
+}
+
+.nav-links a {
+  margin: 0 12px;
+
+  text-decoration: none;
+
+  color: #444;
+}
+
+/* RIGHT NAVBAR */
+
+.nav-right {
+  display: flex;
+  align-items: center;
+
+  gap: 15px;
+}
+
+/* SEARCH */
+
+.search-box {
+  padding: 8px 15px;
+
+  width: 180px;
+
+  border-radius: 20px;
+
+  border: 1px solid #ddd;
+
+  background: #f5f5f5;
+}
+
+/* LOGIN BUTTON */
+
+.login-btn {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  background: #ff2e2e;
+
+  color: white;
+
+  padding: 8px 18px;
+
+  border: none;
+
+  border-radius: 25px;
+
+  cursor: pointer;
+}
 /* ===== HERO SECTION ===== */
 .hero {
   background: var(--bg-light);
