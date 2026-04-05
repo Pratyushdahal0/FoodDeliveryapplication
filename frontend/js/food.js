@@ -165,7 +165,7 @@ function createMenuCard(item) {
       </div>
       <div class="card-footer">
         <span class="card-price">$${item.price}</span>
-        <button class="btn-add" onclick="addToCart(this)">
+        <button class="btn-add" onclick="addToCart(this)" data-product-id="${item.id}" data-product-name="${item.name}" data-product-price="${item.price}" data-product-image="${item.image_url || 'https://via.placeholder.com/600x400'}">
           <svg viewBox="0 0 24 24">
             <circle cx="9" cy="21" r="1" />
             <circle cx="20" cy="21" r="1" />
@@ -271,6 +271,20 @@ function addToCart(btn) {
   if (btn.classList.contains('adding')) return;
 
   btn.classList.add('adding');
+  
+  // Add item to cart with product details
+  if (typeof addItemToCart === 'function') {
+    const product = {
+      id: btn.dataset.productId,
+      name: btn.dataset.productName,
+      price: btn.dataset.productPrice,
+      image_url: btn.dataset.productImage
+    };
+    addItemToCart(product);
+  } else {
+    console.warn('addItemToCart not available');
+  }
+  
   const originalHTML = btn.innerHTML;
 
   btn.innerHTML = '✓ Added';

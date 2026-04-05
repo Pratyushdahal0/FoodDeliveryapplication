@@ -134,7 +134,7 @@ function createProductCard(product) {
       </div>
       <div class="product-footer">
         <span class="product-price">$${product.price}</span>
-        <button class="add-to-cart">+</button>
+        <button class="add-to-cart" data-product-id="${product.id}" data-product-name="${product.name}" data-product-price="${product.price}" data-product-image="${product.image_url || 'https://via.placeholder.com/400x300'}">+</button>
       </div>
     </div>
   `;
@@ -180,6 +180,19 @@ function handleAddToCart(btn) {
   btn.textContent = '✓';
   btn.style.background = '#22c55e';
   btn.style.transform = 'scale(1.15)';
+
+  // Add item to cart with product details
+  if (typeof addItemToCart === 'function') {
+    const product = {
+      id: btn.dataset.productId,
+      name: btn.dataset.productName,
+      price: btn.dataset.productPrice,
+      image_url: btn.dataset.productImage
+    };
+    addItemToCart(product);
+  } else {
+    console.warn('addItemToCart not available');
+  }
 
   setTimeout(() => {
     btn.textContent = original;

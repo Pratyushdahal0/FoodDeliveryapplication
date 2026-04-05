@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Cart - FoodExpress</title>
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <style>
+      .cart-page {
+        max-width: 900px;
+        margin: 80px auto 40px;
+        padding: 0 20px;
+      }
+
+      .cart-header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .cart-header h1 {
+        font-size: 2.5rem;
+        color: var(--text-dark);
+        margin-bottom: 10px;
+      }
+
+      .cart-empty {
+        text-align: center;
+        padding: 60px 20px;
+        background: #f9fafb;
+        border-radius: var(--radius);
+        color: var(--text-light);
+      }
+
+      .cart-empty p {
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+      }
+
+      .cart-items-list {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin-bottom: 30px;
+      }
+
+      .cart-item {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.2s;
+      }
+
+      .cart-item:last-child {
+        border-bottom: none;
+      }
+
+      .cart-item:hover {
+        background: #f9fafb;
+      }
+
+      .cart-item-image {
+        width: 80px;
+        height: 80px;
+        background: #f3f4f6;
+        border-radius: var(--radius);
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .cart-item-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .cart-item-details {
+        flex: 1;
+      }
+
+      .cart-item-name {
+        font-weight: 600;
+        color: var(--text-dark);
+        font-size: 1rem;
+        margin-bottom: 8px;
+      }
+
+      .cart-item-price {
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 1.1rem;
+      }
+
+      .cart-item-quantity {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 120px;
+      }
+
+      .qty-btn {
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+      }
+
+      .qty-btn:hover {
+        background: var(--primary-light);
+        color: var(--primary);
+      }
+
+      .quantity {
+        font-weight: 600;
+        min-width: 30px;
+        text-align: center;
+      }
+
+      .remove-btn {
+        background: #fee;
+        color: #c62828;
+        border: none;
+        padding: 8px 16px;
+        border-radius: var(--radius-full);
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.2s;
+      }
+
+      .remove-btn:hover {
+        background: #fdd;
+      }
+
+      .cart-summary {
+        background: #f9fafb;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 30px;
+        margin-bottom: 30px;
+      }
+
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        font-size: 1rem;
+      }
+
+      .summary-row.total {
+        border-top: 2px solid var(--border);
+        padding-top: 15px;
+        margin-top: 15px;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-dark);
+      }
+
+      .cart-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      .btn-continue {
+        flex: 1;
+        background: #f3f4f6;
+        color: var(--text-dark);
+        border: none;
+        padding: 14px 20px;
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn-continue:hover {
+        background: #e5e7eb;
+      }
+
+      .btn-checkout {
+        flex: 1;
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 14px 20px;
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 1rem;
+      }
+
+      .btn-checkout:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+      }
+
+      .btn-checkout:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <div class="container">
+        <div class="navbar-brand">FoodExpress</div>
+        <div class="navbar-nav">
+          <a href="dashboard.html" class="nav-link">Home</a>
+          <a href="shop.html" class="nav-link">Shop</a>
+          <a href="food.html" class="nav-link">Food</a>
+          <a href="loggedContact.html" class="nav-link">Contact</a>
+        </div>
+        <div class="navbar-right">
+          <div class="search-box">
+            <input type="text" placeholder="Search food..." />
+          </div>
+          <div class="hamburger" id="hamburger">
+            <span></span><span></span><span></span>
+          </div>
+          <a href="landingpage.html">
+            <button class="login-btn">
+              <i class="fa-regular fa-user"></i>
+              Log out
+            </button>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- CART PAGE -->
+    <div class="cart-page">
+      <div class="cart-header">
+        <h1>Your Cart</h1>
+        <p id="cartStatusText">Loading cart items...</p>
+      </div>
+
+      <!-- Empty Cart Message -->
+      <div id="emptyCart" class="cart-empty" style="display: none">
+        <p>🛒 Your cart is empty</p>
+        <a
+          href="shop.html"
+          style="
+            display: inline-block;
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            border-radius: var(--radius-full);
+            text-decoration: none;
+            font-weight: 600;
+          "
+          >Continue Shopping</a
+        >
+      </div>
+
+      <!-- Cart Items -->
+      <div id="cartItemsContainer">
+        <div class="cart-items-list" id="cartItemsList"></div>
+
+        <!-- Cart Summary -->
+        <div class="cart-summary">
+          <div class="summary-row">
+            <span>Subtotal:</span>
+            <span>$<span id="subtotal">0.00</span></span>
+          </div>
+          <div class="summary-row">
+            <span>Delivery Fee:</span>
+            <span>$<span id="deliveryFee">5.00</span></span>
+          </div>
+          <div class="summary-row">
+            <span>Tax:</span>
+            <span>$<span id="tax">0.00</span></span>
+          </div>
+          <div class="summary-row total">
+            <span>Total:</span>
+            <span>$<span id="total">0.00</span></span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="cart-actions">
+          <a href="shop.html" class="btn-continue">← Continue Shopping</a>
+          <button class="btn-checkout" id="proceedCheckoutBtn">
+            Proceed to Checkout →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="footer-grid">
+        <div>
+          <div class="footer-logo">FoodExpress</div>
+          <p class="footer-desc">
+            Delivering happiness to your doorstep, one meal at a time.
+          </p>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="dashboard.html">Home</a></li>
+            <li><a href="shop.html">Our Menu</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="../js/api/productApi2.js"></script>
+    <script src="../js/modules/cart.js"></script>
+    <script src="../js/cart-page.js"></script>
+  </body>
+</html>
