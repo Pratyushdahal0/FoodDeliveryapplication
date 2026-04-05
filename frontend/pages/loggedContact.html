@@ -30,7 +30,7 @@
             <span></span>
             <span></span>
           </div>
-          <a href="landingpage.html">
+          <a href="#" onclick="logout()">
             <button class="login-btn">
               <i class="fa-regular fa-user"></i>
               Log out
@@ -154,6 +154,21 @@
       </div>
       <div class="footer-bottom">© 2026 FoodExpress</div>
     </div>
+
+    <script>
+      function logout() {
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("foodDeliveryCartCount");
+        localStorage.removeItem("foodDeliveryCartItems");
+        localStorage.removeItem("checkoutTotal");
+        localStorage.removeItem("checkoutSubtotal");
+        localStorage.removeItem("checkoutTax");
+        localStorage.removeItem("lastOrder");
+        alert("You have been logged out");
+        window.location.href = "landingpage.html";
+      }
+    </script>
 
     <script src="../js/contact.js"></script>
   </body>

@@ -16,6 +16,14 @@
     />
   </head>
   <body>
+    <!-- AUTH PROTECTION -->
+    <script>
+      if (!localStorage.getItem("isLoggedIn")) {
+        alert("Please login first");
+        window.location.href = "login.html";
+      }
+    </script>
+
     <!-- ===== NAVBAR ===== -->
     <nav class="navbar">
       <div class="container">
