@@ -3,318 +3,141 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FoodExpress Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <title>FoodExpress</title>
+
+    <link rel="stylesheet" href="../css/index.css" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"
       rel="stylesheet"
     />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    />
-    <link rel="stylesheet" href="../css/dashboard.css" />
   </head>
   <body>
-    <header class="navbar">
-      <div class="logo">FoodExpress</div>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <h2 class="logo">FoodExpress</h2>
 
-      <nav class="nav-links">
-        <a href="#" class="active">Home</a>
-        <a href="#">About</a>
-        <a href="#">Shop</a>
-        <a href="#">Food</a>
-        <a href="#">Recipes</a>
-        <a href="#">Contact</a>
-      </nav>
+      <ul class="nav-links">
+        <li class="active">Home</li>
+        <li>About</li>
+        <li>Shop</li>
+        <li>Food</li>
+        <li>Recipes</li>
+        <li>Contact</li>
+      </ul>
 
-      <div class="nav-actions">
-        <div class="search-box">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" placeholder="Search food..." />
-        </div>
-        <button class="login-btn">
-          <i class="fa-regular fa-user"></i>
-          Login
-        </button>
+      <div class="nav-right">
+        <input type="text" placeholder="Search food..." />
+        <button class="login-btn">Login</button>
       </div>
-    </header>
+    </nav>
 
-    <main class="dashboard-page">
-      <section class="hero-panel">
-        <div class="profile-left">
-          <div class="avatar-wrap">
-            <div class="avatar">JD</div>
-            <span class="online-dot"></span>
-          </div>
+    <!-- MAIN -->
+    <div class="container">
+      <!-- Welcome -->
+      <div class="welcome-card">
+        <div class="avatar">JD</div>
 
-          <div class="profile-info">
-            <h1>Welcome back, <span>John Doe</span>!</h1>
-            <p class="email">john.doe@example.com</p>
-            <div class="member-row">
-              <span class="member-badge">
-                <i class="fa-solid fa-star"></i>
-                Gold Member
-              </span>
-              <span class="divider-dot">•</span>
-              <span class="member-since">Member since Jan 2024</span>
-            </div>
-          </div>
+        <div>
+          <h2>Welcome back, <span>John Doe</span>!</h2>
+          <p>john.doe@example.com</p>
         </div>
 
-        <div class="hero-stats">
-          <div class="stat-item">
+        <div class="stats">
+          <div>
             <h3>127</h3>
             <p>Orders</p>
           </div>
-          <div class="stat-item">
+          <div>
             <h3>850</h3>
             <p>Points</p>
           </div>
-          <div class="stat-item">
+          <div>
             <h3>$25</h3>
             <p>Saved</p>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section class="content-grid">
-        <div class="left-column">
-          <section class="rewards-card">
-            <div class="rewards-top">
-              <div>
-                <h2>Rewards Program</h2>
-                <p>You're 150 points away from a free meal!</p>
-              </div>
-              <div class="gift-icon">
-                <i class="fa-solid fa-gift"></i>
-              </div>
-            </div>
+      <!-- GRID -->
+      <div class="grid">
+        <!-- LEFT -->
+        <div>
+          <!-- Rewards -->
+          <div class="card rewards">
+            <h3>Rewards Program</h3>
+            <p>You’re 150 points away from a free meal!</p>
 
-            <div class="progress-bar">
+            <div class="progress">
               <div class="progress-fill"></div>
             </div>
 
-            <div class="rewards-bottom">
-              <span>850 / 1000 points</span>
-              <button>View Rewards</button>
-            </div>
-          </section>
+            <button>View Rewards</button>
+          </div>
 
-          <section class="orders-card">
-            <div class="orders-tabs">
-              <button class="tab active">
-                <i class="fa-solid fa-bag-shopping"></i>
-                Recent Orders
-              </button>
-              <button class="tab">
-                <i class="fa-regular fa-heart"></i>
-                Favorites
-              </button>
+          <!-- Orders -->
+          <div class="card orders">
+            <div class="tabs">
+              <button class="active">Recent Orders</button>
+              <button>Favorites</button>
             </div>
 
-            <div class="order-item">
-              <div class="order-main">
-                <img
-                  src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=300&q=80"
-                  alt="Burger"
-                />
-                <div class="order-details">
-                  <h3>Gourmet Burger &amp; Fries</h3>
-                  <p class="restaurant">Burger Palace</p>
-                  <p class="time">
-                    <i class="fa-regular fa-clock"></i>
-                    Today, 2:30 PM
-                  </p>
-                </div>
+            <div class="order">
+              <img src="images/burger.jpg" />
+              <div>
+                <h4>Gourmet Burger & Fries</h4>
+                <p>Burger Place</p>
               </div>
-
-              <div class="order-actions">
-                <div class="price">$24.99</div>
-                <div class="action-buttons">
-                  <button class="icon-btn">
-                    <i class="fa-solid fa-rotate"></i>
-                  </button>
-                  <button class="reorder-btn">Reorder</button>
-                </div>
-              </div>
+              <span>$24.99</span>
             </div>
 
-            <div class="order-item">
-              <div class="order-main">
-                <img
-                  src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=300&q=80"
-                  alt="Pizza"
-                />
-                <div class="order-details">
-                  <h3>Margherita Pizza</h3>
-                  <p class="restaurant">Italian Bistro</p>
-                  <p class="time">
-                    <i class="fa-regular fa-clock"></i>
-                    Yesterday, 7:15 PM
-                  </p>
-                </div>
+            <div class="order">
+              <img src="images/pizza.jpg" />
+              <div>
+                <h4>Margherita Pizza</h4>
+                <p>Italian Bistro</p>
               </div>
-
-              <div class="order-actions">
-                <div class="price">$18.99</div>
-                <div class="action-buttons">
-                  <button class="icon-btn">
-                    <i class="fa-solid fa-rotate"></i>
-                  </button>
-                  <button class="reorder-btn">Reorder</button>
-                </div>
-              </div>
+              <span>$18.99</span>
             </div>
 
-            <div class="order-item">
-              <div class="order-main">
-                <img
-                  src="https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=300&q=80"
-                  alt="Sushi"
-                />
-                <div class="order-details">
-                  <h3>Sushi Platter</h3>
-                  <p class="restaurant">Tokyo Sushi</p>
-                  <p class="time">
-                    <i class="fa-regular fa-clock"></i>
-                    Apr 2, 6:45 PM
-                  </p>
-                </div>
+            <div class="order">
+              <img src="images/sushi.jpg" />
+              <div>
+                <h4>Sushi Platter</h4>
+                <p>Tokyo Sushi</p>
               </div>
-
-              <div class="order-actions">
-                <div class="price">$32.99</div>
-                <div class="action-buttons">
-                  <button class="icon-btn">
-                    <i class="fa-solid fa-rotate"></i>
-                  </button>
-                  <button class="reorder-btn">Reorder</button>
-                </div>
-              </div>
+              <span>$32.99</span>
             </div>
 
-            <button class="view-all-btn">
-              View All Orders
-              <i class="fa-solid fa-chevron-right"></i>
-            </button>
-          </section>
+            <button class="view-all">View All Orders</button>
+          </div>
         </div>
 
-        <aside class="right-column">
-          <section class="side-card">
-            <h2>Quick Actions</h2>
+        <!-- RIGHT -->
+        <div>
+          <div class="card actions">
+            <h3>Quick Actions</h3>
+            <div class="action">Browse Menu</div>
+            <div class="action">Track Order</div>
+            <div class="action">Redeem Points</div>
+          </div>
 
-            <a href="#" class="quick-link pink">
-              <div class="quick-left">
-                <span class="quick-icon red">
-                  <i class="fa-solid fa-bag-shopping"></i>
-                </span>
-                <span>Browse Menu</span>
-              </div>
-              <i class="fa-solid fa-chevron-right"></i>
-            </a>
+          <div class="card account">
+            <h3>Account</h3>
+            <p>Edit Profile</p>
+            <p>Addresses</p>
+            <p>Payment Methods</p>
+            <p>Notifications</p>
+            <p>Settings</p>
+            <p class="logout">Log Out</p>
+          </div>
 
-            <a href="#" class="quick-link">
-              <div class="quick-left">
-                <span class="quick-icon dark">
-                  <i class="fa-solid fa-cube"></i>
-                </span>
-                <span>Track Order</span>
-              </div>
-              <i class="fa-solid fa-chevron-right"></i>
-            </a>
-
-            <a href="#" class="quick-link">
-              <div class="quick-left">
-                <span class="quick-icon dark">
-                  <i class="fa-solid fa-gift"></i>
-                </span>
-                <span>Redeem Points</span>
-              </div>
-              <i class="fa-solid fa-chevron-right"></i>
-            </a>
-          </section>
-
-          <section class="side-card account-card">
-            <h2>Account</h2>
-
-            <a href="#" class="account-link">
-              <i class="fa-regular fa-user"></i>
-              <span>Edit Profile</span>
-            </a>
-
-            <a href="#" class="account-link">
-              <i class="fa-solid fa-location-dot"></i>
-              <span>Addresses</span>
-            </a>
-
-            <a href="#" class="account-link">
-              <i class="fa-regular fa-credit-card"></i>
-              <span>Payment Methods</span>
-            </a>
-
-            <a href="#" class="account-link">
-              <i class="fa-regular fa-bell"></i>
-              <span>Notifications</span>
-            </a>
-
-            <a href="#" class="account-link">
-              <i class="fa-solid fa-gear"></i>
-              <span>Settings</span>
-            </a>
-
-            <hr />
-
-            <a href="#" class="account-link logout">
-              <i class="fa-solid fa-right-from-bracket"></i>
-              <span>Log Out</span>
-            </a>
-          </section>
-
-          <section class="offer-card">
-            <div class="offer-icon">
-              <i class="fa-solid fa-arrow-trend-up"></i>
-            </div>
+          <div class="card offer">
             <h3>Special Offer!</h3>
-            <p>Get 20% off your next order over $30</p>
+            <p>Get 20% off your next order</p>
             <button>Claim Offer</button>
-          </section>
-        </aside>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <div class="footer-grid">
-        <div>
-          <h3>FoodExpress</h3>
-          <p>Delivering happiness to your doorstep, one meal at a time.</p>
-        </div>
-
-        <div>
-          <h4>Quick Links</h4>
-          <a href="#">Home</a>
-          <a href="#">About Us</a>
-          <a href="#">Our Menu</a>
-          <a href="#">Recipes</a>
-        </div>
-
-        <div>
-          <h4>Support</h4>
-          <a href="#">Help Center</a>
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms of Service</a>
-        </div>
-
-        <div>
-          <h4>Contact</h4>
-          <p>
-            <i class="fa-solid fa-location-dot"></i> 123 Food Street, Culinary
-            City, FC 12345
-          </p>
+          </div>
         </div>
       </div>
-    </footer>
+    </div>
   </body>
 </html>

@@ -1,0 +1,202 @@
+/* ══════════════════════════
+   shared.css
+   Base + Navbar + Footer + Help Bubble
+══════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #fff;
+  color: #111;
+  min-height: 100vh;
+}
+
+/* ── NAVBAR ── */
+nav {
+  display: flex;
+  align-items: center;
+  padding: 0 48px;
+  height: 64px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-logo {
+  font-size: 22px;
+  font-weight: 800;
+  color: #e53935;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+  margin-right: 32px;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  flex: 1;
+}
+
+.nav-links li a,
+.nav-links li button {
+  text-decoration: none;
+  color: #333;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.15s;
+  display: block;
+}
+.nav-links li a:hover,
+.nav-links li button:hover { background: #f5f5f5; }
+
+.nav-links li.active-nav a,
+.nav-links li.active-nav button {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.nav-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f7f7f7;
+  border: 1px solid #e8e8e8;
+  border-radius: 24px;
+  padding: 8px 16px;
+  margin-right: 16px;
+  width: 220px;
+}
+.nav-search input {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #555;
+  outline: none;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+}
+.nav-search svg { color: #999; flex-shrink: 0; }
+
+.btn-login {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #e53935;
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.btn-login:hover { background: #c62828; }
+
+/* ── FOOTER ── */
+footer {
+  background: #1a1a2e;
+  color: rgba(255,255,255,0.7);
+  padding: 56px 48px 24px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1.2fr;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.footer-logo {
+  font-size: 22px;
+  font-weight: 800;
+  color: #e53935;
+  margin-bottom: 14px;
+}
+
+.footer-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.footer-socials { display: flex; gap: 16px; }
+.footer-socials a {
+  color: rgba(255,255,255,0.6);
+  font-size: 18px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-socials a:hover { color: #e53935; }
+
+.footer-col h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 16px;
+}
+.footer-col ul { list-style: none; }
+.footer-col ul li { margin-bottom: 10px; }
+.footer-col ul li a {
+  text-decoration: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 14px;
+  transition: color 0.2s;
+}
+.footer-col ul li a:hover { color: #e53935; }
+
+.contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+.contact-item span {
+  color: rgba(255,255,255,0.6);
+  line-height: 1.5;
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+}
+
+/* ── HELP BUBBLE ── */
+.help-bubble {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 42px;
+  height: 42px;
+  background: #1a1a2e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  z-index: 999;
+}
