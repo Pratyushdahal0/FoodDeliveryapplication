@@ -4,6 +4,41 @@
 // ══════════════════════════
 
 let allProducts = []; // Store all products for filtering
+const FAVORITES_KEY = 'foodDeliveryFavorites';
+
+function getFavoriteIds() {
+  try {
+    return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveFavoriteIds(ids) {
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids));
+}
+
+function isFavorite(productId) {
+  return getFavoriteIds().includes(String(productId));
+}
+
+function toggleFavorite(productId, btn) {
+  const ids = getFavoriteIds();
+  const id = String(productId);
+  const index = ids.indexOf(id);
+
+  if (index === -1) {
+    ids.push(id);
+    btn.textContent = '♥';
+    btn.classList.add('liked');
+  } else {
+    ids.splice(index, 1);
+    btn.textContent = '♡';
+    btn.classList.remove('liked');
+  }
+
+  saveFavoriteIds(ids);
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadProducts();
@@ -83,12 +118,14 @@ function createProductCard(product) {
   card.className = 'product-card';
 
   const popularBadge = product.is_popular ? '<span class="popular-badge">Popular</span>' : '';
+  const favoriteClass = isFavorite(product.id) ? 'liked' : '';
+  const favoriteIcon = isFavorite(product.id) ? '♥' : '♡';
 
   card.innerHTML = `
     <div class="product-img">
       <img src="${product.image_url || 'https://via.placeholder.com/400x300'}" alt="${product.name}" />
       ${popularBadge}
-      <button class="wishlist-btn">♡</button>
+      <button class="wishlist-btn ${favoriteClass}" data-product-id="${product.id}">${favoriteIcon}</button>
     </div>
     <div class="product-info">
       <div class="product-name">${product.name}</div>
@@ -126,9 +163,9 @@ function attachWishlistListeners() {
   document.querySelectorAll('.wishlist-btn').forEach(btn => {
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
-      const isLiked = this.textContent === '♥';
-      this.textContent = isLiked ? '♡' : '♥';
-      this.classList.toggle('liked', !isLiked);
+      const productId = this.dataset.productId;
+      if (!productId) return;
+      toggleFavorite(productId, this);
     });
   });
 }

@@ -4,6 +4,41 @@
 // ══════════════════════════
 
 let allMenuItems = []; // Store all menu items for filtering
+const FAVORITES_KEY = 'foodDeliveryFavorites';
+
+function getFavoriteIds() {
+  try {
+    return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveFavoriteIds(ids) {
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids));
+}
+
+function isFavorite(productId) {
+  return getFavoriteIds().includes(String(productId));
+}
+
+function toggleFavorite(productId, btn) {
+  const ids = getFavoriteIds();
+  const id = String(productId);
+  const index = ids.indexOf(id);
+
+  if (index === -1) {
+    ids.push(id);
+    btn.textContent = '♥';
+    btn.classList.add('liked');
+  } else {
+    ids.splice(index, 1);
+    btn.textContent = '♡';
+    btn.classList.remove('liked');
+  }
+
+  saveFavoriteIds(ids);
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadMenuItems();
@@ -99,12 +134,15 @@ function createMenuCard(item) {
   card.setAttribute('data-category', dataCategory);
   card.setAttribute('data-diet', dataDiet);
 
+  const favoriteClass = isFavorite(item.id) ? 'liked' : '';
+  const favoriteIcon = isFavorite(item.id) ? '♥' : '♡';
+
   card.innerHTML = `
     <div class="card-img">
       <img src="${item.image_url || 'https://via.placeholder.com/600x400'}" alt="${item.name}" />
       ${popularBadge}
       ${dietBadge}
-      <button class="wishlist-btn" onclick="toggleWish(this)">♡</button>
+      <button class="wishlist-btn ${favoriteClass}" data-product-id="${item.id}" onclick="toggleWish(this)">${favoriteIcon}</button>
     </div>
     <div class="card-body">
       <div class="card-name">${item.name}</div>
@@ -223,9 +261,9 @@ function attachCardListeners() {
 
 // Toggle wishlist (existing function)
 function toggleWish(btn) {
-  const isLiked = btn.textContent === '♥';
-  btn.textContent = isLiked ? '♡' : '♥';
-  btn.classList.toggle('liked', !isLiked);
+  const productId = btn.dataset.productId;
+  if (!productId) return;
+  toggleFavorite(productId, btn);
 }
 
 // Add to cart (existing function)

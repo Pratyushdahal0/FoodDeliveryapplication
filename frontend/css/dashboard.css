@@ -373,6 +373,42 @@ body {
   color: #e53935;
 }
 
+.favorites-content {
+  margin-top: 16px;
+}
+
+#favoritesList {
+  display: grid;
+  gap: 10px;
+}
+
+.remove-favorite {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid #f8d7da;
+  background: #fff;
+  color: #b91c1c;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-favorite:hover {
+  border-color: #f87171;
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.empty-msg {
+  color: #6b7280;
+  padding: 18px 0;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
 /* ===== RIGHT COLUMN CARDS ===== */
 .card {
   background: #fff;

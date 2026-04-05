@@ -102,86 +102,98 @@
           <!-- ORDERS -->
           <div class="orders-card">
             <div class="tabs">
-              <button class="tab-btn active">
+              <button class="tab-btn active" id="recentTab">
                 <i class="fa-solid fa-bag-shopping"></i> Recent Orders
               </button>
-              <button class="tab-btn">
+              <button class="tab-btn" id="favoriteTab">
                 <i class="fa-regular fa-heart"></i> Favorites
               </button>
             </div>
 
-            <!-- Order 1 -->
-            <div class="order-item">
-              <img
-                class="order-img"
-                src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=120&q=80"
-                alt="Burger"
-              />
-              <div class="order-info">
-                <h4>Gourmet Burger & Fries</h4>
-                <p class="restaurant">Burger Place</p>
-                <p class="time">
-                  <i class="fa-regular fa-clock"></i> Today, 2:30 PM
-                </p>
+            <div id="ordersContent">
+              <!-- Order 1 -->
+              <div class="order-item">
+                <img
+                  class="order-img"
+                  src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=120&q=80"
+                  alt="Burger"
+                />
+                <div class="order-info">
+                  <h4>Gourmet Burger & Fries</h4>
+                  <p class="restaurant">Burger Place</p>
+                  <p class="time">
+                    <i class="fa-regular fa-clock"></i> Today, 2:30 PM
+                  </p>
+                </div>
+                <div class="order-right">
+                  <span class="order-price">$24.99</span>
+                  <button class="reorder-icon">
+                    <i class="fa-solid fa-rotate-right"></i>
+                  </button>
+                  <button class="reorder-btn">Reorder</button>
+                </div>
               </div>
-              <div class="order-right">
-                <span class="order-price">$24.99</span>
-                <button class="reorder-icon">
-                  <i class="fa-solid fa-rotate-right"></i>
-                </button>
-                <button class="reorder-btn">Reorder</button>
+
+              <!-- Order 2 -->
+              <div class="order-item">
+                <img
+                  class="order-img"
+                  src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=120&q=80"
+                  alt="Pizza"
+                />
+                <div class="order-info">
+                  <h4>Margherita Pizza</h4>
+                  <p class="restaurant">Italian Bistro</p>
+                  <p class="time">
+                    <i class="fa-regular fa-clock"></i> Yesterday, 7:15 PM
+                  </p>
+                </div>
+                <div class="order-right">
+                  <span class="order-price">$18.99</span>
+                  <button class="reorder-icon">
+                    <i class="fa-solid fa-rotate-right"></i>
+                  </button>
+                  <button class="reorder-btn">Reorder</button>
+                </div>
+              </div>
+
+              <!-- Order 3 -->
+              <div class="order-item">
+                <img
+                  class="order-img"
+                  src="https://images.unsplash.com/photo-1553621042-f6e147245754?w=120&q=80"
+                  alt="Sushi"
+                />
+                <div class="order-info">
+                  <h4>Sushi Platter</h4>
+                  <p class="restaurant">Tokyo Sushi</p>
+                  <p class="time">
+                    <i class="fa-regular fa-clock"></i> Apr 2, 6:45 PM
+                  </p>
+                </div>
+                <div class="order-right">
+                  <span class="order-price">$32.99</span>
+                  <button class="reorder-icon">
+                    <i class="fa-solid fa-rotate-right"></i>
+                  </button>
+                  <button class="reorder-btn">Reorder</button>
+                </div>
               </div>
             </div>
-
-            <!-- Order 2 -->
-            <div class="order-item">
-              <img
-                class="order-img"
-                src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=120&q=80"
-                alt="Pizza"
-              />
-              <div class="order-info">
-                <h4>Margherita Pizza</h4>
-                <p class="restaurant">Italian Bistro</p>
-                <p class="time">
-                  <i class="fa-regular fa-clock"></i> Yesterday, 7:15 PM
-                </p>
-              </div>
-              <div class="order-right">
-                <span class="order-price">$18.99</span>
-                <button class="reorder-icon">
-                  <i class="fa-solid fa-rotate-right"></i>
-                </button>
-                <button class="reorder-btn">Reorder</button>
-              </div>
-            </div>
-
-            <!-- Order 3 -->
-            <div class="order-item">
-              <img
-                class="order-img"
-                src="https://images.unsplash.com/photo-1553621042-f6e147245754?w=120&q=80"
-                alt="Sushi"
-              />
-              <div class="order-info">
-                <h4>Sushi Platter</h4>
-                <p class="restaurant">Tokyo Sushi</p>
-                <p class="time">
-                  <i class="fa-regular fa-clock"></i> Apr 2, 6:45 PM
-                </p>
-              </div>
-              <div class="order-right">
-                <span class="order-price">$32.99</span>
-                <button class="reorder-icon">
-                  <i class="fa-solid fa-rotate-right"></i>
-                </button>
-                <button class="reorder-btn">Reorder</button>
-              </div>
-            </div>
-
             <button class="view-all-btn">
               View All Orders <i class="fa-solid fa-chevron-right"></i>
             </button>
+
+            <div
+              class="favorites-content"
+              id="favoritesContent"
+              style="display: none"
+            >
+              <div id="favoritesList"></div>
+              <p id="noFavoritesMsg" class="empty-msg">
+                No favorites yet. Add items from Shop or Food.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -306,5 +318,7 @@
 
       <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
     </footer>
+    <script src="../js/api/productApi2.js"></script>
+    <script src="../js/dashboard.js"></script>
   </body>
 </html>
