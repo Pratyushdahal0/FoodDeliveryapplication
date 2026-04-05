@@ -1,0 +1,146 @@
+main { padding: 0 14px 30px; }
+
+.auth-page {
+  background: linear-gradient(180deg, #efe5e2 0%, #f5ece8 72%);
+  border-radius: 0 0 26px 26px;
+  min-height: calc(100vh - 84px);
+  padding: 40px 36px 50px;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.auth-title {
+  font-size: 72px;
+  line-height: 1.05;
+  margin-bottom: 12px;
+  font-weight: 800;
+}
+
+.auth-title span { color: var(--primary); }
+
+.auth-subtitle {
+  color: #51627a;
+  font-size: 22px;
+}
+
+.auth-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+  align-items: start;
+}
+
+.auth-card {
+  background: #f3f2f4;
+  border-radius: 28px;
+  padding: 34px;
+  box-shadow: var(--shadow);
+}
+
+.auth-card h2 {
+  font-size: 54px;
+  margin-bottom: 18px;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.tab-btn {
+  flex: 1;
+  border: none;
+  border-radius: 18px;
+  padding: 12px 16px;
+  background: #e5e7eb;
+  color: #111827;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+label {
+  display: block;
+  margin: 16px 0 8px;
+  font-weight: 700;
+  font-size: 22px;
+}
+
+.input-wrap {
+  position: relative;
+}
+
+.auth-card input,
+.auth-card textarea,
+.auth-card select {
+  font-size: 22px;
+  padding: 18px 18px;
+  border-radius: 18px;
+}
+
+.remember-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 18px 0 6px;
+  font-size: 22px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-weight: 500;
+}
+
+.checkbox-label input {
+  width: 18px;
+  height: 18px;
+}
+
+.forgot-text {
+  color: var(--primary);
+}
+
+.full-btn {
+  width: 100%;
+  margin-top: 22px;
+  font-size: 22px;
+  padding: 18px 24px;
+}
+
+.auth-image-card {
+  background: transparent;
+}
+
+.auth-image-card img {
+  width: 100%;
+  max-height: 650px;
+  object-fit: cover;
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 1000px) {
+  .auth-title { font-size: 54px; }
+  .auth-card h2 { font-size: 40px; }
+  .auth-subtitle, label, .remember-row, .auth-card input, .auth-card textarea, .auth-card select, .full-btn { font-size: 18px; }
+}
+
+@media (max-width: 850px) {
+  .auth-page { padding: 26px 18px; }
+  .auth-grid { grid-template-columns: 1fr; }
+  .auth-image-card { order: -1; }
+}

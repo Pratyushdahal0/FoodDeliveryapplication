@@ -3,9 +3,62 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>FoodExpress - Admin</title>
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
   </head>
   <body>
-    <!--DOkunfeature-->
+    <div id="navbar"></div>
+
+    <main class="admin-page">
+      <section class="admin-hero">
+        <div>
+          <p class="tagline">Admin Dashboard</p>
+          <h1>Manage Food Items</h1>
+          <p>Add, update and delete food items from the system.</p>
+        </div>
+        <button id="logoutBtn" class="btn btn-primary">Logout</button>
+      </section>
+
+      <section class="admin-layout">
+        <div class="admin-form-card">
+          <h2 id="formTitle">Add Food Item</h2>
+          <form id="productForm">
+            <input type="hidden" id="productId" />
+            <label for="name">Food Name</label>
+            <input type="text" id="name" required />
+
+            <label for="description">Description</label>
+            <textarea id="description" required></textarea>
+
+            <label for="price">Price</label>
+            <input type="number" id="price" step="0.01" required />
+
+            <label for="category">Category</label>
+            <input type="text" id="category" required />
+
+            <label for="image">Image URL</label>
+            <input type="text" id="image" required />
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save Item</button>
+              <button type="button" id="clearBtn" class="btn btn-outline">
+                Clear
+              </button>
+            </div>
+          </form>
+          <p id="adminMessage" class="message"></p>
+        </div>
+
+        <div class="admin-table-card">
+          <h2>Existing Products</h2>
+          <div id="adminProductList" class="admin-product-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <div id="footer"></div>
+    <script type="module" src="./js/pages/admin.js"></script>
   </body>
 </html>
