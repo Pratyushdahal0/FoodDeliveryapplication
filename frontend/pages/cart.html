@@ -220,6 +220,15 @@
     </style>
   </head>
   <body>
+    <!-- AUTH PROTECTION -->
+    <script>
+      // Check if user is logged in
+      if (!localStorage.getItem("isLoggedIn")) {
+        alert("Please login first to access your cart");
+        window.location.href = "login.html";
+      }
+    </script>
+
     <!-- NAVBAR -->
     <nav class="navbar">
       <div class="container">

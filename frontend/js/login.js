@@ -58,6 +58,10 @@ function handleLogin() {
 
       if (data.includes("Login successful")) {
         successBox.innerText = data;
+        
+        // Store user email in localStorage to track login
+        localStorage.setItem("userEmail", email);
+        localStorage.setItem("isLoggedIn", "true");
 
         setTimeout(() => {
           //Redirect to dashboard.html inside the same pages folder

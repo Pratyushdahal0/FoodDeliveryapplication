@@ -37,7 +37,7 @@
             <span></span>
             <span></span>
           </div>
-          <a href="landingpage.html">
+          <a href="#" onclick="logout()">
             <button class="login-btn">
               <i class="fa-regular fa-user"></i>
               Log out
@@ -716,6 +716,20 @@
     </footer>
 
     <!-- Food page script — must be last -->
+    <script>
+      function logout() {
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("foodDeliveryCartCount");
+        localStorage.removeItem("foodDeliveryCartItems");
+        localStorage.removeItem("checkoutTotal");
+        localStorage.removeItem("checkoutSubtotal");
+        localStorage.removeItem("checkoutTax");
+        localStorage.removeItem("lastOrder");
+        alert("You have been logged out");
+        window.location.href = "landingpage.html";
+      }
+    </script>
     <script src="../js/api/productApi2.js"></script>
     <script src="../js/modules/cart.js"></script>
     <script src="../js/food.js"></script>
