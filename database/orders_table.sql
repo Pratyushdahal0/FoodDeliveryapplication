@@ -1,14 +1,14 @@
 -- Orders Table
 CREATE TABLE IF NOT EXISTS orders (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  order_number VARCHAR(10) UNIQUE NOT NULL,
+  order_number VARCHAR(20) UNIQUE NOT NULL,
   user_id INT,
   customer_name VARCHAR(100) NOT NULL,
   phone_number VARCHAR(20) NOT NULL,
   address VARCHAR(255) NOT NULL,
   city VARCHAR(50) NOT NULL,
   postal_code VARCHAR(10) NOT NULL,
-  payment_method ENUM('cash', 'card', 'digital') NOT NULL,
+  payment_method VARCHAR(50) NOT NULL,
   subtotal DECIMAL(10, 2) NOT NULL,
   tax DECIMAL(10, 2) NOT NULL,
   delivery_fee DECIMAL(10, 2) DEFAULT 5.00,

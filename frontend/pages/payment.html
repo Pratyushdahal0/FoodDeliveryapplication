@@ -452,6 +452,11 @@
 
         try {
           // Save order to database
+          console.log(
+            "📤 Sending order data:",
+            JSON.stringify(orderData, null, 2),
+          );
+
           const response = await fetch(
             "../../backend/controllers/OrderController.php?action=create",
             {
@@ -463,7 +468,11 @@
             },
           );
 
-          const result = await response.json();
+          console.log("📥 Response status:", response.status);
+          const responseText = await response.text();
+          console.log("📥 Raw response:", responseText);
+
+          const result = JSON.parse(responseText);
 
           if (result.success) {
             // Store order details locally
@@ -499,8 +508,11 @@
             alert("Failed to place order: " + result.message);
           }
         } catch (error) {
-          console.error("Error placing order:", error);
-          alert("Error placing order. Please try again.");
+          console.error("❌ Error placing order:", error);
+          alert(
+            "Error placing order. Please try again.\n\nCheck console for details: " +
+              error.message,
+          );
         }
       }
     </script>

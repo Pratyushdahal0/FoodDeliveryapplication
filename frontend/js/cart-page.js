@@ -52,7 +52,7 @@ function changeQuantity(productId, delta) {
   const item = items.find(i => i.id === productId);
   
   if (!item) return;
-  
+  //still not working properly, need to check console for errors and debug further
   item.quantity += delta;
   if (item.quantity <= 0) {
     removeItem(productId);
@@ -62,12 +62,12 @@ function changeQuantity(productId, delta) {
     renderCart();
   }
 }
-
+//still not working properly, need to check console for errors and debug further
 function removeItem(productId) {
   removeItemFromCart(productId);
   renderCart();
 }
-
+//still not working properly, need to check console for errors and debug further
 function updateSummary() {
   const items = getCartItemsFromStorage();
   const subtotal = items.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);

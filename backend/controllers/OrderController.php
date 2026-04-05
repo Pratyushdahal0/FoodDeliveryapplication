@@ -1,11 +1,62 @@
 <?php
+// Enable error reporting for debugging (disable in production)
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Disable in production - errors are logged
+
+// Set CORS headers
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
-require "../config/db.php";
-require "../models/Order.php";
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Function to send JSON response
+function sendJsonResponse($data, $statusCode = 200) {
+    http_response_code($statusCode);
+    echo json_encode($data);
+    exit();
+}
+
+// Function to send error response
+function sendErrorResponse($message, $statusCode = 500) {
+    sendJsonResponse([
+        "success" => false,
+        "message" => $message
+    ], $statusCode);
+}
+
+// Define base path for includes
+$basePath = __DIR__ . '/../';
+
+// Include database configuration
+$dbConfigPath = $basePath . 'config/db.php';
+if (!file_exists($dbConfigPath)) {
+    sendErrorResponse("Database configuration file not found: " . $dbConfigPath, 500);
+}
+
+include $dbConfigPath;
+
+// Check if connection is established
+if (!isset($conn)) {
+    sendErrorResponse("Database connection not established. Please check your database configuration.", 500);
+}
+
+if ($conn->connect_error) {
+    sendErrorResponse("Database connection failed: " . $conn->connect_error, 500);
+}
+
+// Include Order model
+$orderModelPath = $basePath . 'models/Order.php';
+if (!file_exists($orderModelPath)) {
+    sendErrorResponse("Order model file not found: " . $orderModelPath, 500);
+}
+
+include $orderModelPath;
 
 $order = new Order($conn);
 $action = $_GET['action'] ?? '';

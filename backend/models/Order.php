@@ -11,50 +11,62 @@ class Order {
 
     // Create a new order
     public function create($data) {
-        // Generate unique order number
-        $order_number = 'ORD' . date('Ymd') . strtoupper(substr(uniqid(), -4));
-        
-        $query = "INSERT INTO " . $this->table . " 
-                  (order_number, customer_name, phone_number, address, city, postal_code, 
-                   payment_method, subtotal, tax, delivery_fee, total, status, notes) 
-                  VALUES 
-                  (:order_number, :customer_name, :phone_number, :address, :city, :postal_code, 
-                   :payment_method, :subtotal, :tax, :delivery_fee, :total, :status, :notes)";
+        try {
+            $order_number = 'ORD' . date('Ymd') . strtoupper(substr(uniqid(), -4));
+            
+            $status = 'pending';
+            $notes = isset($data['notes']) ? $data['notes'] : null;
+            $subtotal = isset($data['subtotal']) ? floatval($data['subtotal']) : 0;
+            $tax = isset($data['tax']) ? floatval($data['tax']) : 0;
+            $delivery_fee = isset($data['delivery_fee']) ? floatval($data['delivery_fee']) : 5.00;
+            $total = isset($data['total']) ? floatval($data['total']) : 0;
+            
+            $query = "INSERT INTO " . $this->table . " 
+                      (order_number, customer_name, phone_number, address, city, postal_code, 
+                       payment_method, subtotal, tax, delivery_fee, total, status, notes) 
+                      VALUES 
+                      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        $stmt = $this->conn->prepare($query);
+            $stmt = $this->conn->prepare($query);
+            
+            if (!$stmt) {
+                return ['success' => false, 'message' => 'Database prepare error: ' . $this->conn->error];
+            }
 
-        // Bind values
-        $stmt->bindParam(':order_number', $order_number);
-        $stmt->bindParam(':customer_name', $data['customer_name']);
-        $stmt->bindParam(':phone_number', $data['phone_number']);
-        $stmt->bindParam(':address', $data['address']);
-        $stmt->bindParam(':city', $data['city']);
-        $stmt->bindParam(':postal_code', $data['postal_code']);
-        $stmt->bindParam(':payment_method', $data['payment_method']);
-        $stmt->bindParam(':subtotal', $data['subtotal']);
-        $stmt->bindParam(':tax', $data['tax']);
-        $stmt->bindParam(':delivery_fee', $data['delivery_fee']);
-        $stmt->bindParam(':total', $data['total']);
-        
-        $status = 'pending';
-        $stmt->bindParam(':status', $status);
-        
-        $notes = isset($data['notes']) ? $data['notes'] : null;
-        $stmt->bindParam(':notes', $notes);
+            $bind_result = $stmt->bind_param(
+                "sssssssddddss",
+                $order_number,
+                $data['customer_name'],
+                $data['phone_number'],
+                $data['address'],
+                $data['city'],
+                $data['postal_code'],
+                $data['payment_method'],
+                $subtotal,
+                $tax,
+                $delivery_fee,
+                $total,
+                $status,
+                $notes
+            );
 
-        if ($stmt->execute()) {
-            return [
-                'success' => true,
-                'order_id' => $this->conn->lastInsertId(),
-                'order_number' => $order_number,
-                'message' => 'Order created successfully'
-            ];
+            if (!$bind_result) {
+                return ['success' => false, 'message' => 'Bind parameter error: ' . $stmt->error];
+            }
+
+            if ($stmt->execute()) {
+                return [
+                    'success' => true,
+                    'order_id' => $this->conn->insert_id,
+                    'order_number' => $order_number,
+                    'message' => 'Order created successfully'
+                ];
+            }
+
+            return ['success' => false, 'message' => 'Execute error: ' . $stmt->error];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Exception: ' . $e->getMessage()];
         }
-
-        return [
-            'success' => false,
-            'message' => 'Failed to create order'
-        ];
     }
 
     // Add items to an order
@@ -62,19 +74,30 @@ class Order {
         $query = "INSERT INTO " . $this->items_table . " 
                   (order_id, product_id, product_name, quantity, price, subtotal) 
                   VALUES 
-                  (:order_id, :product_id, :product_name, :quantity, :price, :subtotal)";
+                  (?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->conn->prepare($query);
+        
+        if (!$stmt) {
+            return false;
+        }
 
         foreach ($items as $item) {
-            $stmt->bindParam(':order_id', $order_id);
-            $stmt->bindParam(':product_id', $item['id']);
-            $stmt->bindParam(':product_name', $item['name']);
-            $stmt->bindParam(':quantity', $item['quantity']);
-            $stmt->bindParam(':price', $item['price']);
-            
-            $subtotal = $item['price'] * $item['quantity'];
-            $stmt->bindParam(':subtotal', $subtotal);
+            $product_id = isset($item['id']) ? intval($item['id']) : 0;
+            $product_name = isset($item['name']) ? strval($item['name']) : '';
+            $quantity = isset($item['quantity']) ? intval($item['quantity']) : 1;
+            $price = isset($item['price']) ? floatval($item['price']) : 0;
+            $subtotal = $price * $quantity;
+
+            $stmt->bind_param(
+                "iisidd",
+                $order_id,
+                $product_id,
+                $product_name,
+                $quantity,
+                $price,
+                $subtotal
+            );
 
             if (!$stmt->execute()) {
                 return false;
@@ -86,58 +109,72 @@ class Order {
 
     // Get order by ID
     public function getById($order_id) {
-        $query = "SELECT * FROM " . $this->table . " WHERE id = :id";
+        $query = "SELECT * FROM " . $this->table . " WHERE id = ?";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $order_id);
+        $stmt->bind_param("i", $order_id);
         $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $result = $stmt->get_result();
+        return $result->fetch_assoc();
     }
 
     // Get order by order number
     public function getByOrderNumber($order_number) {
-        $query = "SELECT * FROM " . $this->table . " WHERE order_number = :order_number";
+        $query = "SELECT * FROM " . $this->table . " WHERE order_number = ?";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':order_number', $order_number);
+        $stmt->bind_param("s", $order_number);
         $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $result = $stmt->get_result();
+        return $result->fetch_assoc();
     }
 
     // Get order items
     public function getItems($order_id) {
-        $query = "SELECT * FROM " . $this->items_table . " WHERE order_id = :order_id";
+        $query = "SELECT * FROM " . $this->items_table . " WHERE order_id = ?";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':order_id', $order_id);
+        $stmt->bind_param("i", $order_id);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $result = $stmt->get_result();
+        $items = [];
+        while ($row = $result->fetch_assoc()) {
+            $items[] = $row;
+        }
+        return $items;
     }
 
     // Get all orders
     public function getAll($limit = 50, $offset = 0) {
-        $query = "SELECT * FROM " . $this->table . " ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
+        $query = "SELECT * FROM " . $this->table . " ORDER BY created_at DESC LIMIT ? OFFSET ?";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bind_param("ii", $limit, $offset);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $result = $stmt->get_result();
+        $orders = [];
+        while ($row = $result->fetch_assoc()) {
+            $orders[] = $row;
+        }
+        return $orders;
     }
 
     // Update order status
     public function updateStatus($order_id, $status) {
-        $query = "UPDATE " . $this->table . " SET status = :status WHERE id = :id";
+        $query = "UPDATE " . $this->table . " SET status = ? WHERE id = ?";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':status', $status);
-        $stmt->bindParam(':id', $order_id);
-        
+        $stmt->bind_param("si", $status, $order_id);
         return $stmt->execute();
     }
 
     // Get orders by status
     public function getByStatus($status) {
-        $query = "SELECT * FROM " . $this->table . " WHERE status = :status ORDER BY created_at DESC";
+        $query = "SELECT * FROM " . $this->table . " WHERE status = ? ORDER BY created_at DESC";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':status', $status);
+        $stmt->bind_param("s", $status);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $result = $stmt->get_result();
+        $orders = [];
+        while ($row = $result->fetch_assoc()) {
+            $orders[] = $row;
+        }
+        return $orders;
     }
 
     // Get total sales
@@ -145,8 +182,9 @@ class Order {
         $query = "SELECT SUM(total) as total_sales FROM " . $this->table . " WHERE status != 'cancelled'";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result['total_sales'] ?? 0;
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        return isset($row['total_sales']) ? floatval($row['total_sales']) : 0;
     }
 
     // Get orders count
@@ -154,8 +192,9 @@ class Order {
         $query = "SELECT COUNT(*) as count FROM " . $this->table;
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result['count'] ?? 0;
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        return isset($row['count']) ? intval($row['count']) : 0;
     }
 }
 ?>
