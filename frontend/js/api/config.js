@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost/FoodDeliveryApp/backend/controllers";
+const API_BASE = "../../../backend/controllers";
 
 const API = {
     products: `${API_BASE}/ProductController.php`,
