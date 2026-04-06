@@ -16,7 +16,7 @@ body {
 .welcome-card {
   background: #fff;
   border-radius: 20px;
-  padding: 28px 32px;
+  padding: 20px 32px;
   display: flex;
   align-items: center;
   gap: 20px;
