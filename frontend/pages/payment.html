@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout - FoodExpress</title>
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <style>
+      .checkout-page {
+        max-width: 900px;
+        margin: 80px auto 40px;
+        padding: 0 20px;
+      }
+
+      .checkout-header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .checkout-header h1 {
+        font-size: 2.5rem;
+        color: var(--text-dark);
+        margin-bottom: 10px;
+      }
+
+      .checkout-container {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 30px;
+        margin-bottom: 40px;
+      }
+
+      @media (max-width: 768px) {
+        .checkout-container {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .form-section {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 30px;
+      }
+
+      .form-section h2 {
+        font-size: 1.25rem;
+        margin-bottom: 20px;
+        color: var(--text-dark);
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--text-dark);
+      }
+
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 1rem;
+        font-family: inherit;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+      }
+
+      .order-summary {
+        background: #f9fafb;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        position: sticky;
+        top: 90px;
+      }
+
+      .order-summary h3 {
+        font-size: 1.1rem;
+        margin-bottom: 15px;
+        color: var(--text-dark);
+      }
+
+      .summary-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+      }
+
+      .summary-item.total {
+        border-top: 2px solid var(--border);
+        padding-top: 10px;
+        margin-top: 10px;
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--text-dark);
+      }
+
+      .payment-methods {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+
+      .payment-method {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border: 2px solid var(--border);
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .payment-method:hover {
+        border-color: var(--primary);
+        background: #f9fafb;
+      }
+
+      .payment-method input[type="radio"] {
+        margin-right: 12px;
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+      }
+
+      .payment-method.selected {
+        border-color: var(--primary);
+        background: rgba(var(--primary-rgb), 0.05);
+      }
+
+      .payment-label {
+        flex: 1;
+        font-weight: 500;
+        color: var(--text-dark);
+      }
+
+      .place-order-btn {
+        width: 100%;
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 16px 20px;
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .place-order-btn:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+      }
+
+      .place-order-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- AUTH PROTECTION -->
+    <script>
+      // Check if user is logged in
+      if (!localStorage.getItem("isLoggedIn")) {
+        alert("Please login first to proceed with payment");
+        window.location.href = "login.html";
+      }
+    </script>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <div class="container">
+        <div class="navbar-brand">FoodExpress</div>
+        <div class="navbar-nav">
+          <a href="dashboard.html" class="nav-link">Home</a>
+          <a href="shop.html" class="nav-link">Shop</a>
+          <a href="food.html" class="nav-link">Food</a>
+          <a href="loggedContact.html" class="nav-link">Contact</a>
+        </div>
+        <div class="navbar-right">
+          <div class="search-box">
+            <input type="text" placeholder="Search food..." />
+          </div>
+          <div class="hamburger" id="hamburger">
+            <span></span><span></span><span></span>
+          </div>
+          <a href="landingpage.html">
+            <button class="login-btn">
+              <i class="fa-regular fa-user"></i>
+              Log out
+            </button>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- CHECKOUT PAGE -->
+    <div class="checkout-page">
+      <div class="checkout-header">
+        <h1>Checkout</h1>
+        <p>Complete your order</p>
+      </div>
+
+      <div class="checkout-container">
+        <!-- Left: Forms -->
+        <div>
+          <!-- Delivery Address -->
+          <div class="form-section">
+            <h2>Delivery Address</h2>
+            <div class="form-group">
+              <label>Full Name *</label>
+              <input
+                type="text"
+                id="fullName"
+                required
+                placeholder="Your name"
+              />
+            </div>
+            <div class="form-group">
+              <label>Phone Number *</label>
+              <input
+                type="tel"
+                id="phoneNumber"
+                required
+                placeholder="+977 98XXXXXXXX"
+              />
+            </div>
+            <div class="form-group">
+              <label>Address *</label>
+              <input
+                type="text"
+                id="address"
+                required
+                placeholder="Street address"
+              />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>City *</label>
+                <input type="text" id="city" required placeholder="City" />
+              </div>
+              <div class="form-group">
+                <label>Postal Code *</label>
+                <input
+                  type="text"
+                  id="postalCode"
+                  required
+                  placeholder="12345"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Method -->
+          <div class="form-section" style="margin-top: 30px">
+            <h2>Payment Method</h2>
+            <div class="payment-methods">
+              <label class="payment-method selected">
+                <input type="radio" name="paymentMethod" value="cash" checked />
+                <span class="payment-label">💵 Cash on Delivery</span>
+              </label>
+              <label class="payment-method">
+                <input type="radio" name="paymentMethod" value="card" />
+                <span class="payment-label">💳 Credit/Debit Card</span>
+              </label>
+              <label class="payment-method">
+                <input type="radio" name="paymentMethod" value="digital" />
+                <span class="payment-label"
+                  >📱 Digital Wallet (eSewa, Khalti)</span
+                >
+              </label>
+            </div>
+
+            <!-- Card Details (Hidden by default) -->
+            <div
+              id="cardDetails"
+              style="
+                display: none;
+                margin-top: 20px;
+                padding-top: 20px;
+                border-top: 1px solid var(--border);
+              "
+            >
+              <div class="form-group">
+                <label>Card Number *</label>
+                <input
+                  type="text"
+                  id="cardNumber"
+                  placeholder="1234 5678 9012 3456"
+                />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Expiry Date *</label>
+                  <input type="text" id="cardExpiry" placeholder="MM/YY" />
+                </div>
+                <div class="form-group">
+                  <label>CVV *</label>
+                  <input type="text" id="cardCVV" placeholder="123" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Place Order Button -->
+          <button
+            class="place-order-btn"
+            onclick="placeOrder()"
+            style="margin-top: 30px"
+          >
+            Place Order
+          </button>
+        </div>
+
+        <!-- Right: Order Summary -->
+        <div class="order-summary">
+          <h3>Order Summary</h3>
+          <div class="summary-item">
+            <span>Subtotal:</span>
+            <span>$<span id="summarySubtotal">0.00</span></span>
+          </div>
+          <div class="summary-item">
+            <span>Delivery Fee:</span>
+            <span>$5.00</span>
+          </div>
+          <div class="summary-item">
+            <span>Tax (10%):</span>
+            <span>$<span id="summaryTax">0.00</span></span>
+          </div>
+          <div class="summary-item total">
+            <span>Total:</span>
+            <span>$<span id="summaryTotal">0.00</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="footer-grid">
+        <div>
+          <div class="footer-logo">FoodExpress</div>
+          <p class="footer-desc">
+            Delivering happiness to your doorstep, one meal at a time.
+          </p>
+        </div>
+      </div>
+      <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
+    </footer>
+
+    <script>
+      // Load checkout totals
+      window.addEventListener("load", function () {
+        const subtotal = parseFloat(
+          localStorage.getItem("checkoutSubtotal") || 0,
+        );
+        const tax = parseFloat(localStorage.getItem("checkoutTax") || 0);
+        const total = parseFloat(localStorage.getItem("checkoutTotal") || 0);
+
+        document.getElementById("summarySubtotal").textContent =
+          subtotal.toFixed(2);
+        document.getElementById("summaryTax").textContent = tax.toFixed(2);
+        document.getElementById("summaryTotal").textContent = total.toFixed(2);
+      });
+
+      // Show/hide card details
+      document
+        .querySelectorAll('input[name="paymentMethod"]')
+        .forEach((radio) => {
+          radio.addEventListener("change", function () {
+            const cardDetails = document.getElementById("cardDetails");
+            const paymentMethod = document.querySelector(
+              'input[name="paymentMethod"]:checked',
+            );
+
+            // Update selected styling
+            document
+              .querySelectorAll(".payment-method")
+              .forEach((m) => m.classList.remove("selected"));
+            paymentMethod.closest(".payment-method").classList.add("selected");
+
+            if (paymentMethod.value === "card") {
+              cardDetails.style.display = "block";
+            } else {
+              cardDetails.style.display = "none";
+            }
+          });
+        });
+
+      async function placeOrder() {
+        const fullName = document.getElementById("fullName").value;
+        const phoneNumber = document.getElementById("phoneNumber").value;
+        const address = document.getElementById("address").value;
+        const city = document.getElementById("city").value;
+        const postalCode = document.getElementById("postalCode").value;
+        const paymentMethod = document.querySelector(
+          'input[name="paymentMethod"]:checked',
+        ).value;
+
+        if (!fullName || !phoneNumber || !address || !city || !postalCode) {
+          alert("Please fill in all required fields");
+          return;
+        }
+
+        const subtotal = parseFloat(
+          localStorage.getItem("checkoutSubtotal") || 0,
+        );
+        const tax = parseFloat(localStorage.getItem("checkoutTax") || 0);
+        const total = parseFloat(localStorage.getItem("checkoutTotal") || 0);
+        const cartItems = JSON.parse(
+          localStorage.getItem("foodDeliveryCartItems") || "[]",
+        );
+
+        // Prepare order data for database
+        const orderData = {
+          customer_name: fullName,
+          phone_number: phoneNumber,
+          address: address,
+          city: city,
+          postal_code: postalCode,
+          payment_method: paymentMethod,
+          subtotal: subtotal,
+          tax: tax,
+          delivery_fee: 5.0,
+          total: total,
+          items: cartItems,
+        };
+
+        try {
+          // Save order to database
+          console.log(
+            "📤 Sending order data:",
+            JSON.stringify(orderData, null, 2),
+          );
+
+          const response = await fetch(
+            "../../backend/controllers/OrderController.php?action=create",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(orderData),
+            },
+          );
+
+          console.log("📥 Response status:", response.status);
+          const responseText = await response.text();
+          console.log("📥 Raw response:", responseText);
+
+          const result = JSON.parse(responseText);
+
+          if (result.success) {
+            // Store order details locally
+            const orderDetails = {
+              orderId: result.order_id,
+              orderNumber: result.order_number,
+              fullName,
+              phoneNumber,
+              address,
+              city,
+              postalCode,
+              paymentMethod,
+              total: total,
+              items: cartItems,
+              timestamp: new Date().toISOString(),
+            };
+
+            localStorage.setItem("lastOrder", JSON.stringify(orderDetails));
+
+            // Clear cart after successful order
+            localStorage.removeItem("foodDeliveryCartCount");
+            localStorage.removeItem("foodDeliveryCartItems");
+            localStorage.removeItem("checkoutTotal");
+            localStorage.removeItem("checkoutSubtotal");
+            localStorage.removeItem("checkoutTax");
+
+            alert(
+              "✅ Order placed successfully!\n\nOrder Number: " +
+                result.order_number,
+            );
+            window.location.href = "dashboard.html";
+          } else {
+            alert("Failed to place order: " + result.message);
+          }
+        } catch (error) {
+          console.error("❌ Error placing order:", error);
+          alert(
+            "Error placing order. Please try again.\n\nCheck console for details: " +
+              error.message,
+          );
+        }
+      }
+    </script>
+  </body>
+</html>
