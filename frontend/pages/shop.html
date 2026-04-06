@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FoodExpress — Shop</title>
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/shop.css" />
+  </head>
+  <body>
+    <!-- AUTH PROTECTION -->
+    <script>
+      if (!localStorage.getItem("isLoggedIn")) {
+        alert("Please login first");
+        window.location.href = "login.html";
+      }
+    </script>
+
+    <!-- ══════════════════ NAVBAR ══════════════════ -->
+    <nav class="navbar" id="navbar">
+      <div class="container">
+        <div class="navbar-brand">FoodExpress</div>
+
+        <div class="navbar-nav">
+          <a href="dashboard.html" class="nav-link">Home</a>
+          <a href="shop.html" class="nav-link">Shop</a>
+          <a href="food.html" class="nav-link">Food</a>
+          <a href="loggedContact.html" class="nav-link">Contact</a>
+        </div>
+
+        <div class="navbar-right">
+          <div class="search-box">
+            <input type="text" placeholder="Search food..." />
+          </div>
+          <div class="hamburger" id="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <a href="#" onclick="logout()">
+            <button class="login-btn">
+              <i class="fa-regular fa-user"></i>
+              Log out
+            </button>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ══════════════════ SHOP PAGE ══════════════════ -->
+    <div class="shop-page">
+      <!-- Hero -->
+      <div class="shop-hero">
+        <h1>Our <span>Shop</span></h1>
+        <p>
+          Browse our wide selection of delicious meals and place your order
+          today
+        </p>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <span class="filter-icon">⋮≡</span>
+        <button class="filter-btn active">All Items</button>
+        <button class="filter-btn">Popular</button>
+        <button class="filter-btn">Breakfast</button>
+        <button class="filter-btn">Lunch</button>
+        <button class="filter-btn">Dinner</button>
+        <button class="filter-btn">Desserts</button>
+        <button class="filter-btn">Drinks</button>
+      </div>
+
+      <!-- Products -->
+      <div class="products-section">
+        <div class="products-count">Loading products...</div>
+        <div class="products-grid" id="productsGrid">
+          <!-- Products will be loaded here -->
+        </div>
+        <!-- end .products-grid -->
+      </div>
+      <!-- end .products-section -->
+
+      <!-- CTA Banner -->
+      <div class="cta-banner">
+        <h2>Can't Find What You're Looking For?</h2>
+        <p>Contact us and we'll help you find the perfect meal</p>
+        <button class="btn-contact">Contact Us</button>
+      </div>
+    </div>
+    <!-- end .shop-page -->
+
+    <!-- ══════════════════ FOOTER ══════════════════ -->
+    <footer>
+      <div class="footer-grid">
+        <div>
+          <div class="footer-logo">FoodExpress</div>
+          <p class="footer-desc">
+            Delivering happiness to your doorstep, one meal at a time.
+          </p>
+          <div class="footer-socials">
+            <a href="#">f</a>
+            <a href="#">𝕏</a>
+            <a href="#">◎</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="home.html">Home</a></li>
+            <li><a href="shop.html">Our Menu</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <div class="contact-item">📍 <span>Kathmandu, Nepal</span></div>
+          <div class="contact-item">📞 <span>+977 - 9841223344</span></div>
+          <div class="contact-item">✉️ <span>Lovely@gmail.com</span></div>
+        </div>
+      </div>
+      <div class="footer-bottom">©️ 2026 FoodExpress. All rights reserved.</div>
+    </footer>
+
+    <!-- Help Bubble -->
+    <div class="help-bubble">?</div>
+
+    <!-- LOGOUT FUNCTION -->
+    <script>
+      function logout() {
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("foodDeliveryCartCount");
+        localStorage.removeItem("foodDeliveryCartItems");
+        localStorage.removeItem("checkoutTotal");
+        localStorage.removeItem("checkoutSubtotal");
+        localStorage.removeItem("checkoutTax");
+        localStorage.removeItem("lastOrder");
+        alert("You have been logged out");
+        window.location.href = "landingpage.html";
+      }
+    </script>
+
+    <script src="../js/api/productApi2.js"></script>
+    <script src="../js/modules/cart.js"></script>
+    <script src="../js/shop.js"></script>
+  </body>
+</html>
