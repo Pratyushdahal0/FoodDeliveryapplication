@@ -7,22 +7,37 @@ function showToast(messageText, color) {
   const toast = document.createElement("div");
 
   toast.textContent = messageText;
-
   toast.style.position = "fixed";
-  toast.style.bottom = "20px";
-  toast.style.right = "20px";
-  toast.style.padding = "12px 20px";
+  toast.style.bottom = "30px";
+  toast.style.right = "30px";
+  toast.style.padding = "14px 22px";
   toast.style.background = color;
   toast.style.color = "#fff";
-  toast.style.borderRadius = "10px";
-  toast.style.boxShadow = "0 5px 15px rgba(0,0,0,0.2)";
-  toast.style.zIndex = "1000";
+  toast.style.borderRadius = "12px";
+  toast.style.boxShadow = "0 8px 25px rgba(0,0,0,0.2)";
+  toast.style.opacity = "0";
+  toast.style.transform = "translateY(20px)";
+  toast.style.transition = "all 0.4s ease";
 
   document.body.appendChild(toast);
 
   setTimeout(() => {
-    toast.remove();
+    toast.style.opacity = "1";
+    toast.style.transform = "translateY(0)";
+  }, 100);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(20px)";
+    setTimeout(() => toast.remove(), 400);
   }, 3000);
+}
+
+// shake effect
+function shake(el) {
+  el.style.transform = "translateX(-5px)";
+  setTimeout(() => (el.style.transform = "translateX(5px)"), 100);
+  setTimeout(() => (el.style.transform = "translateX(0)"), 200);
 }
 
 // form submit
@@ -37,6 +52,7 @@ button.addEventListener("click", function (e) {
   inputs.forEach((input) => {
     if (input.value.trim() === "") {
       input.style.border = "2px solid red";
+      shake(input);
       isValid = false;
     } else {
       input.style.border = "1px solid #ddd";
@@ -45,27 +61,24 @@ button.addEventListener("click", function (e) {
   });
 
   if (!isValid) {
-    showToast("Please fill all fields", "red");
+    showToast("Please fill all fields", "#e74c3c");
     return;
   }
 
-  // loading effect
-  button.textContent = "Sending...";
+  // loading
   button.disabled = true;
+  button.innerHTML = "Sending <span class='loader'></span>";
 
   setTimeout(() => {
-    button.textContent = "Send Message";
     button.disabled = false;
+    button.innerHTML = "Send Message";
 
     ```
-// save data
 localStorage.setItem("contactForm", JSON.stringify(formData));
 
-showToast("Message sent successfully", "green");
+showToast("Message sent successfully", "#27ae60");
 
-inputs.forEach(input => {
-  input.value = "";
-});
+inputs.forEach(input => (input.value = ""));
 ```;
   }, 1500);
 });
@@ -78,6 +91,7 @@ emailInput.addEventListener("blur", function () {
 
   if (!pattern.test(emailInput.value)) {
     emailInput.style.border = "2px solid red";
+    shake(emailInput);
   } else {
     emailInput.style.border = "1px solid #ddd";
   }
