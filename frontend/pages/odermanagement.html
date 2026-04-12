@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Management - FoodExpress</title>
+  <link rel="stylesheet" href="../css/odermanagement.css">
+</head>
+<body>
+  <!-- Upgraded Navbar -->
+  <header class="header">
+    <div class="logo">
+      <span class="food">Food</span><span class="express">Express</span>
+    </div>
+    
+    <nav class="nav">
+      <a href="#">Home</a>
+      <a href="#">About</a>
+      <a href="#">Restaurants</a>
+      <a href="#">Menu</a>
+      <a href="#">Contact</a>
+      <a href="#">All Pages</a>
+    </nav>
+    
+    <div class="search-login">
+      <div class="search-bar">
+        <input type="text" placeholder="Search food...">
+      </div>
+      <button class="login-btn">Login</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Title Card -->
+    <div class="title-card">
+      <h1>Order <span class="highlight">Management</span></h1>
+      <p>Manage and track all your restaurant orders</p>
+    </div>
+
+    <!-- Status Tabs -->
+    <div class="status-tabs">
+      <button class="tab active">
+        <span class="icon">⏰</span> Pending (2)
+      </button>
+      <button class="tab">
+        <span class="icon">📦</span> Accepted (2)
+      </button>
+      <button class="tab">
+        <span class="icon">✅</span> Delivered (1)
+      </button>
+      <button class="tab">
+        <span class="icon">❌</span> Cancelled (1)
+      </button>
+    </div>
+
+    <!-- Order Card 1 - Burger -->
+    <div class="order-card">
+      <img src="https://th.bing.com/th/id/OIP.AxfQsXcPstgslGiTxHqbrAHaJR?w=135&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" alt="Gourmet Burger">
+      
+      <div class="order-content">
+        <div class="order-header">
+          <div>
+            <h3>#12850</h3>
+            <p class="time">5 mins ago</p>
+          </div>
+          <span class="status-badge">Pending</span>
+        </div>
+
+        <div class="details">
+          <div class="customer-details">
+            <strong>Customer Details</strong><br>
+            <strong>John Doe</strong><br>
+            +977 9876543210<br>
+            123 Main St, Kathmandu
+          </div>
+
+          <div class="order-items">
+            <strong>Order Items</strong><br>
+            1x Gourmet Burger<br>
+            2x French Fries<br>
+            1x Coke
+          </div>
+        </div>
+
+        <div class="total-section">
+          <div>
+            <span class="total-label">Total Amount</span><br>
+            <span class="amount">$34.99</span>
+          </div>
+          <div class="actions">
+            <button class="reject-btn">✕ Reject</button>
+            <button class="accept-btn">✓ Accept</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Card 2 - Pizza -->
+    <div class="order-card">
+      <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500" alt="Margherita Pizza">
+      
+      <div class="order-content">
+        <div class="order-header">
+          <div>
+            <h3>#12849</h3>
+            <p class="time">8 mins ago</p>
+          </div>
+          <span class="status-badge">Pending</span>
+        </div>
+
+        <div class="details">
+          <div class="customer-details">
+            <strong>Customer Details</strong><br>
+            <strong>Sarah Smith</strong><br>
+            +977 9812345678<br>
+            456 Park Ave, Lalitpur
+          </div>
+
+          <div class="order-items">
+            <strong>Order Items</strong><br>
+            1x Margherita Pizza<br>
+            1x Caesar Salad
+          </div>
+        </div>
+
+        <div class="total-section">
+          <div>
+            <span class="total-label">Total Amount</span><br>
+            <span class="amount">$28.50</span>
+          </div>
+          <div class="actions">
+            <button class="reject-btn">✕ Reject</button>
+            <button class="accept-btn">✓ Accept</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <h3>FoodExpress</h3>
+        <p>Delivering happiness to your doorstep, one meal at a time.</p>
+      </div>
+      <div>
+        <h4>Quick Links</h4>
+        <a href="#">Home</a>
+        <a href="#">About Us</a>
+        <a href="#">Our Menu</a>
+        <a href="#">Recipes</a>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <a href="#">Help Center</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Contact Us</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <p>123 Food Street, Culinary City, FC 12345</p>
+        <p>+977 (555) 123-4567</p>
+        <p>hello@foodexpress.com</p>
+      </div>
+    </div>
+    <div class="copyright">
+      © 2026 FoodExpress. All rights reserved.
+    </div>
+  </footer>
+</body>
+</html>
