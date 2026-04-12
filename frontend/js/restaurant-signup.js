@@ -1,3 +1,5 @@
+const DEMO_MODE = true;
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("restaurantSignupForm");
   const panels = document.querySelectorAll(".step-panel");
@@ -69,18 +71,13 @@ document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function validateStep(step) {
+  function saveStepData(step) {
     if (step === 1) {
       const restaurantName = document.getElementById("restaurantName").value.trim();
       const restaurantLocation = document.getElementById("restaurantLocation").value.trim();
       const restaurantPhone = document.getElementById("restaurantPhone").value.trim();
       const restaurantEmail = document.getElementById("restaurantEmail").value.trim();
       const restaurantPassword = document.getElementById("restaurantPassword").value.trim();
-
-      if (!restaurantName || !restaurantLocation || !restaurantPhone || !restaurantEmail || !restaurantPassword) {
-        alert("Please fill all required fields in Basic Information.");
-        return false;
-      }
 
       localStorage.setItem(
         "restaurantSignupStep1",
@@ -97,11 +94,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (step === 2) {
       const ownerFullName = document.getElementById("ownerFullName").value.trim();
 
-      if (!ownerFullName) {
-        alert("Please enter owner full name.");
-        return false;
-      }
-
       localStorage.setItem(
         "restaurantSignupStep2",
         JSON.stringify({
@@ -115,11 +107,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const otpValue = Array.from(otpInputs)
         .map((input) => input.value.trim())
         .join("");
-
-      if (otpValue.length !== 6) {
-        alert("Please enter the 6-digit verification code.");
-        return false;
-      }
 
       localStorage.setItem(
         "restaurantSignupStep3",
@@ -135,11 +122,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const openingTime = document.getElementById("openingTime").value;
       const closingTime = document.getElementById("closingTime").value;
       const deliveryAvailable = document.getElementById("deliveryAvailable").checked;
-
-      if (!restaurantDescription || !cuisineType || !openingTime || !closingTime) {
-        alert("Please fill all required restaurant details.");
-        return false;
-      }
 
       localStorage.setItem(
         "restaurantSignupStep4",
@@ -157,11 +139,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const panNumber = document.getElementById("panNumber").value.trim();
       const businessRegNumber = document.getElementById("businessRegNumber").value.trim();
 
-      if (!panNumber || !businessRegNumber) {
-        alert("Please fill all required legal information.");
-        return false;
-      }
-
       localStorage.setItem(
         "restaurantSignupStep5",
         JSON.stringify({
@@ -169,6 +146,79 @@ document.addEventListener("DOMContentLoaded", () => {
           businessRegNumber
         })
       );
+    }
+  }
+
+  function validateStep(step) {
+    if (DEMO_MODE) {
+      saveStepData(step);
+      return true;
+    }
+
+    if (step === 1) {
+      const restaurantName = document.getElementById("restaurantName").value.trim();
+      const restaurantLocation = document.getElementById("restaurantLocation").value.trim();
+      const restaurantPhone = document.getElementById("restaurantPhone").value.trim();
+      const restaurantEmail = document.getElementById("restaurantEmail").value.trim();
+      const restaurantPassword = document.getElementById("restaurantPassword").value.trim();
+
+      if (!restaurantName || !restaurantLocation || !restaurantPhone || !restaurantEmail || !restaurantPassword) {
+        alert("Please fill all required fields in Basic Information.");
+        return false;
+      }
+
+      saveStepData(1);
+    }
+
+    if (step === 2) {
+      const ownerFullName = document.getElementById("ownerFullName").value.trim();
+
+      if (!ownerFullName) {
+        alert("Please enter owner full name.");
+        return false;
+      }
+
+      saveStepData(2);
+    }
+
+    if (step === 3) {
+      const otpInputs = document.querySelectorAll(".otp-input");
+      const otpValue = Array.from(otpInputs)
+        .map((input) => input.value.trim())
+        .join("");
+
+      if (otpValue.length !== 6) {
+        alert("Please enter the 6-digit verification code.");
+        return false;
+      }
+
+      saveStepData(3);
+    }
+
+    if (step === 4) {
+      const restaurantDescription = document.getElementById("restaurantDescription").value.trim();
+      const cuisineType = document.getElementById("cuisineType").value;
+      const openingTime = document.getElementById("openingTime").value;
+      const closingTime = document.getElementById("closingTime").value;
+
+      if (!restaurantDescription || !cuisineType || !openingTime || !closingTime) {
+        alert("Please fill all required restaurant details.");
+        return false;
+      }
+
+      saveStepData(4);
+    }
+
+    if (step === 5) {
+      const panNumber = document.getElementById("panNumber").value.trim();
+      const businessRegNumber = document.getElementById("businessRegNumber").value.trim();
+
+      if (!panNumber || !businessRegNumber) {
+        alert("Please fill all required legal information.");
+        return false;
+      }
+
+      saveStepData(5);
     }
 
     return true;
@@ -196,6 +246,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!validateStep(5)) return;
 
+    if (DEMO_MODE) {
+      window.location.href = "ownerdashboard.html";
+      return;
+    }
+
     const finalData = {
       step1: JSON.parse(localStorage.getItem("restaurantSignupStep1") || "{}"),
       step2: JSON.parse(localStorage.getItem("restaurantSignupStep2") || "{}"),
@@ -206,8 +261,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     console.log("Final Restaurant Signup Data:", finalData);
     alert("Restaurant registration submitted successfully!");
-
-    // later connect backend here
   });
 
   const otpInputs = document.querySelectorAll(".otp-input");

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FoodExpress - Restaurant Dashboard</title>
+
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
@@ -12,46 +13,29 @@
   </head>
   <body>
     <!-- TOP NAV -->
-    <nav>
-      <div class="nav-logo">Food<span>Express</span></div>
-      <div class="nav-links">
-        <a href="#">Home</a>
-        <a href="#">About</a>
-        <a href="#">Restaurants</a>
-        <a href="#">Menu</a>
-        <a href="#">Contact</a>
-        <a href="#">All Pages</a>
-      </div>
-      <div class="nav-search">
-        <svg
-          width="15"
-          height="15"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
-        <input type="text" placeholder="Search food..." />
-      </div>
-      <button class="nav-login">
-        <svg
-          width="15"
-          height="15"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-        </svg>
-        Login
-      </button>
-    </nav>
+    <nav class="navbar">
+      <div class="container">
+        <div class="navbar-brand">FoodExpress</div>
 
+        <div class="navbar-nav">
+          <a href="ownerdashboard.html" class="nav-link">Dashboard</a>
+          <a href="#" class="nav-link">Orders</a>
+          <a href="ownermenu.html" class="nav-link">Menu</a>
+          <a href="#" class="nav-link">Earnings</a>
+          <a href="#" class="nav-link">Settings</a>
+        </div>
+
+        <div class="navbar-right">
+          <div class="search-box">
+            <input type="text" placeholder="Search orders..." />
+          </div>
+
+          <a href="landingpage.html">
+            <button class="login-btn">Logout</button>
+          </a>
+        </div>
+      </div>
+    </nav>
     <!-- LAYOUT -->
     <div class="layout">
       <!-- SIDEBAR -->
@@ -431,17 +415,10 @@
         </div>
         <div class="footer-col">
           <h4>Quick Links</h4>
-          <a href="#">Home</a>
-          <a href="#">About Us</a>
-          <a href="#">Our Menu</a>
-          <a href="#">Recipes</a>
-        </div>
-        <div class="footer-col">
-          <h4>Support</h4>
-          <a href="#">Help Center</a>
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms of Service</a>
-          <a href="#">Contact Us</a>
+          <a href="ownerdashboard.html">Dashboard</a>
+          <a href="#">Order</a>
+          <a href="ownerMenu.html">Menu</a>
+          <a href="#">Earnings</a>
         </div>
         <div class="footer-col">
           <h4>Contact</h4>
@@ -457,7 +434,7 @@
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
               <circle cx="12" cy="10" r="3" />
             </svg>
-            123 Food Street, Culinary City, FC 12345
+            kaks ko hostel
           </div>
           <div class="contact-row">
             <svg
@@ -472,7 +449,7 @@
                 d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
               />
             </svg>
-            (555) 123-4567
+            9826385149
           </div>
           <div class="contact-row">
             <svg

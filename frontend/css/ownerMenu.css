@@ -20,88 +20,9 @@
 }
 
 body {
-  font-family: "DM Sans", sans-serif;
   background: var(--bg);
   color: var(--dark);
   min-height: 100vh;
-}
-
-/* ── NAV ── */
-nav {
-  background: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 48px;
-  height: 64px;
-  border-bottom: 1px solid var(--light-gray);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.logo {
-  font-family: "Playfair Display", serif;
-  font-size: 1.5rem;
-  color: var(--red);
-  letter-spacing: -0.5px;
-}
-.nav-links {
-  display: flex;
-  gap: 32px;
-  list-style: none;
-}
-.nav-links a {
-  text-decoration: none;
-  font-size: 0.93rem;
-  color: var(--dark);
-  font-weight: 500;
-  transition: color 0.2s;
-}
-.nav-links a:hover {
-  color: var(--red);
-}
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.search-bar {
-  display: flex;
-  align-items: center;
-  background: #f5f5f5;
-  border: 1px solid var(--light-gray);
-  border-radius: 24px;
-  padding: 8px 16px;
-  gap: 8px;
-}
-.search-bar input {
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 0.88rem;
-  color: var(--dark);
-  width: 160px;
-}
-.search-bar svg {
-  color: #999;
-  flex-shrink: 0;
-}
-.btn-login {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--red);
-  color: var(--white);
-  border: none;
-  border-radius: 24px;
-  padding: 10px 22px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-login:hover {
-  background: var(--red-dark);
 }
 
 /* ── MAIN ── */
