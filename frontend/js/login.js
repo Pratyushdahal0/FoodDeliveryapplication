@@ -155,3 +155,15 @@ window.switchTab = switchTab;
 window.handleLogin = handleLogin;
 window.handleRegister = handleRegister;
 window.togglePassword = togglePassword;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const roleSelect = document.getElementById("regRole");
+
+  if (roleSelect) {
+    roleSelect.addEventListener("change", function () {
+      if (this.value === "restaurant-owner") {
+        window.location.href = "restaurant-signup.html";
+      }
+    });
+  }
+});

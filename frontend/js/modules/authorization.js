@@ -1,55 +1,3 @@
-import { renderNavbar } from "../components/navbar.js";
-import { renderFooter } from "../components/footer.js";
-import { loginUser, registerUser } from "../modules/auth.js";
-
-document.getElementById("navbar").innerHTML = renderNavbar();
-document.getElementById("footer").innerHTML = renderFooter();
-
-const tabButtons = document.querySelectorAll(".tab-btn");
-const loginTab = document.getElementById("loginTab");
-const registerTab = document.getElementById("registerTab");
-const authMessage = document.getElementById("authMessage");
-
-function showMessage(text, type = "success") {
-  authMessage.textContent = text;
-  authMessage.className = `message show ${type}`;
-}
-
-tabButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    tabButtons.forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-
-    const tab = btn.dataset.tab;
-    loginTab.classList.toggle("active", tab === "login");
-    registerTab.classList.toggle("active", tab === "register");
-  });
-});
-
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  try {
-    const result = await loginUser(
-      document.getElementById("loginEmail").value.trim(),
-      document.getElementById("loginPassword").value
-    );
-
-    showMessage(result.message, result.success ? "success" : "error");
-
-    if (result.success) {
-      if (result.data.role === "admin") {
-        window.location.href = "./admin.html";
-      } else {
-        window.location.href = "./index.html";
-      }
-    }
-  } catch (error) {
-    showMessage("Could not connect to backend", "error");
-    console.error(error);
-  }
-});
-
 document.getElementById("registerForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -62,6 +10,17 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
       address: document.getElementById("registerAddress").value.trim(),
       role: document.getElementById("registerRole").value
     };
+
+    if (!payload.name || !payload.email || !payload.password) {
+      showMessage("Please fill all required fields", "error");
+      return;
+    }
+
+    if (payload.role === "restaurant-owner") {
+      localStorage.setItem("restaurantOwnerBasicInfo", JSON.stringify(payload));
+      window.location.href = "./restaurant-signup.html";
+      return;
+    }
 
     const result = await registerUser(payload);
     showMessage(result.message, result.success ? "success" : "error");
