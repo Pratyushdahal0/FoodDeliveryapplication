@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FoodExpress - Order Management</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../css/odermanagement.css"/>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav>
+  <div class="logo">FoodExpress</div>
+  <ul class="nav-links">
+    <li><a href="#">Home</a></li>
+    <li><a href="#">About</a></li>
+    <li><a href="#">Restaurants</a></li>
+    <li><a href="#">Menu</a></li>
+    <li><a href="#">Contact</a></li>
+    <li><a href="#">All Pages</a></li>
+  </ul>
+  <div class="search-box">
+    <i class="fa fa-search"></i>
+    <input type="text" placeholder="Search food..."/>
+  </div>
+  <button class="btn-login">
+    <i class="fa fa-user"></i> Login
+  </button>
+</nav>
+
+<!-- ── MAIN ── -->
+<div class="container">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1>Order <span>Management</span></h1>
+    <p>Manage and track all your restaurant orders</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active-pending" onclick="switchTab('pending', this)">
+      <i class="fa fa-clock"></i> Pending (2)
+    </button>
+    <button class="tab" onclick="switchTab('accepted', this)">
+      <i class="fa fa-box"></i> Accepted (2)
+    </button>
+    <button class="tab" onclick="switchTab('delivered', this)">
+      <i class="fa fa-circle-check"></i> Delivered (1)
+    </button>
+    <button class="tab" onclick="switchTab('cancelled', this)">
+      <i class="fa fa-circle-xmark"></i> Cancelled (1)
+    </button>
+  </div>
+
+  <!-- ── PENDING SECTION ── -->
+  <div class="order-section active" id="section-pending">
+
+    <!-- Order #12850 -->
+    <div class="order-card">
+      <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80" alt="Burger"/>
+      <div class="order-body">
+        <div class="order-top">
+          <div>
+            <div class="order-id">#12850</div>
+            <div class="order-time">5 mins ago</div>
+          </div>
+          <span class="badge badge-pending">Pending</span>
+        </div>
+        <div class="details-grid">
+          <div>
+            <div class="detail-label">Customer Details</div>
+            <div class="detail-name">John Doe</div>
+            <div class="detail-text">+977 9876543210</div>
+            <div class="detail-text">123 Main St, Kathmandu</div>
+          </div>
+          <div>
+            <div class="detail-label">Order Items</div>
+            <div class="order-item">1x Gourmet Burger</div>
+            <div class="order-item">2x French Fries</div>
+            <div class="order-item">1x Coke</div>
+          </div>
+        </div>
+        <div class="order-footer">
+          <div>
+            <div class="total-label">Total Amount</div>
+            <div class="total-amount">$34.99</div>
+          </div>
+          <div class="actions">
+            <button class="btn-reject"><i class="fa fa-xmark"></i> Reject</button>
+            <button class="btn-accept"><i class="fa fa-check"></i> Accept</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order #12849 -->
+    <div class="order-card">
+      <img src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&q=80" alt="Pizza"/>
+      <div class="order-body">
+        <div class="order-top">
+          <div>
+            <div class="order-id">#12849</div>
+            <div class="order-time">3 mins ago</div>
+          </div>
+          <span class="badge badge-pending">Pending</span>
+        </div>
+        <div class="details-grid">
+          <div>
+            <div class="detail-label">Customer Details</div>
+            <div class="detail-name">Sarah Smith</div>
+            <div class="detail-text">+977 9812345678</div>
+            <div class="detail-text">456 Park Ave, Lalitpur</div>
+          </div>
+          <div>
+            <div class="detail-label">Order Items</div>
+            <div class="order-item">1x Margherita Pizza</div>
+            <div class="order-item">1x Caesar Salad</div>
+          </div>
+        </div>
+        <div class="order-footer">
+          <div>
+            <div class="total-label">Total Amount</div>
+            <div class="total-amount">$28.5</div>
+          </div>
+          <div class="actions">
+            <button class="btn-reject"><i class="fa fa-xmark"></i> Reject</button>
+            <button class="btn-accept"><i class="fa fa-check"></i> Accept</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /pending -->
+
+  <!-- ── ACCEPTED SECTION ── -->
+  <div class="order-section" id="section-accepted">
+
+    <!-- Order #12848 -->
+    <div class="order-card">
+      <img src="https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&q=80" alt="Sushi"/>
+      <div class="order-body">
+        <div class="order-top">
+          <div>
+            <div class="order-id">#12848</div>
+            <div class="order-time">15 mins ago</div>
+          </div>
+          <span class="badge badge-accepted">Accepted</span>
+        </div>
+        <div class="details-grid">
+          <div>
+            <div class="detail-label">Customer Details</div>
+            <div class="detail-name">Mike Johnson</div>
+            <div class="detail-text">+977 9823456789</div>
+            <div class="detail-text">789 Hill Road, Bhaktapur</div>
+          </div>
+          <div>
+            <div class="detail-label">Order Items</div>
+            <div class="order-item">1x Sushi Platter</div>
+            <div class="order-item">1x Miso Soup</div>
+            <div class="order-item">2x Green Tea</div>
+          </div>
+        </div>
+        <div class="order-footer">
+          <div>
+            <div class="total-label">Total Amount</div>
+            <div class="total-amount">$42.99</div>
+          </div>
+          <div class="actions">
+            <button class="btn-deliver"><i class="fa fa-circle-check"></i> Mark as Delivered</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order #12847 -->
+    <div class="order-card">
+      <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80" alt="Food"/>
+      <div class="order-body">
+        <div class="order-top">
+          <div>
+            <div class="order-id">#12847</div>
+            <div class="order-time">30 mins ago</div>
+          </div>
+          <span class="badge badge-accepted">Accepted</span>
+        </div>
+        <div class="details-grid">
+          <div>
+            <div class="detail-label">Customer Details</div>
+            <div class="detail-name">Emma Wilson</div>
+            <div class="detail-text">+977 9834567890</div>
+            <div class="detail-text">321 Lake View, Kirtipur</div>
+          </div>
+          <div>
+            <div class="detail-label">Order Items</div>
+            <div class="order-item">2x Dal Bhat</div>
+            <div class="order-item">1x Momo (Veg)</div>
+          </div>
+        </div>
+        <div class="order-footer">
+          <div>
+            <div class="total-label">Total Amount</div>
+            <div class="total-amount">$19.99</div>
+          </div>
+          <div class="actions">
+            <button class="btn-deliver"><i class="fa fa-circle-check"></i> Mark as Delivered</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /accepted -->
+
+  <!-- ── DELIVERED SECTION ── -->
+  <div class="order-section" id="section-delivered">
+
+    <!-- Order #12846 -->
+    <div class="order-card">
+      <img src="https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&q=80" alt="Pasta"/>
+      <div class="order-body">
+        <div class="order-top">
+          <div>
+            <div class="order-id">#12846</div>
+            <div class="order-time">1 hour ago</div>
+          </div>
+          <span class="badge badge-delivered">Delivered</span>
+        </div>
+        <div class="details-grid">
+          <div>
+            <div class="detail-label">Customer Details</div>
+            <div class="detail-name">David Brown</div>
+            <div class="detail-text">+977 9845678901</div>
+            <div class="detail-text">654 Mountain View, Patan</div>
+          </div>
+          <div>
+            <div class="detail-label">Order Items</div>
+            <div class="order-item">2x Pasta Carbonara</div>
+            <div class="order-item">1x Garlic Bread</div>
+          </div>
+        </div>
+        <div class="order-footer">
+          <div>
+            <div class="total-label">Total Amount</div>
+            <div class="total-amount">$38.5</div>
+          </div>
+          <div class="actions">
+            <button class="btn-view"><i class="fa fa-eye"></i> View Details</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /delivered -->
+
+  <!-- ── CANCELLED SECTION ── -->
+  <div class="order-section" id="section-cancelled">
+
+    <!-- Order #12845 -->
+    <div class="order-card">
+      <img src="https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80" alt="Tikka Masala"/>
+      <div class="order-body">
+        <div class="order-top">
+          <div>
+            <div class="order-id">#12845</div>
+            <div class="order-time">2 hours ago</div>
+          </div>
+          <span class="badge badge-cancelled">Cancelled</span>
+        </div>
+        <div class="details-grid">
+          <div>
+            <div class="detail-label">Customer Details</div>
+            <div class="detail-name">Lisa Anderson</div>
+            <div class="detail-text">+977 9856789012</div>
+            <div class="detail-text">987 Valley Road, Banepa</div>
+          </div>
+          <div>
+            <div class="detail-label">Order Items</div>
+            <div class="order-item">1x Chicken Tikka Masala</div>
+            <div class="order-item">2x Naan Bread</div>
+          </div>
+        </div>
+        <div class="order-footer">
+          <div>
+            <div class="total-label">Total Amount</div>
+            <div class="total-amount">$25.99</div>
+          </div>
+          <div class="actions">
+            <button class="btn-view"><i class="fa fa-eye"></i> View Details</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /cancelled -->
+
+</div><!-- /container -->
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-logo">FoodExpress</div>
+      <p class="footer-tagline">Delivering happiness to your doorstep, one meal at a time.</p>
+      <div class="footer-socials">
+        <a href="#"><i class="fab fa-facebook-f"></i></a>
+        <a href="#"><i class="fab fa-twitter"></i></a>
+        <a href="#"><i class="fab fa-instagram"></i></a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4>Quick Links</h4>
+      <ul>
+        <li><a href="#">Home</a></li>
+        <li><a href="#">About Us</a></li>
+        <li><a href="#">Our Menu</a></li>
+        <li><a href="#">Recipes</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <ul>
+        <li><a href="#">Help Center</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Terms of Service</a></li>
+        <li><a href="#">Contact Us</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <div class="footer-contact-item"><i class="fa fa-location-dot"></i> 123 Food Street, Culinary City, FC 12345</div>
+      <div class="footer-contact-item"><i class="fa fa-phone"></i> (555) 123-4567</div>
+      <div class="footer-contact-item"><i class="fa fa-envelope"></i> hello@foodexpress.com</div>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
+</footer>
+
+<script>
+  const tabClasses = {
+    pending:   'active-pending',
+    accepted:  'active-accepted',
+    delivered: 'active-delivered',
+    cancelled: 'active-cancelled'
+  };
+
+  function switchTab(type, el) {
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.remove('active-pending','active-accepted','active-delivered','active-cancelled');
+    });
+    el.classList.add(tabClasses[type]);
+    document.querySelectorAll('.order-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-' + type).classList.add('active');
+  }
+</script>
+
+</body>
+</html>
