@@ -9,6 +9,8 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/ownerdashboard.css" />
   </head>
   <body>
@@ -47,7 +49,7 @@
             <div class="sub">Owner Dashboard</div>
           </div>
         </div>
-        <a href="#" class="nav-item active">
+        <a href="ownerdashboard.html" class="nav-item active">
           <svg
             fill="none"
             stroke="currentColor"
@@ -74,7 +76,7 @@
           </svg>
           Orders
         </a>
-        <a href="#" class="nav-item">
+        <a href="ownerMenu.html" class="nav-item">
           <svg
             fill="none"
             stroke="currentColor"
@@ -173,7 +175,7 @@
               <span class="stat-badge up">↗ +12.5%</span>
             </div>
             <div class="stat-label">Total Orders</div>
-            <div class="stat-value">1,247</div>
+            <div class="stat-value" id="totalOrders">0</div>
           </div>
           <div class="stat-card">
             <div class="stat-top">
@@ -193,7 +195,7 @@
               <span class="stat-badge up">↗ +8.2%</span>
             </div>
             <div class="stat-label">Total Earnings</div>
-            <div class="stat-value">$45,890</div>
+            <div class="stat-value" id="totalEarnings">$0.00</div>
           </div>
           <div class="stat-card">
             <div class="stat-top">
@@ -214,7 +216,7 @@
               <span class="stat-badge down">↘ -3</span>
             </div>
             <div class="stat-label">Active Orders</div>
-            <div class="stat-value">23</div>
+            <div class="stat-value" id="activeOrders">0</div>
           </div>
           <div class="stat-card">
             <div class="stat-top">
@@ -234,7 +236,7 @@
               <span class="stat-badge up">↗ +2</span>
             </div>
             <div class="stat-label">Pending Orders</div>
-            <div class="stat-value">8</div>
+            <div class="stat-value" id="pendingOrders">0</div>
           </div>
         </div>
 
@@ -256,64 +258,9 @@
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="recentOrdersTable">
                 <tr>
-                  <td>
-                    <div class="order-id">#12847</div>
-                    <div class="order-time">10 mins ago</div>
-                  </td>
-                  <td><span class="customer-name">John Doe</span></td>
-                  <td><span class="items-text">Burger, Fries, Coke</span></td>
-                  <td><span class="amount">$24.99</span></td>
-                  <td><span class="status-badge delivered">Delivered</span></td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="order-id">#12846</div>
-                    <div class="order-time">15 mins ago</div>
-                  </td>
-                  <td><span class="customer-name">Sarah Smith</span></td>
-                  <td>
-                    <span class="items-text">Pizza Margherita, Salad</span>
-                  </td>
-                  <td><span class="amount">$32.50</span></td>
-                  <td>
-                    <span class="status-badge progress">In Progress</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="order-id">#12845</div>
-                    <div class="order-time">20 mins ago</div>
-                  </td>
-                  <td><span class="customer-name">Mike Johnson</span></td>
-                  <td><span class="items-text">Pasta Carbonara</span></td>
-                  <td><span class="amount">$18.99</span></td>
-                  <td><span class="status-badge pending">Pending</span></td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="order-id">#12844</div>
-                    <div class="order-time">35 mins ago</div>
-                  </td>
-                  <td><span class="customer-name">Emma Wilson</span></td>
-                  <td>
-                    <span class="items-text">Steak, Mashed Potatoes</span>
-                  </td>
-                  <td><span class="amount">$45.00</span></td>
-                  <td><span class="status-badge delivered">Delivered</span></td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="order-id">#12843</div>
-                    <div class="order-time">1 hour ago</div>
-                  </td>
-                  <td><span class="customer-name">David Brown</span></td>
-                  <td>
-                    <span class="items-text">Sushi Platter, Miso Soup</span>
-                  </td>
-                  <td><span class="amount">$38.75</span></td>
-                  <td><span class="status-badge delivered">Delivered</span></td>
+                  <td colspan="5">Loading recent orders...</td>
                 </tr>
               </tbody>
             </table>
@@ -324,7 +271,7 @@
             <div class="earnings-card">
               <h3>Weekly Earnings</h3>
               <div class="earnings-box">
-                <div class="earnings-amount">$2,840</div>
+                <div class="earnings-amount" id="weeklyEarnings">$0.00</div>
                 <div class="earnings-label">This Week</div>
               </div>
             </div>
@@ -474,5 +421,6 @@
 
     <!-- FAB -->
     <button class="fab">?</button>
+    <script src="../js/ownerdashboard.js?v=1"></script>
   </body>
 </html>

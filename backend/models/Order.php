@@ -13,29 +13,37 @@ class Order {
     public function create($data) {
         try {
             $order_number = 'ORD' . date('Ymd') . strtoupper(substr(uniqid(), -4));
-            
-            $status = 'pending';
+
+            $user_id = isset($data['user_id']) && $data['user_id'] !== '' ? intval($data['user_id']) : null;
+            $restaurant_id = isset($data['restaurant_id']) ? intval($data['restaurant_id']) : 0;
+
+            $status = isset($data['status']) && $data['status'] !== '' ? $data['status'] : 'pending';
             $notes = isset($data['notes']) ? $data['notes'] : null;
             $subtotal = isset($data['subtotal']) ? floatval($data['subtotal']) : 0;
             $tax = isset($data['tax']) ? floatval($data['tax']) : 0;
             $delivery_fee = isset($data['delivery_fee']) ? floatval($data['delivery_fee']) : 5.00;
             $total = isset($data['total']) ? floatval($data['total']) : 0;
-            
-            $query = "INSERT INTO " . $this->table . " 
-                      (order_number, customer_name, phone_number, address, city, postal_code, 
-                       payment_method, subtotal, tax, delivery_fee, total, status, notes) 
-                      VALUES 
-                      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            $query = "INSERT INTO " . $this->table . "
+                      (order_number, user_id, restaurant_id, customer_name, phone_number, address, city, postal_code,
+                       payment_method, subtotal, tax, delivery_fee, total, status, notes)
+                      VALUES
+                      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $stmt = $this->conn->prepare($query);
-            
+
             if (!$stmt) {
-                return ['success' => false, 'message' => 'Database prepare error: ' . $this->conn->error];
+                return [
+                    'success' => false,
+                    'message' => 'Database prepare error: ' . $this->conn->error
+                ];
             }
 
             $bind_result = $stmt->bind_param(
-                "sssssssddddss",
+                "siissssssddddss",
                 $order_number,
+                $user_id,
+                $restaurant_id,
                 $data['customer_name'],
                 $data['phone_number'],
                 $data['address'],
@@ -51,7 +59,10 @@ class Order {
             );
 
             if (!$bind_result) {
-                return ['success' => false, 'message' => 'Bind parameter error: ' . $stmt->error];
+                return [
+                    'success' => false,
+                    'message' => 'Bind parameter error: ' . $stmt->error
+                ];
             }
 
             if ($stmt->execute()) {
@@ -63,21 +74,27 @@ class Order {
                 ];
             }
 
-            return ['success' => false, 'message' => 'Execute error: ' . $stmt->error];
+            return [
+                'success' => false,
+                'message' => 'Execute error: ' . $stmt->error
+            ];
         } catch (Exception $e) {
-            return ['success' => false, 'message' => 'Exception: ' . $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => 'Exception: ' . $e->getMessage()
+            ];
         }
     }
 
     // Add items to an order
     public function addItems($order_id, $items) {
-        $query = "INSERT INTO " . $this->items_table . " 
-                  (order_id, product_id, product_name, quantity, price, subtotal) 
-                  VALUES 
+        $query = "INSERT INTO " . $this->items_table . "
+                  (order_id, product_id, product_name, quantity, price, subtotal)
+                  VALUES
                   (?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->conn->prepare($query);
-        
+
         if (!$stmt) {
             return false;
         }
@@ -134,6 +151,7 @@ class Order {
         $stmt->bind_param("i", $order_id);
         $stmt->execute();
         $result = $stmt->get_result();
+
         $items = [];
         while ($row = $result->fetch_assoc()) {
             $items[] = $row;
@@ -148,6 +166,7 @@ class Order {
         $stmt->bind_param("ii", $limit, $offset);
         $stmt->execute();
         $result = $stmt->get_result();
+
         $orders = [];
         while ($row = $result->fetch_assoc()) {
             $orders[] = $row;
@@ -170,6 +189,7 @@ class Order {
         $stmt->bind_param("s", $status);
         $stmt->execute();
         $result = $stmt->get_result();
+
         $orders = [];
         while ($row = $result->fetch_assoc()) {
             $orders[] = $row;
@@ -195,6 +215,96 @@ class Order {
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
         return isset($row['count']) ? intval($row['count']) : 0;
+    }
+
+    // ===== OWNER DASHBOARD =====
+    public function getTotalOrdersByRestaurant($restaurantId) {
+        $query = "SELECT COUNT(*) as total_orders
+                  FROM " . $this->table . "
+                  WHERE restaurant_id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $restaurantId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+
+        return intval($row['total_orders'] ?? 0);
+    }
+
+    public function getTotalEarningsByRestaurant($restaurantId) {
+        $query = "SELECT SUM(total) as total_earnings
+                  FROM " . $this->table . "
+                  WHERE restaurant_id = ?
+                  AND status != 'cancelled'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $restaurantId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+
+        return floatval($row['total_earnings'] ?? 0);
+    }
+
+    public function getActiveOrdersByRestaurant($restaurantId) {
+        $query = "SELECT COUNT(*) as active_orders
+                  FROM " . $this->table . "
+                  WHERE restaurant_id = ?
+                  AND status IN ('confirmed', 'preparing', 'on_the_way')";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $restaurantId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+
+        return intval($row['active_orders'] ?? 0);
+    }
+
+    public function getPendingOrdersByRestaurant($restaurantId) {
+        $query = "SELECT COUNT(*) as pending_orders
+                  FROM " . $this->table . "
+                  WHERE restaurant_id = ?
+                  AND status = 'pending'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $restaurantId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+
+        return intval($row['pending_orders'] ?? 0);
+    }
+
+    public function getWeeklyEarningsByRestaurant($restaurantId) {
+        $query = "SELECT SUM(total) as weekly_earnings
+                  FROM " . $this->table . "
+                  WHERE restaurant_id = ?
+                  AND status != 'cancelled'
+                  AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $restaurantId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+
+        return floatval($row['weekly_earnings'] ?? 0);
+    }
+
+    public function getRecentOrdersByRestaurant($restaurantId, $limit = 5) {
+        $query = "SELECT id, order_number, customer_name, total, status, created_at
+                  FROM " . $this->table . "
+                  WHERE restaurant_id = ?
+                  ORDER BY created_at DESC
+                  LIMIT ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("ii", $restaurantId, $limit);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $orders = [];
+        while ($row = $result->fetch_assoc()) {
+            $orders[] = $row;
+        }
+
+        return $orders;
     }
 }
 ?>

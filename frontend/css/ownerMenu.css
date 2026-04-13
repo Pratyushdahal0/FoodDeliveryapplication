@@ -246,6 +246,10 @@ main {
 .icon-btn:hover svg {
   stroke: var(--red);
 }
+.icon-btn {
+  font-size: 16px;
+  line-height: 1;
+}
 
 /* ── FOOTER ── */
 footer {
@@ -358,6 +362,113 @@ footer {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
+/* ── MODAL ── */
+.menu-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.menu-modal.show {
+  display: flex;
+}
+
+.menu-modal-content {
+  width: 100%;
+  max-width: 480px;
+  background: var(--white);
+  border-radius: 20px;
+  padding: 16px;
+  position: relative;
+}
+
+/* HEADER */
+.menu-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.menu-modal-header h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.modal-close-btn {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+/* FORM */
+.modal-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.modal-form-group label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.modal-form-group input,
+.modal-form-group select,
+.modal-form-group textarea {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--light-gray);
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.modal-form-group input:focus,
+.modal-form-group select:focus,
+.modal-form-group textarea:focus {
+  border-color: var(--red);
+}
+
+/* ROW */
+.modal-form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.modal-form-row .modal-form-group {
+  flex: 1;
+}
+
+/* BUTTONS */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.btn-cancel {
+  background: #eee;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.btn-save {
+  background: var(--red);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
 @media (max-width: 900px) {
   .menu-grid {
     grid-template-columns: repeat(2, 1fr);

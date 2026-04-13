@@ -25,8 +25,14 @@ function saveCartItemsToStorage(items) {
 
 function addItemToCart(product) {
   const items = getCartItemsFromStorage();
-  const existingItem = items.find(item => item.id === product.id);
-  
+
+  // match by both product id and restaurant_id
+  const existingItem = items.find(
+    item =>
+      String(item.id) === String(product.id) &&
+      String(item.restaurant_id) === String(product.restaurant_id)
+  );
+
   if (existingItem) {
     existingItem.quantity += 1;
   } else {
@@ -35,21 +41,33 @@ function addItemToCart(product) {
       name: product.name,
       price: product.price,
       image_url: product.image_url,
-      quantity: 1
+      quantity: 1,
+      restaurant_id: product.restaurant_id
     });
   }
-  
+
   saveCartItemsToStorage(items);
   updateCartCount();
-  console.log('Item added to cart:', product.name);
+  console.log('Item added to cart:', product.name, 'restaurant_id:', product.restaurant_id);
 }
 
-function removeItemFromCart(productId) {
+function removeItemFromCart(productId, restaurantId = null) {
   const items = getCartItemsFromStorage();
-  const filtered = items.filter(item => item.id !== productId);
+
+  const filtered =
+    restaurantId === null
+      ? items.filter(item => String(item.id) !== String(productId))
+      : items.filter(
+          item =>
+            !(
+              String(item.id) === String(productId) &&
+              String(item.restaurant_id) === String(restaurantId)
+            )
+        );
+
   saveCartItemsToStorage(filtered);
   updateCartCount();
-  console.log('Item removed from cart:', productId);
+  console.log('Item removed from cart:', productId, 'restaurant_id:', restaurantId);
 }
 
 function updateCartCount() {
@@ -72,6 +90,7 @@ function updateCartBadge(count) {
   } else {
     badge.style.display = 'none';
   }
+
   console.log('Cart badge updated to:', count);
 }
 
@@ -81,6 +100,7 @@ function setupNavbarCartIcon() {
     console.warn('navbar-right element not found');
     return;
   }
+
   if (document.getElementById('cartButton')) {
     console.log('Cart button already exists');
     return;
@@ -103,12 +123,12 @@ function setupNavbarCartIcon() {
     }
   });
 
-  // Create a new navbar right container if it's empty or append to the end
   if (navbarRight.children.length === 0) {
     navbarRight.appendChild(cartButton);
   } else {
     navbarRight.insertBefore(cartButton, navbarRight.firstChild);
   }
+
   console.log('Cart button added to navbar');
 }
 
@@ -129,8 +149,6 @@ function incrementCartCount(amount = 1) {
   return nextCount;
 }
 
-
-// Explicitly export to window for global access FIRST
 window.getCartCountFromStorage = getCartCountFromStorage;
 window.saveCartCountToStorage = saveCartCountToStorage;
 window.getCartItemsFromStorage = getCartItemsFromStorage;
@@ -145,7 +163,6 @@ window.incrementCartCount = incrementCartCount;
 
 console.log('[cart.js] Cart functions registered globally');
 
-// Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', function() {
     console.log('[cart.js] DOM ready, initializing cart');
