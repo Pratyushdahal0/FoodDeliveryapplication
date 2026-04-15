@@ -12,6 +12,28 @@ function formatCurrency(amount) {
   return `$${Number(amount || 0).toFixed(2)}`;
 }
 
+function getOwnerProfile() {
+  return typeof getUserProfile === 'function' ? getUserProfile() : null;
+}
+
+function renderOwnerName() {
+  const profile = getOwnerProfile();
+  const displayName = profile?.name || 'Restaurant Owner';
+  const ownerNameLabel = document.getElementById('ownerNameLabel');
+  if (ownerNameLabel) {
+    ownerNameLabel.textContent = displayName;
+  }
+}
+
+function setupOwnerActions() {
+  document.getElementById('ownerQuickAddMenuBtn')?.addEventListener('click', () => {
+    window.location.href = 'ownerMenu.html';
+  });
+  document.getElementById('ownerQuickViewOrdersBtn')?.addEventListener('click', () => {
+    window.location.href = 'ownermanagement.html';
+  });
+}
+
 function formatTimeAgo(dateString) {
   const now = new Date();
   const orderDate = new Date(dateString);
@@ -122,4 +144,12 @@ async function loadDashboard() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", loadDashboard);
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof requireOwnerAuth === 'function') {
+    if (!requireOwnerAuth()) return;
+  }
+
+  renderOwnerName();
+  setupOwnerActions();
+  loadDashboard();
+});

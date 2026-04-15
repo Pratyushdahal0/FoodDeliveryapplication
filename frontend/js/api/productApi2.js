@@ -1,12 +1,11 @@
+const API_BASE = "../../backend/controllers";
+const API = {
+    products: `${API_BASE}/ProductController.php`,
+    auth:     `${API_BASE}/AuthController.php`,
+};
+
 // Fetch all products
 async function getAllProducts() {
-    // API Configuration
-    const API_BASE = "../../backend/controllers";
-    const API = {
-        products: `${API_BASE}/ProductController.php`,
-        auth:     `${API_BASE}/AuthController.php`,
-    };
-
     try {
         console.log('Fetching from:', `${API.products}?action=all`);
         const res = await fetch(`${API.products}?action=all`);

@@ -240,6 +240,13 @@ if (searchInput) {
   });
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof requireOwnerAuth === 'function') {
+    requireOwnerAuth();
+  }
+  loadMenu();
+});
+
 window.filterTag = (element, category) => {
   document.querySelectorAll(".tag").forEach((tag) => {
     tag.classList.remove("active");
@@ -258,4 +265,8 @@ window.filterTag = (element, category) => {
   });
 };
 
-loadMenu();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", loadMenu);
+} else {
+  loadMenu();
+}

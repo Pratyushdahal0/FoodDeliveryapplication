@@ -1,21 +1,23 @@
 // ══════════════════════════
-//  shop.js
-//  Shop page interactions
+// shop.js (FINAL WITH RESTAURANT NAME)
 // ══════════════════════════
 
-let allProducts = []; // Store all products for filtering
+let allProducts = [];
 const FAVORITES_KEY = 'foodDeliveryFavorites';
+const DEFAULT_IMAGE = '../assets/images/placeholder-food.jpg';
 
+// ---------- FAVORITES ----------
 function getFavoriteIds() {
   try {
-    return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+    const stored = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+    return Array.isArray(stored) ? stored.map(String) : [];
   } catch {
     return [];
   }
 }
 
 function saveFavoriteIds(ids) {
-  localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids));
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids || []));
 }
 
 function isFavorite(productId) {
@@ -23,49 +25,46 @@ function isFavorite(productId) {
 }
 
 function toggleFavorite(productId, btn) {
-  const ids = getFavoriteIds();
+  let ids = getFavoriteIds();
   const id = String(productId);
-  const index = ids.indexOf(id);
 
-  if (index === -1) {
-    ids.push(id);
-    btn.textContent = '♥';
-    btn.classList.add('liked');
+  if (ids.includes(id)) {
+    ids = ids.filter((i) => i !== id);
   } else {
-    ids.splice(index, 1);
-    btn.textContent = '♡';
-    btn.classList.remove('liked');
+    ids.push(id);
   }
 
   saveFavoriteIds(ids);
+  renderFavoriteButton(btn, ids.includes(id));
 }
 
+function renderFavoriteButton(btn, active) {
+  if (!btn) return;
+  btn.textContent = active ? '♥' : '♡';
+  btn.classList.toggle('liked', active);
+}
+
+// ---------- INIT ----------
 document.addEventListener('DOMContentLoaded', async () => {
   await loadProducts();
 
-  // ── FILTER BUTTONS ──
-  const filterBtns = document.querySelectorAll('.filter-btn');
-  const countEl = document.querySelector('.products-count');
-
-  filterBtns.forEach(btn => {
+  document.querySelectorAll('.filter-btn').forEach((btn) => {
     btn.addEventListener('click', function () {
-      filterBtns.forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
+      document
+        .querySelectorAll('.filter-btn')
+        .forEach((b) => b.classList.remove('active'));
 
-      const filter = this.textContent.trim().toLowerCase();
-      filterProducts(filter);
+      this.classList.add('active');
+      filterProducts(this.textContent.toLowerCase());
     });
   });
 
-  // ── ADD TO CART ──
-  document.addEventListener('click', function(e) {
+  document.addEventListener('click', (e) => {
     if (e.target.classList.contains('add-to-cart')) {
-      e.stopPropagation();
       handleAddToCart(e.target);
     }
   });
 
-  // ── CONTACT US BUTTON ──
   const contactBtn = document.querySelector('.btn-contact');
   if (contactBtn) {
     contactBtn.addEventListener('click', () => {
@@ -74,130 +73,200 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-// Load products from backend
+// ---------- LOAD ----------
 async function loadProducts() {
-  console.log('Starting to load products...');
+  const countEl = document.querySelector('.products-count');
+
   try {
-    console.log('Calling getAllProducts...');
+    console.log('Loading products...');
     allProducts = await getAllProducts();
-    console.log('Products loaded:', allProducts);
+
+    if (!Array.isArray(allProducts)) {
+      allProducts = [];
+    }
+
+    console.log('Loaded:', allProducts);
     renderProducts(allProducts);
-  } catch (error) {
-    console.error('Error loading products:', error);
-    document.querySelector('.products-count').textContent = 'Error loading products';
+  } catch (err) {
+    console.error('Error loading products:', err);
+
+    const grid = document.getElementById('productsGrid');
+    if (grid) {
+      grid.innerHTML = '<p>Failed to load products</p>';
+    }
+
+    if (countEl) {
+      countEl.textContent = 'Error loading products';
+    }
   }
 }
 
-// Render products to the grid
+// ---------- RENDER ----------
 function renderProducts(products) {
   const grid = document.getElementById('productsGrid');
   const countEl = document.querySelector('.products-count');
 
-  grid.innerHTML = ''; // Clear existing
+  if (!grid) return;
 
-  if (products.length === 0) {
+  grid.innerHTML = '';
+
+  if (!products.length) {
     grid.innerHTML = '<p>No products found.</p>';
-    countEl.textContent = 'No items';
+    if (countEl) countEl.textContent = 'No items';
     return;
   }
 
-  products.forEach(product => {
-    const card = createProductCard(product);
-    grid.appendChild(card);
+  products.forEach((product) => {
+    grid.appendChild(createProductCard(product));
   });
 
-  countEl.textContent = `Showing ${products.length} item${products.length !== 1 ? 's' : ''}`;
-
-  // Re-attach wishlist event listeners
-  attachWishlistListeners();
+  if (countEl) {
+    countEl.textContent = `Showing ${products.length} item${
+      products.length !== 1 ? 's' : ''
+    }`;
+  }
 }
 
-// Create a product card element
+// ---------- CARD ----------
 function createProductCard(product) {
   const card = document.createElement('div');
   card.className = 'product-card';
 
-  const popularBadge = product.is_popular ? '<span class="popular-badge">Popular</span>' : '';
-  const favoriteClass = isFavorite(product.id) ? 'liked' : '';
-  const favoriteIcon = isFavorite(product.id) ? '♥' : '♡';
+  const productId = String(product.id || '');
+  const productName = product.name || 'Unnamed Product';
+  const productPrice = Number(product.price || 0);
+  const productImage = product.image_url || DEFAULT_IMAGE;
+  const restaurantId = String(product.restaurant_id || '');
+  const restaurantName =
+    product.restaurant_name ||
+    product.restaurant ||
+    product.restaurant_title ||
+    'Unknown Restaurant';
+
+  const favoriteActive = isFavorite(productId);
+  const popularBadge =
+    Number(product.is_popular) === 1
+      ? '<span class="popular-badge">Popular</span>'
+      : '';
 
   card.innerHTML = `
     <div class="product-img">
-      <img src="${product.image_url || 'https://via.placeholder.com/400x300'}" alt="${product.name}" />
+      <img src="${productImage}" alt="${escapeHtml(productName)}" onerror="this.src='${DEFAULT_IMAGE}'" />
       ${popularBadge}
-      <button class="wishlist-btn ${favoriteClass}" data-product-id="${product.id}">${favoriteIcon}</button>
+      <button class="wishlist-btn ${favoriteActive ? 'liked' : ''}" type="button">
+        ${favoriteActive ? '♥' : '♡'}
+      </button>
     </div>
+
     <div class="product-info">
-      <div class="product-name">${product.name}</div>
-      <div class="product-rating">
-        <span class="star">★</span> ${product.rating || 0} <span>(${product.delivery_time || 'N/A'})</span>
+      <div class="product-name">${escapeHtml(productName)}</div>
+      <div class="product-restaurant" style="color:#777; font-size:0.95rem; margin:6px 0 10px;">
+        from ${escapeHtml(restaurantName)}
       </div>
+
+      <div class="product-rating">
+        <span class="star">★</span> ${product.rating || 0}
+        <span>(${product.delivery_time || 'N/A'})</span>
+      </div>
+
       <div class="product-footer">
-        <span class="product-price">$${product.price}</span>
-        <button class="add-to-cart" data-product-id="${product.id}" data-product-name="${product.name}" data-product-price="${product.price}" data-product-image="${product.image_url || 'https://via.placeholder.com/400x300'}">+</button>
+        <span class="product-price">$${productPrice.toFixed(2)}</span>
+
+        <button
+          class="add-to-cart"
+          data-product-id="${productId}"
+          data-product-name="${escapeHtml(productName)}"
+          data-product-price="${productPrice}"
+          data-product-image="${productImage}"
+          data-restaurant-id="${restaurantId}"
+          data-restaurant-name="${escapeHtml(restaurantName)}"
+          title="Add to cart"
+          type="button"
+        >
+          +
+        </button>
       </div>
     </div>
   `;
 
+  const wishlistBtn = card.querySelector('.wishlist-btn');
+  if (wishlistBtn) {
+    wishlistBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFavorite(productId, wishlistBtn);
+    });
+  }
+
   return card;
 }
 
-// Filter products based on category
+// ---------- FILTER ----------
 function filterProducts(filter) {
-  let filtered = [];
-
-  if (filter === 'all items') {
-    filtered = allProducts;
-  } else if (filter === 'popular') {
-    filtered = allProducts.filter(p => p.is_popular);
-  } else {
-    // For specific categories like Breakfast, Lunch, etc.
-    filtered = allProducts.filter(p => p.category.toLowerCase() === filter);
+  if (filter.includes('all')) {
+    renderProducts(allProducts);
+    return;
   }
 
-  renderProducts(filtered);
+  if (filter.includes('popular')) {
+    renderProducts(allProducts.filter((p) => Number(p.is_popular) === 1));
+    return;
+  }
+
+  renderProducts(
+    allProducts.filter(
+      (p) => String(p.category || '').toLowerCase() === filter
+    )
+  );
 }
 
-// Attach wishlist button listeners
-function attachWishlistListeners() {
-  document.querySelectorAll('.wishlist-btn').forEach(btn => {
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      const productId = this.dataset.productId;
-      if (!productId) return;
-      toggleFavorite(productId, this);
-    });
-  });
-}
-
-// Handle add to cart animation
+// ---------- CART ----------
 function handleAddToCart(btn) {
-  if (btn.classList.contains('adding')) return;
+  const product = {
+    id: btn.dataset.productId,
+    name: btn.dataset.productName,
+    price: Number(btn.dataset.productPrice || 0),
+    image_url: btn.dataset.productImage || DEFAULT_IMAGE,
+    quantity: 1,
+    restaurant_id: btn.dataset.restaurantId,
+    restaurant_name: btn.dataset.restaurantName || 'Unknown Restaurant'
+  };
 
-  btn.classList.add('adding');
-  const original = btn.textContent;
-
-  btn.textContent = '✓';
-  btn.style.background = '#22c55e';
-  btn.style.transform = 'scale(1.15)';
-
-  // Add item to cart with product details
-  if (typeof addItemToCart === 'function') {
-    const product = {
-      id: btn.dataset.productId,
-      name: btn.dataset.productName,
-      price: btn.dataset.productPrice,
-      image_url: btn.dataset.productImage
-    };
-    addItemToCart(product);
-  } else {
-    console.warn('addItemToCart not available');
+  if (!product.id) {
+    alert('Product ID missing');
+    return;
   }
 
-  setTimeout(() => {
-    btn.textContent = original;
-    btn.style.background = '';
-    btn.style.transform = '';
-    btn.classList.remove('adding');
-  }, 1000);
+  if (!product.restaurant_id) {
+    alert('Restaurant info missing');
+    return;
+  }
+
+  try {
+    if (typeof addItemToCart !== 'function') {
+      throw new Error('addItemToCart is not available');
+    }
+
+    addItemToCart(product);
+
+    btn.textContent = '✓';
+    btn.style.background = '#22c55e';
+
+    setTimeout(() => {
+      btn.textContent = '+';
+      btn.style.background = '';
+    }, 800);
+  } catch (err) {
+    console.error('Cart error:', err);
+    alert('Cart error');
+  }
+}
+
+// ---------- UTILS ----------
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

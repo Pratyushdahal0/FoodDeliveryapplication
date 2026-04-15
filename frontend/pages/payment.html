@@ -182,16 +182,17 @@
     </style>
   </head>
   <body>
-    <!-- AUTH PROTECTION -->
     <script>
-      // Check if user is logged in
-      if (!localStorage.getItem("isLoggedIn")) {
+      const isLoggedIn =
+        localStorage.getItem("isLoggedIn") === "true" ||
+        localStorage.getItem("isLoggedIn") === "1";
+
+      if (!isLoggedIn) {
         alert("Please login first to proceed with payment");
         window.location.href = "login.html";
       }
     </script>
 
-    <!-- NAVBAR -->
     <nav class="navbar">
       <div class="container">
         <div class="navbar-brand">FoodExpress</div>
@@ -208,17 +209,19 @@
           <div class="hamburger" id="hamburger">
             <span></span><span></span><span></span>
           </div>
-          <a href="landingpage.html">
-            <button class="login-btn">
-              <i class="fa-regular fa-user"></i>
-              Log out
-            </button>
+          <a
+            href="#"
+            onclick="
+              logout();
+              return false;
+            "
+          >
+            <button class="login-btn" type="button">Log out</button>
           </a>
         </div>
       </div>
     </nav>
 
-    <!-- CHECKOUT PAGE -->
     <div class="checkout-page">
       <div class="checkout-header">
         <h1>Checkout</h1>
@@ -226,13 +229,11 @@
       </div>
 
       <div class="checkout-container">
-        <!-- Left: Forms -->
         <div>
-          <!-- Delivery Address -->
           <div class="form-section">
             <h2>Delivery Address</h2>
             <div class="form-group">
-              <label>Full Name *</label>
+              <label for="fullName">Full Name *</label>
               <input
                 type="text"
                 id="fullName"
@@ -241,7 +242,7 @@
               />
             </div>
             <div class="form-group">
-              <label>Phone Number *</label>
+              <label for="phoneNumber">Phone Number *</label>
               <input
                 type="tel"
                 id="phoneNumber"
@@ -250,7 +251,7 @@
               />
             </div>
             <div class="form-group">
-              <label>Address *</label>
+              <label for="address">Address *</label>
               <input
                 type="text"
                 id="address"
@@ -260,11 +261,11 @@
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label>City *</label>
+                <label for="city">City *</label>
                 <input type="text" id="city" required placeholder="City" />
               </div>
               <div class="form-group">
-                <label>Postal Code *</label>
+                <label for="postalCode">Postal Code *</label>
                 <input
                   type="text"
                   id="postalCode"
@@ -275,7 +276,6 @@
             </div>
           </div>
 
-          <!-- Payment Method -->
           <div class="form-section" style="margin-top: 30px">
             <h2>Payment Method</h2>
             <div class="payment-methods">
@@ -295,7 +295,6 @@
               </label>
             </div>
 
-            <!-- Card Details (Hidden by default) -->
             <div
               id="cardDetails"
               style="
@@ -306,7 +305,7 @@
               "
             >
               <div class="form-group">
-                <label>Card Number *</label>
+                <label for="cardNumber">Card Number *</label>
                 <input
                   type="text"
                   id="cardNumber"
@@ -315,28 +314,28 @@
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Expiry Date *</label>
+                  <label for="cardExpiry">Expiry Date *</label>
                   <input type="text" id="cardExpiry" placeholder="MM/YY" />
                 </div>
                 <div class="form-group">
-                  <label>CVV *</label>
+                  <label for="cardCVV">CVV *</label>
                   <input type="text" id="cardCVV" placeholder="123" />
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Place Order Button -->
           <button
             class="place-order-btn"
+            id="placeOrderBtn"
             onclick="placeOrder()"
             style="margin-top: 30px"
+            type="button"
           >
             Place Order
           </button>
         </div>
 
-        <!-- Right: Order Summary -->
         <div class="order-summary">
           <h3>Order Summary</h3>
           <div class="summary-item">
@@ -359,7 +358,6 @@
       </div>
     </div>
 
-    <!-- FOOTER -->
     <footer>
       <div class="footer-grid">
         <div>
@@ -372,14 +370,29 @@
       <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
     </footer>
 
+    <script src="../js/api/config.js"></script>
     <script>
-      // Load checkout totals
+      function logout() {
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("foodDeliveryCartCount");
+        localStorage.removeItem("foodDeliveryCartItems");
+        localStorage.removeItem("checkoutItems");
+        localStorage.removeItem("checkoutRestaurantId");
+        localStorage.removeItem("checkoutRestaurantName");
+        localStorage.removeItem("checkoutTotal");
+        localStorage.removeItem("checkoutSubtotal");
+        localStorage.removeItem("checkoutTax");
+        localStorage.removeItem("lastOrder");
+        window.location.href = "landingpage.html";
+      }
+
       window.addEventListener("load", function () {
         const subtotal = parseFloat(
-          localStorage.getItem("checkoutSubtotal") || 0,
+          localStorage.getItem("checkoutSubtotal") || "0",
         );
-        const tax = parseFloat(localStorage.getItem("checkoutTax") || 0);
-        const total = parseFloat(localStorage.getItem("checkoutTotal") || 0);
+        const tax = parseFloat(localStorage.getItem("checkoutTax") || "0");
+        const total = parseFloat(localStorage.getItem("checkoutTotal") || "0");
 
         document.getElementById("summarySubtotal").textContent =
           subtotal.toFixed(2);
@@ -387,7 +400,6 @@
         document.getElementById("summaryTotal").textContent = total.toFixed(2);
       });
 
-      // Show/hide card details
       document
         .querySelectorAll('input[name="paymentMethod"]')
         .forEach((radio) => {
@@ -397,13 +409,17 @@
               'input[name="paymentMethod"]:checked',
             );
 
-            // Update selected styling
             document
               .querySelectorAll(".payment-method")
               .forEach((m) => m.classList.remove("selected"));
-            paymentMethod.closest(".payment-method").classList.add("selected");
 
-            if (paymentMethod.value === "card") {
+            if (paymentMethod) {
+              paymentMethod
+                .closest(".payment-method")
+                .classList.add("selected");
+            }
+
+            if (paymentMethod && paymentMethod.value === "card") {
               cardDetails.style.display = "block";
             } else {
               cardDetails.style.display = "none";
@@ -412,30 +428,73 @@
         });
 
       async function placeOrder() {
-        const fullName = document.getElementById("fullName").value;
-        const phoneNumber = document.getElementById("phoneNumber").value;
-        const address = document.getElementById("address").value;
-        const city = document.getElementById("city").value;
-        const postalCode = document.getElementById("postalCode").value;
-        const paymentMethod = document.querySelector(
+        const placeOrderBtn = document.getElementById("placeOrderBtn");
+
+        const fullName = document.getElementById("fullName").value.trim();
+        const phoneNumber = document.getElementById("phoneNumber").value.trim();
+        const address = document.getElementById("address").value.trim();
+        const city = document.getElementById("city").value.trim();
+        const postalCode = document.getElementById("postalCode").value.trim();
+        const paymentMethodInput = document.querySelector(
           'input[name="paymentMethod"]:checked',
-        ).value;
+        );
 
         if (!fullName || !phoneNumber || !address || !city || !postalCode) {
           alert("Please fill in all required fields");
           return;
         }
 
+        if (!paymentMethodInput) {
+          alert("Please select a payment method");
+          return;
+        }
+
+        const paymentMethod = paymentMethodInput.value;
+
+        if (paymentMethod === "card") {
+          const cardNumber = document.getElementById("cardNumber").value.trim();
+          const cardExpiry = document.getElementById("cardExpiry").value.trim();
+          const cardCVV = document.getElementById("cardCVV").value.trim();
+
+          if (!cardNumber || !cardExpiry || !cardCVV) {
+            alert("Please fill in all card details");
+            return;
+          }
+        }
+
         const subtotal = parseFloat(
-          localStorage.getItem("checkoutSubtotal") || 0,
+          localStorage.getItem("checkoutSubtotal") || "0",
         );
-        const tax = parseFloat(localStorage.getItem("checkoutTax") || 0);
-        const total = parseFloat(localStorage.getItem("checkoutTotal") || 0);
+        const tax = parseFloat(localStorage.getItem("checkoutTax") || "0");
+        const total = parseFloat(localStorage.getItem("checkoutTotal") || "0");
         const cartItems = JSON.parse(
           localStorage.getItem("foodDeliveryCartItems") || "[]",
         );
 
-        // Prepare order data for database
+        if (!Array.isArray(cartItems) || cartItems.length === 0) {
+          alert("Your cart is empty!");
+          window.location.href = "cart.html";
+          return;
+        }
+
+        const invalidItem = cartItems.find(
+          (item) => !item || !item.id || !item.restaurant_id,
+        );
+
+        if (invalidItem) {
+          console.error("Invalid cart item:", invalidItem);
+          alert(
+            "Cart data is invalid. Please remove the items and add them again.",
+          );
+          return;
+        }
+
+        if (!window.API || !window.API.orders) {
+          alert("Orders API is not configured correctly.");
+          console.error("Missing window.API.orders");
+          return;
+        }
+
         const orderData = {
           customer_name: fullName,
           phone_number: phoneNumber,
@@ -451,68 +510,84 @@
         };
 
         try {
-          // Save order to database
-          console.log(
-            "📤 Sending order data:",
-            JSON.stringify(orderData, null, 2),
-          );
+          placeOrderBtn.disabled = true;
+          placeOrderBtn.textContent = "Placing Order...";
 
-          const response = await fetch(
-            "../../backend/controllers/OrderController.php?action=create",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(orderData),
+          console.log("Sending order data:", orderData);
+
+          const response = await fetch(`${window.API.orders}?action=create`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             },
-          );
+            body: JSON.stringify(orderData),
+          });
 
-          console.log("📥 Response status:", response.status);
           const responseText = await response.text();
-          console.log("📥 Raw response:", responseText);
+          console.log("Raw order response:", responseText);
 
-          const result = JSON.parse(responseText);
+          let result;
+          try {
+            result = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error("JSON parse error:", parseError);
+            alert("Server returned invalid response. Check backend.");
+            return;
+          }
 
           if (result.success) {
-            // Store order details locally
+            const firstOrder =
+              Array.isArray(result.orders) && result.orders.length
+                ? result.orders[0]
+                : null;
+
             const orderDetails = {
-              orderId: result.order_id,
-              orderNumber: result.order_number,
+              orderId: firstOrder ? firstOrder.order_id : null,
+              orderNumber: firstOrder ? firstOrder.order_number : null,
               fullName,
               phoneNumber,
               address,
               city,
               postalCode,
               paymentMethod,
-              total: total,
+              total,
               items: cartItems,
               timestamp: new Date().toISOString(),
+              rawResult: result,
             };
 
             localStorage.setItem("lastOrder", JSON.stringify(orderDetails));
 
-            // Clear cart after successful order
             localStorage.removeItem("foodDeliveryCartCount");
             localStorage.removeItem("foodDeliveryCartItems");
+            localStorage.removeItem("checkoutItems");
+            localStorage.removeItem("checkoutRestaurantId");
+            localStorage.removeItem("checkoutRestaurantName");
             localStorage.removeItem("checkoutTotal");
             localStorage.removeItem("checkoutSubtotal");
             localStorage.removeItem("checkoutTax");
 
+            const successOrderNumber = firstOrder
+              ? firstOrder.order_number
+              : "Created";
+
             alert(
               "✅ Order placed successfully!\n\nOrder Number: " +
-                result.order_number,
+                successOrderNumber,
             );
             window.location.href = "dashboard.html";
           } else {
-            alert("Failed to place order: " + result.message);
+            console.error("Backend order failure:", result);
+            alert(
+              "Failed to place order: " + (result.message || "Unknown error"),
+            );
           }
         } catch (error) {
-          console.error("❌ Error placing order:", error);
-          alert(
-            "Error placing order. Please try again.\n\nCheck console for details: " +
-              error.message,
-          );
+          console.error("Order request failed:", error);
+          alert("Error placing order. Please try again.");
+        } finally {
+          placeOrderBtn.disabled = false;
+          placeOrderBtn.textContent = "Place Order";
         }
       }
     </script>

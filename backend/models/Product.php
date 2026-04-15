@@ -9,9 +9,20 @@ class Product {
 
     // ===== CUSTOMER SIDE =====
     public function getAll() {
-        $sql = "SELECT * FROM {$this->table} WHERE is_available = 1 ORDER BY is_popular DESC, created_at DESC";
+        $sql = "SELECT
+                    p.*,
+                    r.restaurant_name AS restaurant_name
+                FROM {$this->table} p
+                LEFT JOIN restaurants r ON p.restaurant_id = r.id
+                WHERE p.is_available = 1
+                ORDER BY p.is_popular DESC, p.id DESC";
+
         $result = $this->conn->query($sql);
         $products = [];
+
+        if (!$result) {
+            return $products;
+        }
 
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
@@ -22,10 +33,19 @@ class Product {
 
     public function getByCategory($category) {
         $stmt = $this->conn->prepare(
-            "SELECT * FROM {$this->table}
-             WHERE category = ? AND is_available = 1
-             ORDER BY created_at DESC"
+            "SELECT
+                p.*,
+                r.restaurant_name AS restaurant_name
+             FROM {$this->table} p
+             LEFT JOIN restaurants r ON p.restaurant_id = r.id
+             WHERE p.category = ? AND p.is_available = 1
+             ORDER BY p.id DESC"
         );
+
+        if (!$stmt) {
+            return [];
+        }
+
         $stmt->bind_param("s", $category);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -39,9 +59,21 @@ class Product {
     }
 
     public function getPopular() {
-        $sql = "SELECT * FROM {$this->table} WHERE is_popular = 1 AND is_available = 1 ORDER BY created_at DESC LIMIT 8";
+        $sql = "SELECT
+                    p.*,
+                    r.restaurant_name AS restaurant_name
+                FROM {$this->table} p
+                LEFT JOIN restaurants r ON p.restaurant_id = r.id
+                WHERE p.is_popular = 1 AND p.is_available = 1
+                ORDER BY p.id DESC
+                LIMIT 8";
+
         $result = $this->conn->query($sql);
         $products = [];
+
+        if (!$result) {
+            return $products;
+        }
 
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
@@ -51,7 +83,19 @@ class Product {
     }
 
     public function getById($id) {
-        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE id = ?");
+        $stmt = $this->conn->prepare(
+            "SELECT
+                p.*,
+                r.restaurant_name AS restaurant_name
+             FROM {$this->table} p
+             LEFT JOIN restaurants r ON p.restaurant_id = r.id
+             WHERE p.id = ?"
+        );
+
+        if (!$stmt) {
+            return null;
+        }
+
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -63,13 +107,26 @@ class Product {
         $keyword = "%" . $keyword . "%";
 
         $stmt = $this->conn->prepare(
-            "SELECT * FROM {$this->table}
-             WHERE is_available = 1
-             AND (name LIKE ? OR description LIKE ? OR category LIKE ?)
-             ORDER BY created_at DESC"
+            "SELECT
+                p.*,
+                r.restaurant_name AS restaurant_name
+             FROM {$this->table} p
+             LEFT JOIN restaurants r ON p.restaurant_id = r.id
+             WHERE p.is_available = 1
+             AND (
+                p.name LIKE ?
+                OR p.description LIKE ?
+                OR p.category LIKE ?
+                OR r.restaurant_name LIKE ?
+             )
+             ORDER BY p.id DESC"
         );
 
-        $stmt->bind_param("sss", $keyword, $keyword, $keyword);
+        if (!$stmt) {
+            return [];
+        }
+
+        $stmt->bind_param("ssss", $keyword, $keyword, $keyword, $keyword);
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -84,10 +141,19 @@ class Product {
     // ===== OWNER SIDE =====
     public function getByRestaurant($restaurantId) {
         $stmt = $this->conn->prepare(
-            "SELECT * FROM {$this->table}
-             WHERE restaurant_id = ?
-             ORDER BY created_at DESC"
+            "SELECT
+                p.*,
+                r.restaurant_name AS restaurant_name
+             FROM {$this->table} p
+             LEFT JOIN restaurants r ON p.restaurant_id = r.id
+             WHERE p.restaurant_id = ?
+             ORDER BY p.id DESC"
         );
+
+        if (!$stmt) {
+            return [];
+        }
+
         $stmt->bind_param("i", $restaurantId);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -106,6 +172,10 @@ class Product {
             (restaurant_id, name, description, price, category, image_url, is_available, is_popular)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         );
+
+        if (!$stmt) {
+            return false;
+        }
 
         $stmt->bind_param(
             "issdssii",
@@ -129,6 +199,10 @@ class Product {
              WHERE id = ? AND restaurant_id = ?"
         );
 
+        if (!$stmt) {
+            return false;
+        }
+
         $stmt->bind_param(
             "ssdssiiii",
             $name,
@@ -151,6 +225,10 @@ class Product {
              WHERE id = ? AND restaurant_id = ?"
         );
 
+        if (!$stmt) {
+            return false;
+        }
+
         $stmt->bind_param("ii", $id, $restaurantId);
         return $stmt->execute();
     }
@@ -161,6 +239,10 @@ class Product {
              SET is_available = ?
              WHERE id = ? AND restaurant_id = ?"
         );
+
+        if (!$stmt) {
+            return false;
+        }
 
         $stmt->bind_param("iii", $isAvailable, $id, $restaurantId);
         return $stmt->execute();

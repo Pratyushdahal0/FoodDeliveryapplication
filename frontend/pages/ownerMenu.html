@@ -20,9 +20,10 @@
 
         <div class="navbar-nav">
           <a href="ownerdashboard.html" class="nav-link">Dashboard</a>
-          <a href="#" class="nav-link">Order</a>
+          <a href="ownermanagement.html" class="nav-link">Orders</a>
           <a href="ownerMenu.html" class="nav-link active">Menu</a>
-          <a href="#" class="nav-link">Earnings</a>
+          <a href="ownerearning.html" class="nav-link">Earnings</a>
+          <a href="ownerSettings.html" class="nav-link">Settings</a>
         </div>
 
         <div class="navbar-right">
@@ -34,12 +35,10 @@
             <span></span>
             <span></span>
           </div>
-          <a href="landingpage.html">
-            <button class="login-btn" type="button">
-              <i class="fa-regular fa-user"></i>
-              Log Out
-            </button>
-          </a>
+          <button class="login-btn" type="button" onclick="logout()">
+            <i class="fa-regular fa-user"></i>
+            Log Out
+          </button>
         </div>
       </div>
     </nav>
@@ -308,6 +307,7 @@
     <!-- Help Button -->
     <button class="help-btn" type="button">?</button>
 
+    <script src="../js/shared.js"></script>
     <script src="../js/ownerMenu.js"></script>
   </body>
 </html>

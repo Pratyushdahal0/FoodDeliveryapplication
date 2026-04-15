@@ -59,5 +59,14 @@ class User {
 
         return false;
     }
+
+    public function getByEmail($email) {
+        $sql = "SELECT id, name, email, phone, address, role, created_at FROM users WHERE email = ? LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_assoc();
+    }
 }
 ?>

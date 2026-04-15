@@ -1,25 +1,136 @@
-const FAVORITES_KEY = 'foodDeliveryFavorites';
-
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+  const profile = await loadCurrentUser();
+  renderUserProfile(profile);
   setupDashboardTabs();
+  setupDashboardNavigation();
+  renderRecentOrders();
   loadFavoriteItems();
 });
 
-function getFavoriteIds() {
-  try {
-    return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
-  } catch {
-    return [];
+async function loadCurrentUser() {
+  let profile = getUserProfile();
+  const email = getCurrentUserEmail();
+
+  if (!profile && email) {
+    profile = await fetchUserProfile(email);
+    if (profile) {
+      profile.points = Number(profile.points ?? 850);
+      profile.orders = Number(profile.orders ?? 0);
+      profile.saved = Number(profile.saved ?? 25);
+      saveUserProfile(profile);
+    }
   }
+
+  if (!profile) {
+    profile = {
+      name: 'Guest',
+      email: email || '',
+      phone: '',
+      address: '',
+      role: 'customer',
+      points: 850,
+      orders: 0,
+      saved: 25
+    };
+  }
+
+  return profile;
 }
 
-function saveFavoriteIds(ids) {
-  localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids));
+function renderUserProfile(profile) {
+  const initials = profile.name
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word[0]?.toUpperCase())
+    .slice(0, 2)
+    .join('') || 'ME';
+
+  document.getElementById('welcomeAvatarText').textContent = initials;
+  document.getElementById('welcomeName').textContent = profile.name;
+  document.getElementById('welcomeEmail').textContent = profile.email;
+  document.getElementById('ordersCount').textContent = profile.orders;
+  document.getElementById('pointsCount').textContent = profile.points;
+  document.getElementById('savingsAmount').textContent = `$${profile.saved}`;
+
+  const nextThreshold = 1000;
+  const progress = Math.min(100, Math.round((profile.points / nextThreshold) * 100));
+  const pointsLeft = Math.max(0, nextThreshold - profile.points);
+
+  document.getElementById('rewardsSubtitle').textContent =
+    pointsLeft > 0
+      ? `You're ${pointsLeft} points away from a free meal!`
+      : 'You have enough points for a reward!';
+  document.getElementById('rewardsProgressText').textContent =
+    `${profile.points} / ${nextThreshold} points`;
+  document.getElementById('rewardsProgressFill').style.width = `${progress}%`;
 }
 
-function removeFavorite(productId) {
-  const ids = getFavoriteIds().filter(id => id !== String(productId));
-  saveFavoriteIds(ids);
+function renderRecentOrders() {
+  const orders = getRecentOrders();
+  const listElement = document.getElementById('recentOrdersList');
+  const emptyMsg = document.getElementById('noRecentOrdersMsg');
+
+  if (!listElement || !emptyMsg) return;
+
+  if (orders.length === 0) {
+    listElement.innerHTML = '';
+    emptyMsg.style.display = 'block';
+    return;
+  }
+
+  emptyMsg.style.display = 'none';
+  listElement.innerHTML = orders.map(createOrderCard).join('');
+
+  document.querySelectorAll('.view-order-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      window.location.href = 'track-order.html';
+    });
+  });
+}
+
+function getRecentOrders() {
+  const lastOrder = JSON.parse(localStorage.getItem('lastOrder') || 'null');
+  if (lastOrder) {
+    return [
+      {
+        id: lastOrder.orderId || lastOrder.orderNumber || '0000',
+        name: lastOrder.items?.[0]?.name || 'Recent Order',
+        restaurant: lastOrder.restaurantName || 'FoodExpress',
+        time: lastOrder.timestamp
+          ? new Date(lastOrder.timestamp).toLocaleString()
+          : 'Today',
+        total: lastOrder.total || 0,
+        status: lastOrder.status || 'Preparing'
+      }
+    ];
+  }
+  return [];
+}
+
+function createOrderCard(order) {
+  return `
+    <div class="order-item">
+      <img
+        class="order-img"
+        src="https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=120&q=80"
+        alt="${order.name}"
+      />
+      <div class="order-info">
+        <h4>${order.name}</h4>
+        <p class="restaurant">${order.restaurant}</p>
+        <p class="time">
+          <i class="fa-regular fa-clock"></i> ${order.time}
+        </p>
+      </div>
+      <div class="order-right">
+        <span class="order-price">$${Number(order.total).toFixed(2)}</span>
+        <button class="reorder-icon view-order-btn" aria-label="Track order">
+          <i class="fa-solid fa-location-dot"></i>
+        </button>
+      </div>
+    </div>
+  `;
 }
 
 async function loadFavoriteItems() {
@@ -37,7 +148,9 @@ async function loadFavoriteItems() {
 
   try {
     const products = await getAllProducts();
-    const favorites = products.filter(product => favoriteIds.includes(String(product.id)));
+    const favorites = products.filter((product) =>
+      favoriteIds.includes(String(product.id))
+    );
 
     favoritesList.innerHTML = '';
 
@@ -47,7 +160,7 @@ async function loadFavoriteItems() {
     }
 
     noFavoritesMsg.style.display = 'none';
-    favorites.forEach(product => {
+    favorites.forEach((product) => {
       favoritesList.appendChild(createFavoriteCard(product));
     });
   } catch (error) {
@@ -78,9 +191,9 @@ function createFavoriteCard(product) {
     </div>
   `;
 
-  const removeBtn = card.querySelector('.remove-favorite');
-  removeBtn.addEventListener('click', () => {
-    removeFavorite(product.id);
+  card.querySelector('.remove-favorite').addEventListener('click', () => {
+    const updated = getFavoriteIds().filter((id) => id !== String(product.id));
+    saveFavoriteIds(updated);
     loadFavoriteItems();
   });
 
@@ -110,3 +223,42 @@ function setupDashboardTabs() {
     loadFavoriteItems();
   });
 }
+
+function setupDashboardNavigation() {
+  document.getElementById('viewRewardsBtn')?.addEventListener('click', () => {
+    window.location.href = 'rewards.html';
+  });
+
+  document.getElementById('actionTrackOrder')?.addEventListener('click', () => {
+    window.location.href = 'track-order.html';
+  });
+
+  document.getElementById('actionRedeemPoints')?.addEventListener('click', () => {
+    window.location.href = 'redeem-points.html';
+  });
+
+  document.getElementById('actionEditProfile')?.addEventListener('click', () => {
+    window.location.href = 'edit-profile.html';
+  });
+
+  document.getElementById('actionAddresses')?.addEventListener('click', () => {
+    window.location.href = 'addresses.html';
+  });
+
+  document.getElementById('actionPaymentMethods')?.addEventListener('click', () => {
+    window.location.href = 'payment-methods.html';
+  });
+
+  document.getElementById('actionNotifications')?.addEventListener('click', () => {
+    window.location.href = 'notifications.html';
+  });
+
+  document.getElementById('actionSettings')?.addEventListener('click', () => {
+    window.location.href = 'settings.html';
+  });
+
+  document.getElementById('actionLogout')?.addEventListener('click', () => {
+    logout();
+  });
+}
+

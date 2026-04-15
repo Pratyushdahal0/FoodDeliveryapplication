@@ -61,27 +61,27 @@
     <div class="dashboard-container">
       <!-- WELCOME CARD -->
       <div class="welcome-card">
-        <div class="avatar">
-          JD
+        <div class="avatar" id="welcomeAvatar">
+          <span id="welcomeAvatarText">JD</span>
           <div class="avatar-online"></div>
         </div>
 
         <div class="welcome-info">
-          <h2>Welcome back, <span>Pratyush</span>!</h2>
-          <p class="email">pratyushdahal33@gmail.com</p>
+          <h2>Welcome back, <span id="welcomeName">Pratyush</span>!</h2>
+          <p class="email" id="welcomeEmail">pratyushdahal33@gmail.com</p>
         </div>
 
         <div class="welcome-stats">
           <div class="stat">
-            <h3>127</h3>
+            <h3 id="ordersCount">127</h3>
             <p>Orders</p>
           </div>
           <div class="stat">
-            <h3>850</h3>
+            <h3 id="pointsCount">850</h3>
             <p>Points</p>
           </div>
           <div class="stat">
-            <h3>$25</h3>
+            <h3 id="savingsAmount">$25</h3>
             <p>Saved</p>
           </div>
         </div>
@@ -97,13 +97,15 @@
               <h3>Rewards Program</h3>
               <span class="rewards-icon">🎁</span>
             </div>
-            <p>You're 150 points away from a free meal!</p>
+            <p id="rewardsSubtitle">You're 150 points away from a free meal!</p>
             <div class="progress-bar">
-              <div class="progress-fill"></div>
+              <div class="progress-fill" id="rewardsProgressFill"></div>
             </div>
             <div class="rewards-footer">
-              <span>850 / 1000 points</span>
-              <button class="rewards-btn">View Rewards</button>
+              <span id="rewardsProgressText">850 / 1000 points</span>
+              <button class="rewards-btn" id="viewRewardsBtn">
+                View Rewards
+              </button>
             </div>
           </div>
 
@@ -119,74 +121,10 @@
             </div>
 
             <div id="ordersContent">
-              <!-- Order 1 -->
-              <div class="order-item">
-                <img
-                  class="order-img"
-                  src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=120&q=80"
-                  alt="Burger"
-                />
-                <div class="order-info">
-                  <h4>Gourmet Burger & Fries</h4>
-                  <p class="restaurant">Burger Place</p>
-                  <p class="time">
-                    <i class="fa-regular fa-clock"></i> Today, 2:30 PM
-                  </p>
-                </div>
-                <div class="order-right">
-                  <span class="order-price">$24.99</span>
-                  <button class="reorder-icon">
-                    <i class="fa-solid fa-rotate-right"></i>
-                  </button>
-                  <button class="reorder-btn">Reorder</button>
-                </div>
-              </div>
-
-              <!-- Order 2 -->
-              <div class="order-item">
-                <img
-                  class="order-img"
-                  src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=120&q=80"
-                  alt="Pizza"
-                />
-                <div class="order-info">
-                  <h4>Margherita Pizza</h4>
-                  <p class="restaurant">Italian Bistro</p>
-                  <p class="time">
-                    <i class="fa-regular fa-clock"></i> Yesterday, 7:15 PM
-                  </p>
-                </div>
-                <div class="order-right">
-                  <span class="order-price">$18.99</span>
-                  <button class="reorder-icon">
-                    <i class="fa-solid fa-rotate-right"></i>
-                  </button>
-                  <button class="reorder-btn">Reorder</button>
-                </div>
-              </div>
-
-              <!-- Order 3 -->
-              <div class="order-item">
-                <img
-                  class="order-img"
-                  src="https://images.unsplash.com/photo-1553621042-f6e147245754?w=120&q=80"
-                  alt="Sushi"
-                />
-                <div class="order-info">
-                  <h4>Sushi Platter</h4>
-                  <p class="restaurant">Tokyo Sushi</p>
-                  <p class="time">
-                    <i class="fa-regular fa-clock"></i> Apr 2, 6:45 PM
-                  </p>
-                </div>
-                <div class="order-right">
-                  <span class="order-price">$32.99</span>
-                  <button class="reorder-icon">
-                    <i class="fa-solid fa-rotate-right"></i>
-                  </button>
-                  <button class="reorder-btn">Reorder</button>
-                </div>
-              </div>
+              <div id="recentOrdersList"></div>
+              <p id="noRecentOrdersMsg" class="empty-msg" style="display: none">
+                No recent orders yet. Place an order to see it here.
+              </p>
             </div>
             <button class="view-all-btn">
               View All Orders <i class="fa-solid fa-chevron-right"></i>
@@ -221,7 +159,7 @@
               <i class="fa-solid fa-chevron-right action-arrow"></i>
             </div>
 
-            <div class="action-item">
+            <div class="action-item" id="actionTrackOrder">
               <div class="action-icon dark">
                 <i class="fa-solid fa-box"></i>
               </div>
@@ -229,7 +167,7 @@
               <i class="fa-solid fa-chevron-right action-arrow"></i>
             </div>
 
-            <div class="action-item">
+            <div class="action-item" id="actionRedeemPoints">
               <div class="action-icon dark">
                 <i class="fa-solid fa-gift"></i>
               </div>
@@ -242,27 +180,27 @@
           <div class="card account-card">
             <h3>Account</h3>
 
-            <div class="account-item">
+            <div class="account-item" id="actionEditProfile">
               <i class="fa-regular fa-user"></i>
               Edit Profile
             </div>
-            <div class="account-item">
+            <div class="account-item" id="actionAddresses">
               <i class="fa-solid fa-location-dot"></i>
               Addresses
             </div>
-            <div class="account-item">
+            <div class="account-item" id="actionPaymentMethods">
               <i class="fa-regular fa-credit-card"></i>
               Payment Methods
             </div>
-            <div class="account-item">
+            <div class="account-item" id="actionNotifications">
               <i class="fa-regular fa-bell"></i>
               Notifications
             </div>
-            <div class="account-item">
+            <div class="account-item" id="actionSettings">
               <i class="fa-solid fa-gear"></i>
               Settings
             </div>
-            <div class="account-item logout">
+            <div class="account-item logout" id="actionLogout">
               <i class="fa-solid fa-right-from-bracket"></i>
               Log Out
             </div>
@@ -297,7 +235,7 @@
         <div class="footer-col">
           <h4>Quick Links</h4>
           <ul>
-            <li><a href="landingpage.html">Home</a></li>
+            <li><a href="dashboard.html">Home</a></li>
             <li><a href="shop.html">Our Menu</a></li>
             <li><a href="food.html">Food</a></li>
           </ul>
@@ -327,25 +265,8 @@
       <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
     </footer>
 
-    <!-- LOGOUT FUNCTION -->
-    <script>
-      function logout() {
-        // Clear all login and cart data
-        localStorage.removeItem("isLoggedIn");
-        localStorage.removeItem("userEmail");
-        localStorage.removeItem("foodDeliveryCartCount");
-        localStorage.removeItem("foodDeliveryCartItems");
-        localStorage.removeItem("checkoutTotal");
-        localStorage.removeItem("checkoutSubtotal");
-        localStorage.removeItem("checkoutTax");
-        localStorage.removeItem("lastOrder");
-
-        alert("You have been logged out");
-        window.location.href = "landingpage.html";
-      }
-    </script>
-
     <script src="../js/api/productApi2.js"></script>
+    <script src="../js/shared.js"></script>
     <script src="../js/dashboard.js"></script>
   </body>
 </html>

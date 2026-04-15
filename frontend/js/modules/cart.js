@@ -1,4 +1,3 @@
-// Shared cart badge helper
 const CART_COUNT_KEY = 'foodDeliveryCartCount';
 const CART_ITEMS_KEY = 'foodDeliveryCartItems';
 
@@ -12,9 +11,10 @@ function saveCartCountToStorage(count) {
 
 function getCartItemsFromStorage() {
   try {
-    return JSON.parse(localStorage.getItem(CART_ITEMS_KEY) || '[]');
-  } catch (e) {
-    console.error('Error parsing cart items:', e);
+    const items = JSON.parse(localStorage.getItem(CART_ITEMS_KEY) || '[]');
+    return Array.isArray(items) ? items : [];
+  } catch (error) {
+    console.error('Error parsing cart items:', error);
     return [];
   }
 }
@@ -23,42 +23,52 @@ function saveCartItemsToStorage(items) {
   localStorage.setItem(CART_ITEMS_KEY, JSON.stringify(items));
 }
 
-function addItemToCart(product) {
-  const items = getCartItemsFromStorage();
+function normalizeCartProduct(product) {
+  return {
+    id: String(product.id),
+    name: product.name || 'Unnamed Item',
+    price: Number(product.price || 0),
+    image_url: product.image_url || 'https://via.placeholder.com/80',
+    quantity: Number(product.quantity || 1),
+    restaurant_id: String(product.restaurant_id || ''),
+    restaurant_name: product.restaurant_name || 'Unknown Restaurant',
+  };
+}
 
-  // match by both product id and restaurant_id
-  const existingItem = items.find(
-    item =>
-      String(item.id) === String(product.id) &&
-      String(item.restaurant_id) === String(product.restaurant_id)
+function addItemToCart(product) {
+  const normalized = normalizeCartProduct(product);
+
+  if (!normalized.id || !normalized.restaurant_id) {
+    console.error('Cannot add item without id and restaurant_id:', product);
+    window.alert('Unable to add item: restaurant information is missing.');
+    return false;
+  }
+
+  const items = getCartItemsFromStorage();
+  const existing = items.find(
+    (item) =>
+      String(item.id) === normalized.id &&
+      String(item.restaurant_id) === normalized.restaurant_id
   );
 
-  if (existingItem) {
-    existingItem.quantity += 1;
+  if (existing) {
+    existing.quantity += normalized.quantity;
   } else {
-    items.push({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image_url: product.image_url,
-      quantity: 1,
-      restaurant_id: product.restaurant_id
-    });
+    items.push(normalized);
   }
 
   saveCartItemsToStorage(items);
   updateCartCount();
-  console.log('Item added to cart:', product.name, 'restaurant_id:', product.restaurant_id);
+  return true;
 }
 
 function removeItemFromCart(productId, restaurantId = null) {
   const items = getCartItemsFromStorage();
-
   const filtered =
     restaurantId === null
-      ? items.filter(item => String(item.id) !== String(productId))
+      ? items.filter((item) => String(item.id) !== String(productId))
       : items.filter(
-          item =>
+          (item) =>
             !(
               String(item.id) === String(productId) &&
               String(item.restaurant_id) === String(restaurantId)
@@ -67,44 +77,29 @@ function removeItemFromCart(productId, restaurantId = null) {
 
   saveCartItemsToStorage(filtered);
   updateCartCount();
-  console.log('Item removed from cart:', productId, 'restaurant_id:', restaurantId);
 }
 
 function updateCartCount() {
   const items = getCartItemsFromStorage();
-  const count = items.reduce((total, item) => total + item.quantity, 0);
+  const count = items.reduce(
+    (total, item) => total + Number(item.quantity || 0),
+    0
+  );
   saveCartCountToStorage(count);
   updateCartBadge(count);
 }
 
 function updateCartBadge(count) {
   const badge = document.getElementById('cartCount');
-  if (!badge) {
-    console.warn('Cart badge element not found');
-    return;
-  }
+  if (!badge) return;
 
-  badge.textContent = count;
-  if (count > 0) {
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
-  }
-
-  console.log('Cart badge updated to:', count);
+  badge.textContent = String(count);
+  badge.style.display = count > 0 ? 'flex' : 'none';
 }
 
 function setupNavbarCartIcon() {
   const navbarRight = document.querySelector('.navbar-right');
-  if (!navbarRight) {
-    console.warn('navbar-right element not found');
-    return;
-  }
-
-  if (document.getElementById('cartButton')) {
-    console.log('Cart button already exists');
-    return;
-  }
+  if (!navbarRight || document.getElementById('cartButton')) return;
 
   const cartButton = document.createElement('a');
   cartButton.href = 'cart.html';
@@ -115,35 +110,23 @@ function setupNavbarCartIcon() {
     <span class="cart-count" id="cartCount">0</span>
   `;
 
-  cartButton.addEventListener('click', function (event) {
-    const currentCount = getCartCountFromStorage();
-    if (currentCount === 0) {
+  cartButton.addEventListener('click', (event) => {
+    if (getCartCountFromStorage() === 0) {
       event.preventDefault();
       window.alert('Your cart is empty. Add items first!');
     }
   });
 
-  if (navbarRight.children.length === 0) {
-    navbarRight.appendChild(cartButton);
-  } else {
-    navbarRight.insertBefore(cartButton, navbarRight.firstChild);
-  }
-
-  console.log('Cart button added to navbar');
+  navbarRight.insertBefore(cartButton, navbarRight.firstChild);
 }
 
 function initializeCartCount() {
-  console.log('Initializing cart count');
   setupNavbarCartIcon();
-  const count = getCartCountFromStorage();
-  updateCartBadge(count);
-  console.log('Cart initialized with count:', count);
+  updateCartCount();
 }
 
 function incrementCartCount(amount = 1) {
-  const oldCount = getCartCountFromStorage();
-  const nextCount = oldCount + amount;
-  console.log('Incrementing cart count from', oldCount, 'to', nextCount);
+  const nextCount = getCartCountFromStorage() + amount;
   saveCartCountToStorage(nextCount);
   updateCartBadge(nextCount);
   return nextCount;
@@ -161,14 +144,8 @@ window.setupNavbarCartIcon = setupNavbarCartIcon;
 window.initializeCartCount = initializeCartCount;
 window.incrementCartCount = incrementCartCount;
 
-console.log('[cart.js] Cart functions registered globally');
-
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('[cart.js] DOM ready, initializing cart');
-    initializeCartCount();
-  });
+  document.addEventListener('DOMContentLoaded', initializeCartCount);
 } else {
-  console.log('[cart.js] DOM already ready, initializing cart immediately');
   initializeCartCount();
 }
