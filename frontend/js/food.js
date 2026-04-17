@@ -1,388 +1,139 @@
 // ══════════════════════════
 // food.js
-// Food page interactions
+// Premium UI version with filter drawer + pill filters
 // ══════════════════════════
 
-const FAVORITES_KEY = 'foodDeliveryFavorites';
-const DEFAULT_IMAGE = 'https://via.placeholder.com/600x400?text=Food';
-const DEFAULT_RESTAURANT_ID = 101;
-const DEFAULT_RESTAURANT_NAME = 'FoodExpress Kitchen';
+console.log("NEW FOOD JS LOADED - PREMIUM FILTER VERSION");
+
+const FOOD_FAVORITES_KEY = 'foodDeliveryFavorites';
+const DEFAULT_IMAGE =
+  'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80';
 
 let allMenuItems = [];
 let currentCategory = 'all';
 let currentDiet = 'all';
 let currentSearch = '';
-
-const staticMenuItems = [
-  {
-    id: 'b1',
-    name: 'Fluffy Pancakes',
-    description: 'Stack of 3 fluffy pancakes with maple syrup',
-    price: 9.99,
-    image_url:
-      'https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=600&h=400&fit=crop',
-    rating: 4.8,
-    delivery_time: '12 min',
-    category: 'breakfast',
-    diet: 'veggie',
-    is_popular: true,
-    restaurant_id: 201,
-    restaurant_name: 'Sunrise Cafe',
-  },
-  {
-    id: 'b2',
-    name: 'Avocado Toast',
-    description: 'Fresh avocado on artisan bread with egg',
-    price: 10.99,
-    image_url:
-      'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=600&h=400&fit=crop',
-    rating: 4.7,
-    delivery_time: '8 min',
-    category: 'breakfast',
-    diet: 'veggie',
-    is_popular: false,
-    restaurant_id: 201,
-    restaurant_name: 'Sunrise Cafe',
-  },
-  {
-    id: 'b3',
-    name: 'Breakfast Burrito',
-    description: 'Eggs, cheese, beans, and salsa wrapped',
-    price: 12.99,
-    image_url:
-      'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=600&h=400&fit=crop',
-    rating: 4.6,
-    delivery_time: '15 min',
-    category: 'breakfast',
-    diet: 'none',
-    is_popular: false,
-    restaurant_id: 202,
-    restaurant_name: 'Morning Wraps',
-  },
-  {
-    id: 'b4',
-    name: 'French Toast',
-    description: 'Brioche bread with berries and cream',
-    price: 11.99,
-    image_url:
-      'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=600&h=400&fit=crop',
-    rating: 4.9,
-    delivery_time: '15 min',
-    category: 'breakfast',
-    diet: 'veggie',
-    is_popular: false,
-    restaurant_id: 201,
-    restaurant_name: 'Sunrise Cafe',
-  },
-  {
-    id: 'b5',
-    name: 'Eggs Benedict',
-    description: 'Poached eggs with hollandaise sauce',
-    price: 13.99,
-    image_url:
-      'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?w=600&h=400&fit=crop',
-    rating: 4.8,
-    delivery_time: '20 min',
-    category: 'breakfast',
-    diet: 'none',
-    is_popular: false,
-    restaurant_id: 203,
-    restaurant_name: 'Brunch House',
-  },
-  {
-    id: 'b6',
-    name: 'Acai Bowl',
-    description: 'Superfood bowl with fresh fruits and granola',
-    price: 12.99,
-    image_url:
-      'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=600&h=400&fit=crop',
-    rating: 4.7,
-    delivery_time: '8 min',
-    category: 'breakfast',
-    diet: 'vegan',
-    is_popular: false,
-    restaurant_id: 204,
-    restaurant_name: 'Green Spoon',
-  },
-  {
-    id: 'l1',
-    name: 'Classic Burger',
-    description: 'Juicy beef patty with lettuce and tomato',
-    price: 14.99,
-    image_url:
-      'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=400&fit=crop',
-    rating: 4.9,
-    delivery_time: '20 min',
-    category: 'lunch',
-    diet: 'none',
-    is_popular: true,
-    restaurant_id: 205,
-    restaurant_name: 'Burger Barn',
-  },
-  {
-    id: 'l2',
-    name: 'Caesar Salad',
-    description: 'Crispy romaine with parmesan and croutons',
-    price: 11.99,
-    image_url:
-      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&h=400&fit=crop',
-    rating: 4.5,
-    delivery_time: '10 min',
-    category: 'lunch',
-    diet: 'veggie',
-    is_popular: false,
-    restaurant_id: 204,
-    restaurant_name: 'Green Spoon',
-  },
-  {
-    id: 'l3',
-    name: 'Pasta Carbonara',
-    description: 'Creamy pasta with pancetta and egg yolk',
-    price: 17.99,
-    image_url:
-      'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=600&h=400&fit=crop',
-    rating: 4.9,
-    delivery_time: '25 min',
-    category: 'lunch',
-    diet: 'none',
-    is_popular: false,
-    restaurant_id: 206,
-    restaurant_name: 'Pasta Point',
-  },
-  {
-    id: 'd1',
-    name: 'Margherita Pizza',
-    description: 'Classic tomato base with fresh mozzarella',
-    price: 13.99,
-    image_url:
-      'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&h=400&fit=crop',
-    rating: 4.8,
-    delivery_time: '30 min',
-    category: 'dinner',
-    diet: 'none',
-    is_popular: true,
-    restaurant_id: 207,
-    restaurant_name: 'Pizza Corner',
-  },
-  {
-    id: 'd2',
-    name: 'Sushi Rolls',
-    description: 'Fresh salmon and tuna with seasoned rice',
-    price: 16.99,
-    image_url:
-      'https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=600&h=400&fit=crop',
-    rating: 4.9,
-    delivery_time: '20 min',
-    category: 'dinner',
-    diet: 'none',
-    is_popular: false,
-    restaurant_id: 208,
-    restaurant_name: 'Tokyo Bites',
-  },
-  {
-    id: 'd3',
-    name: 'Buddha Bowl',
-    description: 'Quinoa, roasted veggies and tahini dressing',
-    price: 14.99,
-    image_url:
-      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&h=400&fit=crop',
-    rating: 4.6,
-    delivery_time: '18 min',
-    category: 'dinner',
-    diet: 'vegan',
-    is_popular: false,
-    restaurant_id: 204,
-    restaurant_name: 'Green Spoon',
-  },
-  {
-    id: 'ds1',
-    name: 'Chocolate Lava Cake',
-    description: 'Warm chocolate cake with molten center',
-    price: 7.99,
-    image_url:
-      'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=600&h=400&fit=crop',
-    rating: 4.8,
-    delivery_time: '12 min',
-    category: 'desserts',
-    diet: 'veggie',
-    is_popular: true,
-    restaurant_id: 209,
-    restaurant_name: 'Sweet Crumbs',
-  },
-  {
-    id: 'ds2',
-    name: 'Fruit Parfait',
-    description: 'Fresh fruit layered with yogurt and granola',
-    price: 6.99,
-    image_url:
-      'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600&h=400&fit=crop',
-    rating: 4.5,
-    delivery_time: '9 min',
-    category: 'desserts',
-    diet: 'veggie',
-    is_popular: false,
-    restaurant_id: 209,
-    restaurant_name: 'Sweet Crumbs',
-  },
-  {
-    id: 'bv1',
-    name: 'Iced Coffee',
-    description: 'Cold brewed coffee served over ice',
-    price: 4.99,
-    image_url:
-      'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&h=400&fit=crop',
-    rating: 4.7,
-    delivery_time: '5 min',
-    category: 'beverages',
-    diet: 'vegan',
-    is_popular: false,
-    restaurant_id: 201,
-    restaurant_name: 'Sunrise Cafe',
-  },
-  {
-    id: 'bv2',
-    name: 'Fresh Orange Juice',
-    description: 'Freshly squeezed orange juice',
-    price: 5.49,
-    image_url:
-      'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=600&h=400&fit=crop',
-    rating: 4.6,
-    delivery_time: '6 min',
-    category: 'beverages',
-    diet: 'vegan',
-    is_popular: false,
-    restaurant_id: 204,
-    restaurant_name: 'Green Spoon',
-  },
-];
+let currentPriceFilter = 'all';
+let currentRatingFilter = 'all';
+let currentDeliveryFilter = 'all';
+let currentSort = 'recommended';
+let currentPopularOnly = false;
 
 function normalizeMenuItem(item, index = 0) {
-  const normalizedCategory = normalizeCategory(item.category, item.name);
-  const normalizedDiet = normalizeDiet(item);
-  const id = String(item.id ?? `menu-${index + 1}`);
-
   return {
-    id,
+    id: String(item.id ?? `menu-${index + 1}`),
     name: item.name || 'Untitled Item',
     description: item.description || 'Freshly prepared dish',
     price: Number(item.price ?? 0),
-    image_url: item.image_url || item.image || DEFAULT_IMAGE,
-    rating: Number(item.rating ?? 4.6).toFixed(1),
-    delivery_time: item.delivery_time || item.deliveryTime || '20 min',
-    category: normalizedCategory,
-    diet: normalizedDiet,
-    is_popular: Boolean(item.is_popular ?? item.isPopular),
-    restaurant_id: String(
-      item.restaurant_id ??
-        item.restaurantId ??
-        item.owner_restaurant_id ??
-        DEFAULT_RESTAURANT_ID
-    ),
+    image_url: item.image_url || DEFAULT_IMAGE,
+    rating: Number(item.rating ?? 4.5),
+    delivery_time: item.delivery_time || '30 min',
+    category: String(item.category || '').trim().toLowerCase(),
+    originalCategory: String(item.category || '').trim().toLowerCase(),
+    diet: normalizeDiet(item),
+    is_popular: Number(item.is_popular) === 1 || item.is_popular === true,
+    restaurant_id: String(item.restaurant_id ?? ''),
     restaurant_name:
       item.restaurant_name ||
-      item.restaurantName ||
-      item.shop_name ||
-      DEFAULT_RESTAURANT_NAME,
+      item.restaurant ||
+      item.restaurant_title ||
+      'Unknown Restaurant',
     distance: item.distance || `${Math.floor(Math.random() * 500) + 200}`,
   };
 }
 
-function normalizeCategory(category, name = '') {
-  const raw = String(category || '').trim().toLowerCase();
-
-  if (
-    ['breakfast', 'lunch', 'dinner', 'desserts', 'beverages'].includes(raw)
-  ) {
-    return raw;
-  }
-
-  const byKeyword = `${raw} ${String(name).toLowerCase()}`;
-
-  if (
-    /pancake|toast|breakfast|benedict|acai|omelette|burrito/.test(byKeyword)
-  ) {
-    return 'breakfast';
-  }
-  if (/burger|salad|sandwich|wrap|taco|lunch|pasta/.test(byKeyword)) {
-    return 'lunch';
-  }
-  if (/pizza|sushi|steak|bowl|dinner/.test(byKeyword)) {
-    return 'dinner';
-  }
-  if (/cake|dessert|cookie|ice cream|parfait|sweet/.test(byKeyword)) {
-    return 'desserts';
-  }
-  if (/coffee|juice|tea|smoothie|drink|beverage/.test(byKeyword)) {
-    return 'beverages';
-  }
-
-  return 'lunch';
-}
-
 function normalizeDiet(item) {
-  if (item.diet) {
-    const diet = String(item.diet).toLowerCase();
-    if (['veggie', 'vegan', 'none'].includes(diet)) return diet;
+  const explicitDiet = String(item.diet || '').toLowerCase();
+  if (['veggie', 'vegan', 'none'].includes(explicitDiet)) {
+    return explicitDiet;
   }
 
-  const text = `${item.name || ''} ${item.description || ''}`.toLowerCase();
+  const text = `${item.name || ''} ${item.description || ''} ${item.category || ''}`.toLowerCase();
 
   if (/vegan/.test(text)) return 'vegan';
-  if (!/(beef|chicken|salmon|tuna|bacon|fish|pork|ham|meat)/i.test(text)) {
+
+  if (
+    !/(beef|chicken|salmon|tuna|bacon|fish|pork|ham|meat|burger|tikka|sushi)/i.test(
+      text
+    )
+  ) {
     return 'veggie';
   }
+
   return 'none';
 }
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+function getDeliveryMinutes(deliveryTime) {
+  const match = String(deliveryTime || '').match(/\d+/);
+  return match ? Number(match[0]) : 999;
 }
 
-function getFavoriteIds() {
+function foodGetFavoriteIds() {
   try {
-    return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+    return JSON.parse(localStorage.getItem(FOOD_FAVORITES_KEY) || '[]');
   } catch {
     return [];
   }
 }
 
-function saveFavoriteIds(ids) {
-  localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids.map(String)));
+function foodSaveFavoriteIds(ids) {
+  localStorage.setItem(FOOD_FAVORITES_KEY, JSON.stringify(ids.map(String)));
 }
 
-function isFavorite(productId) {
-  return getFavoriteIds().includes(String(productId));
+function foodIsFavorite(productId) {
+  return foodGetFavoriteIds().includes(String(productId));
 }
 
-function toggleFavorite(productId) {
+function foodToggleFavorite(productId) {
   const id = String(productId);
-  const ids = getFavoriteIds();
+  const ids = foodGetFavoriteIds();
   const index = ids.indexOf(id);
 
   if (index === -1) {
     ids.push(id);
-  } else {
-    ids.splice(index, 1);
+    foodSaveFavoriteIds(ids);
+    return true;
   }
 
-  saveFavoriteIds(ids);
-  return index === -1;
+  ids.splice(index, 1);
+  foodSaveFavoriteIds(ids);
+  return false;
+}
+
+function matchesPrice(price) {
+  if (currentPriceFilter === 'all') return true;
+  if (currentPriceFilter === 'under10') return price < 10;
+  if (currentPriceFilter === '10to20') return price >= 10 && price <= 20;
+  if (currentPriceFilter === '20to50') return price > 20 && price <= 50;
+  if (currentPriceFilter === 'above50') return price > 50;
+  return true;
+}
+
+function matchesRating(rating) {
+  if (currentRatingFilter === 'all') return true;
+  return rating >= Number(currentRatingFilter);
+}
+
+function matchesDelivery(deliveryTime) {
+  if (currentDeliveryFilter === 'all') return true;
+  return getDeliveryMinutes(deliveryTime) <= Number(currentDeliveryFilter);
 }
 
 function getFilteredItems() {
-  return allMenuItems.filter((item) => {
+  const filtered = allMenuItems.filter((item) => {
     const matchesCategory =
-      currentCategory === 'all' || item.category === currentCategory;
+      currentCategory === 'all' ||
+      String(item.originalCategory || '').toLowerCase() === currentCategory;
 
     const matchesDiet =
       currentDiet === 'all' ||
       (currentDiet === 'veggie' && item.diet === 'veggie') ||
       (currentDiet === 'vegan' && item.diet === 'vegan');
+
+    const matchesPopular = !currentPopularOnly || item.is_popular === true;
+    const matchesPriceRange = matchesPrice(Number(item.price || 0));
+    const matchesMinRating = matchesRating(Number(item.rating || 0));
+    const matchesDeliveryTime = matchesDelivery(item.delivery_time);
 
     const query = currentSearch.trim().toLowerCase();
     const matchesSearch =
@@ -390,21 +141,75 @@ function getFilteredItems() {
       item.name.toLowerCase().includes(query) ||
       item.description.toLowerCase().includes(query) ||
       item.restaurant_name.toLowerCase().includes(query) ||
-      item.category.toLowerCase().includes(query);
+      String(item.originalCategory || '').toLowerCase().includes(query);
 
-    return matchesCategory && matchesDiet && matchesSearch;
+    return (
+      matchesCategory &&
+      matchesDiet &&
+      matchesPopular &&
+      matchesPriceRange &&
+      matchesMinRating &&
+      matchesDeliveryTime &&
+      matchesSearch
+    );
   });
+
+  return sortItems(filtered);
+}
+
+function sortItems(items) {
+  const sorted = [...items];
+
+  if (currentSort === 'priceLow') {
+    sorted.sort((a, b) => a.price - b.price);
+  } else if (currentSort === 'priceHigh') {
+    sorted.sort((a, b) => b.price - a.price);
+  } else if (currentSort === 'ratingHigh') {
+    sorted.sort((a, b) => b.rating - a.rating);
+  } else if (currentSort === 'fastest') {
+    sorted.sort(
+      (a, b) => getDeliveryMinutes(a.delivery_time) - getDeliveryMinutes(b.delivery_time)
+    );
+  } else if (currentSort === 'popular') {
+    sorted.sort((a, b) => Number(b.is_popular) - Number(a.is_popular));
+  } else {
+    sorted.sort((a, b) => {
+      if (Number(b.is_popular) !== Number(a.is_popular)) {
+        return Number(b.is_popular) - Number(a.is_popular);
+      }
+      return b.rating - a.rating;
+    });
+  }
+
+  return sorted;
+}
+
+function updateResultsSummary(items) {
+  const summary = document.getElementById('resultsSummary');
+  if (!summary) return;
+
+  const parts = [];
+  if (currentCategory !== 'all') parts.push(currentCategory);
+  if (currentDiet !== 'all') parts.push(currentDiet === 'veggie' ? 'vegetarian' : currentDiet);
+  if (currentPopularOnly) parts.push('popular');
+  if (currentPriceFilter !== 'all') parts.push('price filtered');
+  if (currentRatingFilter !== 'all') parts.push(`${currentRatingFilter}+ rated`);
+
+  const label = parts.length ? `Filtered by ${parts.join(', ')}` : 'Showing all items';
+  summary.textContent = `${label} • ${items.length} item${items.length !== 1 ? 's' : ''}`;
 }
 
 function renderMenuItems(items) {
   const grid = document.getElementById('menuGrid');
   if (!grid) return;
 
+  updateResultsSummary(items);
+
   if (!items.length) {
     grid.innerHTML = `
       <div class="empty-menu-state">
         <h3>No items found</h3>
-        <p>Try changing the category, diet filter, or search term.</p>
+        <p>Try changing the filters, sort, category, or search term.</p>
       </div>
     `;
     return;
@@ -412,7 +217,8 @@ function renderMenuItems(items) {
 
   grid.innerHTML = items
     .map((item) => {
-      const favorite = isFavorite(item.id);
+      const favorite = foodIsFavorite(item.id);
+
       return `
         <div class="menu-card" data-product-id="${escapeHtml(item.id)}">
           <div class="card-img">
@@ -434,19 +240,20 @@ function renderMenuItems(items) {
               type="button"
               data-action="favorite"
               data-product-id="${escapeHtml(item.id)}"
-              aria-label="Toggle favourite"
             >${favorite ? '♥' : '♡'}</button>
           </div>
+
           <div class="card-body">
             <div class="card-name">${escapeHtml(item.name)}</div>
+
             <div class="card-desc">${escapeHtml(item.description)}</div>
-            <div class="card-restaurant">from ${escapeHtml(
-              item.restaurant_name
-            )}</div>
+
+            <div class="card-restaurant">
+              from ${escapeHtml(item.restaurant_name)}
+            </div>
+
             <div class="card-meta">
-              <span><span class="meta-star">★</span> ${escapeHtml(
-                item.rating
-              )}</span>
+              <span><span class="meta-star">★</span> ${escapeHtml(item.rating.toFixed(1))}</span>
               <span>
                 <svg class="meta-icon" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10"></circle>
@@ -461,6 +268,7 @@ function renderMenuItems(items) {
                 ${escapeHtml(item.distance)}
               </span>
             </div>
+
             <div class="card-footer">
               <span class="card-price">$${Number(item.price).toFixed(2)}</span>
               <button
@@ -496,13 +304,21 @@ function setActiveButton(selector, predicate) {
 
 function setCategory(_btn, category) {
   currentCategory = category;
-  setActiveButton('.cat-tab', (element) => element.dataset.category === category);
+  setActiveButton('.cat-tab', (element) => {
+    return (
+      element.textContent.trim().toLowerCase() === category ||
+      (category === 'all' && element.textContent.trim().toLowerCase() === 'all')
+    );
+  });
   rerenderMenu();
 }
 
 function setDiet(_btn, diet) {
   currentDiet = diet;
-  setActiveButton('.diet-pill', (element) => element.dataset.diet === diet);
+  setActiveButton('.quick-pill', (element) => {
+    const value = element.getAttribute('data-diet-pill');
+    return value === diet;
+  });
   rerenderMenu();
 }
 
@@ -547,15 +363,18 @@ async function loadMenuItems() {
   let products = [];
 
   try {
+    console.log('Starting to load menu items...');
     if (typeof window.getAllProducts === 'function') {
+      console.log('Calling getAllProducts for menu...');
       products = await window.getAllProducts();
+      console.log('Menu items loaded:', products);
     }
   } catch (error) {
     console.error('Error loading backend menu items:', error);
   }
 
-  if (!Array.isArray(products) || !products.length) {
-    products = staticMenuItems;
+  if (!Array.isArray(products)) {
+    products = [];
   }
 
   allMenuItems = products.map(normalizeMenuItem);
@@ -566,7 +385,7 @@ function handleMenuGridClick(event) {
   const favoriteButton = event.target.closest('[data-action="favorite"]');
   if (favoriteButton) {
     const productId = favoriteButton.dataset.productId;
-    const active = toggleFavorite(productId);
+    const active = foodToggleFavorite(productId);
     favoriteButton.textContent = active ? '♥' : '♡';
     favoriteButton.classList.toggle('liked', active);
     return;
@@ -579,26 +398,115 @@ function handleMenuGridClick(event) {
 }
 
 function setupSearch() {
-  const input = document.getElementById('dishSearch');
-  if (!input) return;
+  const heroSearch = document.getElementById('dishSearch');
+  const navSearch = document.getElementById('navbarSearch');
 
-  input.addEventListener('input', (event) => {
-    currentSearch = event.target.value || '';
+  function handleSearch(value) {
+    currentSearch = value || '';
+    rerenderMenu();
+  }
+
+  if (heroSearch) {
+    heroSearch.addEventListener('input', (e) => {
+      handleSearch(e.target.value);
+      if (navSearch) navSearch.value = e.target.value;
+    });
+  }
+
+  if (navSearch) {
+    navSearch.addEventListener('input', (e) => {
+      handleSearch(e.target.value);
+      if (heroSearch) heroSearch.value = e.target.value;
+    });
+  }
+}
+
+function setupSortControl() {
+  const sortFilter = document.getElementById('sortFilter');
+  if (!sortFilter) return;
+
+  sortFilter.addEventListener('change', (e) => {
+    currentSort = e.target.value;
     rerenderMenu();
   });
 }
 
-function setupFilters() {
-  document.querySelectorAll('.cat-tab').forEach((button) => {
-    button.addEventListener('click', () => {
-      setCategory(button, button.dataset.category || 'all');
+function updateDrawerPillState(groupSelector, selectedValue, dataAttr) {
+  document.querySelectorAll(groupSelector).forEach((pill) => {
+    pill.classList.toggle('active', pill.getAttribute(dataAttr) === selectedValue);
+  });
+}
+
+function applyFilterStateToUI() {
+  updateDrawerPillState('.drawer-pill[data-price]', currentPriceFilter, 'data-price');
+  updateDrawerPillState('.drawer-pill[data-rating]', currentRatingFilter, 'data-rating');
+  updateDrawerPillState('.drawer-pill[data-delivery]', currentDeliveryFilter, 'data-delivery');
+
+  const popularOnly = document.getElementById('popularOnly');
+  if (popularOnly) popularOnly.checked = currentPopularOnly;
+}
+
+function setupFilterDrawer() {
+  const drawer = document.getElementById('filterDrawer');
+  const overlay = document.getElementById('filterOverlay');
+  const openBtn = document.getElementById('openFilterDrawer');
+  const closeBtn = document.getElementById('closeFilterDrawer');
+  const applyBtn = document.getElementById('applyFiltersBtn');
+  const resetBtn = document.getElementById('resetFiltersBtn');
+  const popularOnly = document.getElementById('popularOnly');
+
+  function openDrawer() {
+    drawer?.classList.add('open');
+    overlay?.classList.add('open');
+    applyFilterStateToUI();
+  }
+
+  function closeDrawer() {
+    drawer?.classList.remove('open');
+    overlay?.classList.remove('open');
+  }
+
+  openBtn?.addEventListener('click', openDrawer);
+  closeBtn?.addEventListener('click', closeDrawer);
+  overlay?.addEventListener('click', closeDrawer);
+
+  document.querySelectorAll('.drawer-pill[data-price]').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      currentPriceFilter = pill.getAttribute('data-price') || 'all';
+      applyFilterStateToUI();
     });
   });
 
-  document.querySelectorAll('.diet-pill').forEach((button) => {
-    button.addEventListener('click', () => {
-      setDiet(button, button.dataset.diet || 'all');
+  document.querySelectorAll('.drawer-pill[data-rating]').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      currentRatingFilter = pill.getAttribute('data-rating') || 'all';
+      applyFilterStateToUI();
     });
+  });
+
+  document.querySelectorAll('.drawer-pill[data-delivery]').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      currentDeliveryFilter = pill.getAttribute('data-delivery') || 'all';
+      applyFilterStateToUI();
+    });
+  });
+
+  popularOnly?.addEventListener('change', (e) => {
+    currentPopularOnly = e.target.checked;
+  });
+
+  applyBtn?.addEventListener('click', () => {
+    rerenderMenu();
+    closeDrawer();
+  });
+
+  resetBtn?.addEventListener('click', () => {
+    currentPriceFilter = 'all';
+    currentRatingFilter = 'all';
+    currentDeliveryFilter = 'all';
+    currentPopularOnly = false;
+    applyFilterStateToUI();
+    rerenderMenu();
   });
 }
 
@@ -614,7 +522,8 @@ function setupPage() {
   }
 
   setupSearch();
-  setupFilters();
+  setupSortControl();
+  setupFilterDrawer();
 
   const grid = document.getElementById('menuGrid');
   if (grid) {
@@ -639,6 +548,15 @@ function logout() {
   localStorage.removeItem('checkoutTax');
   localStorage.removeItem('lastOrder');
   window.location.href = 'landingpage.html';
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 window.setCategory = setCategory;

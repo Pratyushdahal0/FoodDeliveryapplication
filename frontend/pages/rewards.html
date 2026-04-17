@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rewards - FoodExpress</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/reward.css" />
+  </head>
+
+  <body>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <div class="container">
+        <div class="navbar-brand"><a href="dashboard.html">FoodExpress</a></div>
+
+        <div class="navbar-nav">
+          <a href="dashboard.html" class="nav-link">Home</a>
+          <a href="shop.html" class="nav-link">Shop</a>
+          <a href="food.html" class="nav-link">Food</a>
+          <a href="loggedContact.html" class="nav-link">Contact</a>
+        </div>
+
+        <div class="navbar-right">
+          <div class="search-box">
+            <i
+              class="fa-solid fa-magnifying-glass"
+              style="color: #9ca3af; font-size: 0.85rem"
+            ></i>
+            <input type="text" placeholder="Search food..." />
+          </div>
+          <div class="hamburger" id="hamburger">
+            <span></span><span></span><span></span>
+          </div>
+          <a href="#" onclick="logout()">
+            <button class="login-btn">
+              <i class="fa-regular fa-user"></i>
+              Log out
+            </button>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="rewards-page">
+      <!-- HEADER -->
+      <section class="rewards-header">
+        <div>
+          <h1>🎁 Rewards Program</h1>
+          <p>Earn points and unlock free meals!</p>
+        </div>
+
+        <div class="points-box">
+          <h2 id="pointsValue">0</h2>
+          <span>Points</span>
+        </div>
+      </section>
+
+      <!-- PROGRESS -->
+      <section class="progress-card">
+        <h2>Next Reward</h2>
+        <p id="pointsText">You're 0 points away from a free meal</p>
+
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressBar"></div>
+        </div>
+
+        <p id="progressNumbers">0 / 1000 points</p>
+      </section>
+
+      <!-- REWARDS LIST -->
+      <section class="reward-list">
+        <div class="reward-card">
+          <h3>🍔 Free Burger</h3>
+          <p>Get a free burger from any restaurant</p>
+          <span>500 Points</span>
+          <button onclick="redeemReward(500)">Redeem</button>
+        </div>
+
+        <div class="reward-card">
+          <h3>🍕 Free Pizza</h3>
+          <p>Enjoy a free pizza</p>
+          <span>800 Points</span>
+          <button onclick="redeemReward(800)">Redeem</button>
+        </div>
+
+        <div class="reward-card">
+          <h3>🥤 Free Drink</h3>
+          <p>Free drink on your next order</p>
+          <span>200 Points</span>
+          <button onclick="redeemReward(200)">Redeem</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="../js/reward.js"></script>
+  </body>
+</html>
