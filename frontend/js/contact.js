@@ -61,7 +61,7 @@ button.addEventListener("click", function (e) {
   });
 
   if (!isValid) {
-    showToast("Please fill all fields", "#e74c3c");
+    showToast("Please fill all field", "#e74c3c");
     return;
   }
 
