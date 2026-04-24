@@ -4,48 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Rewards - FoodExpress</title>
+
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/reward.css" />
   </head>
 
   <body>
-    <!-- NAVBAR -->
-    <nav class="navbar">
-      <div class="container">
-        <div class="navbar-brand"><a href="dashboard.html">FoodExpress</a></div>
-
-        <div class="navbar-nav">
-          <a href="dashboard.html" class="nav-link">Home</a>
-          <a href="shop.html" class="nav-link">Shop</a>
-          <a href="food.html" class="nav-link">Food</a>
-          <a href="loggedContact.html" class="nav-link">Contact</a>
-        </div>
-
-        <div class="navbar-right">
-          <div class="search-box">
-            <i
-              class="fa-solid fa-magnifying-glass"
-              style="color: #9ca3af; font-size: 0.85rem"
-            ></i>
-            <input type="text" placeholder="Search food..." />
-          </div>
-          <div class="hamburger" id="hamburger">
-            <span></span><span></span><span></span>
-          </div>
-          <a href="#" onclick="logout()">
-            <button class="login-btn">
-              <i class="fa-regular fa-user"></i>
-              Log out
-            </button>
-          </a>
-        </div>
-      </div>
-    </nav>
+    <!-- USE SHARED NAVBAR -->
+    <div id="navbarContainer"></div>
 
     <!-- MAIN -->
     <main class="rewards-page">
@@ -53,7 +25,7 @@
       <section class="rewards-header">
         <div>
           <h1>🎁 Rewards Program</h1>
-          <p>Earn points and unlock free meals!</p>
+          <p>Earn points and unlock exclusive discounts on your orders.</p>
         </div>
 
         <div class="points-box">
@@ -65,40 +37,97 @@
       <!-- PROGRESS -->
       <section class="progress-card">
         <h2>Next Reward</h2>
-        <p id="pointsText">You're 0 points away from a free meal</p>
+        <h3 id="nextRewardTitle">—</h3>
+        <p id="nextRewardSubtitle">—</p>
 
         <div class="progress-bar">
           <div class="progress-fill" id="progressBar"></div>
         </div>
 
-        <p id="progressNumbers">0 / 1000 points</p>
+        <p id="progressNumbers">0 / 0 points</p>
+        <p id="pointsText"></p>
+
+        <p>Total lifetime points: <strong id="lifetimePoints">0</strong></p>
       </section>
 
-      <!-- REWARDS LIST -->
+      <!-- REWARD TIERS -->
       <section class="reward-list">
-        <div class="reward-card">
-          <h3>🍔 Free Burger</h3>
-          <p>Get a free burger from any restaurant</p>
+        <div
+          class="reward-card"
+          data-reward-points="500"
+          data-reward-discount="5"
+        >
+          <h3>🔥 5% OFF</h3>
+          <p>Save on your next order</p>
           <span>500 Points</span>
-          <button onclick="redeemReward(500)">Redeem</button>
+          <p data-reward-status></p>
+          <button data-redeem-button>Redeem</button>
         </div>
 
-        <div class="reward-card">
-          <h3>🍕 Free Pizza</h3>
-          <p>Enjoy a free pizza</p>
-          <span>800 Points</span>
-          <button onclick="redeemReward(800)">Redeem</button>
+        <div
+          class="reward-card"
+          data-reward-points="900"
+          data-reward-discount="10"
+        >
+          <h3>⚡ 10% OFF</h3>
+          <p>Better savings on meals</p>
+          <span>900 Points</span>
+          <p data-reward-status></p>
+          <button data-redeem-button>Redeem</button>
         </div>
 
-        <div class="reward-card">
-          <h3>🥤 Free Drink</h3>
-          <p>Free drink on your next order</p>
-          <span>200 Points</span>
-          <button onclick="redeemReward(200)">Redeem</button>
+        <div
+          class="reward-card"
+          data-reward-points="1300"
+          data-reward-discount="15"
+        >
+          <h3>💎 15% OFF</h3>
+          <p>Premium discount tier</p>
+          <span>1300 Points</span>
+          <p data-reward-status></p>
+          <button data-redeem-button>Redeem</button>
         </div>
+
+        <div
+          class="reward-card"
+          data-reward-points="2000"
+          data-reward-discount="20"
+        >
+          <h3>👑 20% OFF</h3>
+          <p>Maximum savings unlocked</p>
+          <span>2000 Points</span>
+          <p data-reward-status></p>
+          <button data-redeem-button>Redeem</button>
+        </div>
+      </section>
+
+      <!-- ACTIVE COUPONS -->
+      <section class="rewards-section">
+        <h2>🎟 Active Coupons</h2>
+        <div id="activeCouponsList"></div>
+      </section>
+
+      <!-- HISTORY -->
+      <section class="rewards-section">
+        <h2>📊 Reward Activity</h2>
+        <div id="rewardHistoryList"></div>
       </section>
     </main>
 
+    <!-- SCRIPTS -->
+    <script src="../js/modules/profile.js"></script>
+    <script src="../js/components/navbar.js"></script>
     <script src="../js/reward.js"></script>
+
+    <script>
+      function initNavbar() {
+        if (typeof window.renderNavbar === "function") {
+          renderNavbar("rewards");
+        } else {
+          setTimeout(initNavbar, 100);
+        }
+      }
+      document.addEventListener("DOMContentLoaded", initNavbar);
+    </script>
   </body>
 </html>

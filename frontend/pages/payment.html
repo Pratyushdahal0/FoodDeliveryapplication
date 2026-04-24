@@ -4,366 +4,899 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkout - FoodExpress</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/shared.css" />
+
     <style>
-      .checkout-page {
-        max-width: 900px;
-        margin: 80px auto 40px;
-        padding: 0 20px;
+      :root {
+        --checkout-bg: #f6f7fb;
+        --surface: #ffffff;
+        --surface-muted: #f9fafb;
+        --text-strong: #111827;
+        --text-muted: #6b7280;
+        --border-soft: #e5e7eb;
+        --success: #16a34a;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --shadow-soft: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow-hover: 0 16px 40px rgba(17, 24, 39, 0.12);
+        --radius-lg: 24px;
+        --radius-md: 18px;
+        --radius-sm: 14px;
       }
 
-      .checkout-header {
-        text-align: center;
-        margin-bottom: 40px;
+      * {
+        box-sizing: border-box;
       }
 
-      .checkout-header h1 {
-        font-size: 2.5rem;
-        color: var(--text-dark);
-        margin-bottom: 10px;
+      body {
+        margin: 0;
+        background: var(--checkout-bg);
+        color: var(--text-strong);
       }
 
-      .checkout-container {
-        display: grid;
-        grid-template-columns: 1fr 300px;
-        gap: 30px;
-        margin-bottom: 40px;
+      .checkout-shell {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 110px 24px 48px;
       }
 
-      @media (max-width: 768px) {
-        .checkout-container {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      .form-section {
-        background: #fff;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 30px;
-      }
-
-      .form-section h2 {
-        font-size: 1.25rem;
-        margin-bottom: 20px;
-        color: var(--text-dark);
-      }
-
-      .form-group {
-        margin-bottom: 20px;
-      }
-
-      .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 500;
-        color: var(--text-dark);
-      }
-
-      .form-group input,
-      .form-group select {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        font-size: 1rem;
-        font-family: inherit;
-      }
-
-      .form-group input:focus,
-      .form-group select:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
-      }
-
-      .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-      }
-
-      .order-summary {
-        background: #f9fafb;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 20px;
-        position: sticky;
-        top: 90px;
-      }
-
-      .order-summary h3 {
-        font-size: 1.1rem;
-        margin-bottom: 15px;
-        color: var(--text-dark);
-      }
-
-      .summary-item {
+      .checkout-topbar {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 10px;
+        align-items: flex-start;
+        gap: 20px;
+        margin-bottom: 28px;
+      }
+
+      .checkout-heading h1 {
+        margin: 0 0 8px;
+        font-size: clamp(2rem, 4vw, 2.8rem);
+        line-height: 1.08;
+        font-weight: 800;
+      }
+
+      .checkout-heading p {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 1rem;
+      }
+
+      .checkout-pill {
+        background: rgba(var(--primary-rgb), 0.08);
+        color: var(--primary);
+        border: 1px solid rgba(var(--primary-rgb), 0.15);
+        padding: 12px 16px;
+        border-radius: 999px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .checkout-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) 420px;
+        gap: 28px;
+        align-items: start;
+      }
+
+      .checkout-main {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-soft);
+        padding: 28px;
+      }
+
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 22px;
+      }
+
+      .section-title {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 800;
+      }
+
+      .section-subtitle {
+        margin: 6px 0 0;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      .restaurant-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px 20px;
+        background: linear-gradient(
+          135deg,
+          rgba(var(--primary-rgb), 0.08),
+          rgba(var(--primary-rgb), 0.02)
+        );
+        border: 1px solid rgba(var(--primary-rgb), 0.12);
+        border-radius: 20px;
+      }
+
+      .restaurant-meta h3 {
+        margin: 0 0 6px;
+        font-size: 1.08rem;
+        font-weight: 800;
+      }
+
+      .restaurant-meta p {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 0.94rem;
+      }
+
+      .eta-badge {
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: #fff;
+        border: 1px solid var(--border-soft);
+        font-weight: 700;
+        font-size: 0.92rem;
+      }
+
+      .order-items {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .order-item {
+        display: grid;
+        grid-template-columns: 72px 1fr auto;
+        gap: 14px;
+        align-items: center;
+        padding: 14px;
+        border: 1px solid var(--border-soft);
+        border-radius: 18px;
+        background: var(--surface-muted);
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .order-item:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+      }
+
+      .order-item img {
+        width: 72px;
+        height: 72px;
+        border-radius: 16px;
+        object-fit: cover;
+        background: #f3f4f6;
+      }
+
+      .item-info h4 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .item-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        color: var(--text-muted);
         font-size: 0.9rem;
       }
 
-      .summary-item.total {
-        border-top: 2px solid var(--border);
-        padding-top: 10px;
-        margin-top: 10px;
+      .item-total {
+        text-align: right;
+      }
+
+      .item-total .qty {
+        display: inline-flex;
+        margin-bottom: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #fff;
+        border: 1px solid var(--border-soft);
+        color: var(--text-muted);
+        font-size: 0.82rem;
         font-weight: 700;
+      }
+
+      .item-total .price {
+        display: block;
         font-size: 1rem;
-        color: var(--text-dark);
+        font-weight: 800;
+        color: var(--text-strong);
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .form-group.full {
+        grid-column: 1 / -1;
+      }
+
+      .form-group label {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-strong);
+      }
+
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        min-height: 54px;
+        border: 1px solid var(--border-soft);
+        border-radius: 16px;
+        padding: 14px 16px;
+        font: inherit;
+        color: var(--text-strong);
+        background: #fff;
+        transition:
+          border-color 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .form-group textarea {
+        min-height: 110px;
+        resize: vertical;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: rgba(var(--primary-rgb), 0.5);
+        box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.12);
       }
 
       .payment-methods {
         display: flex;
         flex-direction: column;
-        gap: 15px;
-        margin-bottom: 30px;
+        gap: 14px;
       }
 
       .payment-method {
         display: flex;
         align-items: center;
-        padding: 15px;
-        border: 2px solid var(--border);
-        border-radius: var(--radius);
+        gap: 14px;
+        padding: 16px 18px;
+        border: 1px solid var(--border-soft);
+        border-radius: 18px;
         cursor: pointer;
-        transition: all 0.2s;
+        background: #fff;
+        transition: all 0.2s ease;
       }
 
       .payment-method:hover {
-        border-color: var(--primary);
-        background: #f9fafb;
-      }
-
-      .payment-method input[type="radio"] {
-        margin-right: 12px;
-        cursor: pointer;
-        width: 18px;
-        height: 18px;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-soft);
       }
 
       .payment-method.selected {
-        border-color: var(--primary);
+        border-color: rgba(var(--primary-rgb), 0.4);
         background: rgba(var(--primary-rgb), 0.05);
       }
 
-      .payment-label {
+      .payment-method input[type="radio"] {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+      }
+
+      .payment-method-content {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .payment-method-title {
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .payment-method-desc {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+      }
+
+      .card-fields {
+        display: none;
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid var(--border-soft);
+      }
+
+      .summary-card {
+        position: sticky;
+        top: 104px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .summary-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .summary-top h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 800;
+      }
+
+      .summary-top p {
+        margin: 6px 0 0;
+        color: var(--text-muted);
+        font-size: 0.92rem;
+      }
+
+      .summary-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: #fff7ed;
+        color: #c2410c;
+        border: 1px solid #fdba74;
+        font-size: 0.84rem;
+        font-weight: 700;
+      }
+
+      .summary-lines {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .summary-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.96rem;
+        color: var(--text-muted);
+      }
+
+      .summary-line strong {
+        color: var(--text-strong);
+      }
+
+      .summary-divider {
+        height: 1px;
+        background: var(--border-soft);
+        margin: 2px 0;
+      }
+
+      .summary-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.15rem;
+        font-weight: 800;
+      }
+
+      .summary-note {
+        padding: 14px;
+        border-radius: 16px;
+        background: rgba(var(--primary-rgb), 0.05);
+        border: 1px solid rgba(var(--primary-rgb), 0.12);
+        color: var(--text-muted);
+        font-size: 0.92rem;
+        line-height: 1.5;
+      }
+
+      .rewards-box {
+        padding: 16px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #111827, #1f2937);
+        color: #fff;
+      }
+
+      .rewards-box h4 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .rewards-box p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+      }
+
+      .rewards-points {
+        margin-top: 12px;
+        font-size: 1.4rem;
+        font-weight: 800;
+      }
+
+      .coupon-box {
+        margin-top: 16px;
+        padding: 14px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
+      .coupon-box h5 {
+        margin: 0 0 8px;
+        font-size: 0.95rem;
+        font-weight: 800;
+      }
+
+      .coupon-box p {
+        margin: 0 0 10px;
+        font-size: 0.86rem;
+      }
+
+      .coupon-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .coupon-row select {
         flex: 1;
-        font-weight: 500;
-        color: var(--text-dark);
+        min-height: 46px;
+        border-radius: 12px;
+        border: none;
+        padding: 0 12px;
+        font: inherit;
+      }
+
+      .coupon-row button {
+        min-height: 46px;
+        border: none;
+        border-radius: 12px;
+        padding: 0 16px;
+        background: #fff;
+        color: #111827;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .coupon-message {
+        min-height: 18px;
+        margin-top: 10px;
+        font-size: 0.84rem;
+        font-weight: 700;
+      }
+
+      .coupon-message.success {
+        color: #86efac;
+      }
+
+      .coupon-message.error {
+        color: #fca5a5;
       }
 
       .place-order-btn {
         width: 100%;
-        background: var(--primary);
-        color: white;
         border: none;
-        padding: 16px 20px;
-        border-radius: var(--radius-full);
-        font-weight: 600;
-        font-size: 1.1rem;
+        border-radius: 999px;
+        min-height: 58px;
+        padding: 16px 22px;
+        background: var(--primary);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 800;
         cursor: pointer;
-        transition: all 0.2s;
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease,
+          opacity 0.2s ease;
+        box-shadow: 0 12px 28px rgba(var(--primary-rgb), 0.28);
       }
 
       .place-order-btn:hover {
-        background: var(--primary-dark);
         transform: translateY(-2px);
       }
 
       .place-order-btn:disabled {
-        background: #ccc;
         cursor: not-allowed;
+        opacity: 0.7;
         transform: none;
+      }
+
+      .empty-checkout {
+        display: none;
+        text-align: center;
+        padding: 70px 28px;
+      }
+
+      .empty-checkout h2 {
+        margin: 0 0 12px;
+        font-size: 2rem;
+      }
+
+      .empty-checkout p {
+        margin: 0 auto 24px;
+        max-width: 560px;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+
+      .empty-checkout a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 50px;
+        padding: 0 22px;
+        border-radius: 999px;
+        background: var(--primary);
+        color: #fff;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      .muted {
+        color: var(--text-muted);
+      }
+
+      @media (max-width: 1024px) {
+        .checkout-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-card {
+          position: static;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .checkout-shell {
+          padding: 96px 16px 36px;
+        }
+
+        .checkout-topbar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .card {
+          padding: 20px;
+          border-radius: 20px;
+        }
+
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .order-item {
+          grid-template-columns: 64px 1fr;
+        }
+
+        .item-total {
+          grid-column: 2 / 3;
+          text-align: left;
+        }
+
+        .coupon-row {
+          flex-direction: column;
+        }
       }
     </style>
   </head>
   <body>
-    <!-- AUTH PROTECTION -->
     <script>
-      // Check if user is logged in
       if (!localStorage.getItem("isLoggedIn")) {
-        alert("Please login first to proceed with payment");
+        alert("Please login first to continue checkout.");
         window.location.href = "login.html";
       }
     </script>
 
-    <!-- NAVBAR -->
-    <nav class="navbar">
-      <div class="container">
-        <div class="navbar-brand">FoodExpress</div>
-        <div class="navbar-nav">
-          <a href="dashboard.html" class="nav-link">Home</a>
-          <a href="shop.html" class="nav-link">Shop</a>
-          <a href="food.html" class="nav-link">Food</a>
-          <a href="loggedContact.html" class="nav-link">Contact</a>
-        </div>
-        <div class="navbar-right">
-          <div class="search-box">
-            <input type="text" placeholder="Search food..." />
-          </div>
-          <div class="hamburger" id="hamburger">
-            <span></span><span></span><span></span>
-          </div>
-          <a href="landingpage.html">
-            <button class="login-btn">
-              <i class="fa-regular fa-user"></i>
-              Log out
-            </button>
-          </a>
-        </div>
-      </div>
-    </nav>
+    <div id="navbarContainer"></div>
 
-    <!-- CHECKOUT PAGE -->
-    <div class="checkout-page">
-      <div class="checkout-header">
-        <h1>Checkout</h1>
-        <p>Complete your order</p>
+    <main class="checkout-shell">
+      <div id="emptyCheckout" class="card empty-checkout">
+        <h2>Your checkout is empty</h2>
+        <p>
+          Looks like there is nothing ready for payment yet. Add a few dishes
+          from a restaurant and come back to complete your order.
+        </p>
+        <a href="shop.html">Browse restaurants</a>
       </div>
 
-      <div class="checkout-container">
-        <!-- Left: Forms -->
-        <div>
-          <!-- Delivery Address -->
-          <div class="form-section">
-            <h2>Delivery Address</h2>
-            <div class="form-group">
-              <label>Full Name *</label>
-              <input
-                type="text"
-                id="fullName"
-                required
-                placeholder="Your name"
-              />
-            </div>
-            <div class="form-group">
-              <label>Phone Number *</label>
-              <input
-                type="tel"
-                id="phoneNumber"
-                required
-                placeholder="+977 98XXXXXXXX"
-              />
-            </div>
-            <div class="form-group">
-              <label>Address *</label>
-              <input
-                type="text"
-                id="address"
-                required
-                placeholder="Street address"
-              />
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>City *</label>
-                <input type="text" id="city" required placeholder="City" />
-              </div>
-              <div class="form-group">
-                <label>Postal Code *</label>
-                <input
-                  type="text"
-                  id="postalCode"
-                  required
-                  placeholder="12345"
-                />
-              </div>
-            </div>
+      <div id="checkoutContent">
+        <div class="checkout-topbar">
+          <div class="checkout-heading">
+            <h1>Review and place your order</h1>
+            <p>
+              Double-check your delivery details, payment method, and items
+              before FoodExpress sends your order to the restaurant.
+            </p>
           </div>
+          <div class="checkout-pill" id="checkoutRestaurantPill">
+            Restaurant
+          </div>
+        </div>
 
-          <!-- Payment Method -->
-          <div class="form-section" style="margin-top: 30px">
-            <h2>Payment Method</h2>
-            <div class="payment-methods">
-              <label class="payment-method selected">
-                <input type="radio" name="paymentMethod" value="cash" checked />
-                <span class="payment-label">💵 Cash on Delivery</span>
-              </label>
-              <label class="payment-method">
-                <input type="radio" name="paymentMethod" value="card" />
-                <span class="payment-label">💳 Credit/Debit Card</span>
-              </label>
-              <label class="payment-method">
-                <input type="radio" name="paymentMethod" value="digital" />
-                <span class="payment-label"
-                  >📱 Digital Wallet (eSewa, Khalti)</span
+        <div class="checkout-layout">
+          <section class="checkout-main">
+            <div class="card">
+              <div class="section-head">
+                <div>
+                  <h2 class="section-title">Your order</h2>
+                  <p class="section-subtitle">
+                    Freshly prepared items from your selected restaurant
+                  </p>
+                </div>
+              </div>
+
+              <div class="restaurant-banner">
+                <div class="restaurant-meta">
+                  <h3 id="restaurantName">Restaurant name</h3>
+                  <p id="restaurantMeta">
+                    Estimated preparation and delivery details
+                  </p>
+                </div>
+                <div class="eta-badge" id="estimatedEta">30–40 min</div>
+              </div>
+
+              <div
+                id="orderItems"
+                class="order-items"
+                style="margin-top: 18px"
+              ></div>
+            </div>
+
+            <div class="card">
+              <div class="section-head">
+                <div>
+                  <h2 class="section-title">Delivery details</h2>
+                  <p class="section-subtitle">
+                    We’ll use these details to deliver your order and contact
+                    you if needed
+                  </p>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label for="fullName">Full name *</label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="phoneNumber">Phone number *</label>
+                  <input
+                    type="tel"
+                    id="phoneNumber"
+                    placeholder="+977 98XXXXXXXX"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="city">City *</label>
+                  <input type="text" id="city" placeholder="Kathmandu" />
+                </div>
+
+                <div class="form-group full">
+                  <label for="address">Address *</label>
+                  <input
+                    type="text"
+                    id="address"
+                    placeholder="Street, area, landmark"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="postalCode">Postal code *</label>
+                  <input type="text" id="postalCode" placeholder="44600" />
+                </div>
+
+                <div class="form-group">
+                  <label for="deliveryNote">Delivery note</label>
+                  <input
+                    type="text"
+                    id="deliveryNote"
+                    placeholder="Apartment, gate color, floor, etc."
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="section-head">
+                <div>
+                  <h2 class="section-title">Payment method</h2>
+                  <p class="section-subtitle">
+                    Choose the most convenient way to pay for this order
+                  </p>
+                </div>
+              </div>
+
+              <div class="payment-methods">
+                <label class="payment-method selected">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="cash"
+                    checked
+                  />
+                  <div class="payment-method-content">
+                    <span class="payment-method-title"
+                      >💵 Cash on Delivery</span
+                    >
+                    <span class="payment-method-desc"
+                      >Pay when your order arrives at your doorstep</span
+                    >
+                  </div>
+                </label>
+
+                <label class="payment-method">
+                  <input type="radio" name="paymentMethod" value="card" />
+                  <div class="payment-method-content">
+                    <span class="payment-method-title"
+                      >💳 Credit / Debit Card</span
+                    >
+                    <span class="payment-method-desc"
+                      >Fast and secure payment for a smooth checkout</span
+                    >
+                  </div>
+                </label>
+
+                <label class="payment-method">
+                  <input type="radio" name="paymentMethod" value="digital" />
+                  <div class="payment-method-content">
+                    <span class="payment-method-title">📱 Digital Wallet</span>
+                    <span class="payment-method-desc"
+                      >Use eSewa or Khalti for quick digital payments</span
+                    >
+                  </div>
+                </label>
+              </div>
+
+              <div id="cardFields" class="card-fields">
+                <div class="form-grid">
+                  <div class="form-group full">
+                    <label for="cardNumber">Card number *</label>
+                    <input
+                      type="text"
+                      id="cardNumber"
+                      placeholder="1234 5678 9012 3456"
+                      maxlength="19"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="cardExpiry">Expiry date *</label>
+                    <input
+                      type="text"
+                      id="cardExpiry"
+                      placeholder="MM/YY"
+                      maxlength="5"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="cardCVV">CVV *</label>
+                    <input
+                      type="text"
+                      id="cardCVV"
+                      placeholder="123"
+                      maxlength="4"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="summary-card">
+            <div class="card">
+              <div class="summary-top">
+                <div>
+                  <h3>Order summary</h3>
+                  <p id="summaryItemsLabel">0 items</p>
+                </div>
+                <div class="summary-status">Live checkout</div>
+              </div>
+
+              <div class="summary-lines">
+                <div class="summary-line">
+                  <span>Subtotal</span>
+                  <strong>$<span id="summarySubtotal">0.00</span></strong>
+                </div>
+
+                <div class="summary-line">
+                  <span>Delivery fee</span>
+                  <strong>$<span id="summaryDelivery">5.00</span></strong>
+                </div>
+
+                <div class="summary-line">
+                  <span>Tax</span>
+                  <strong>$<span id="summaryTax">0.00</span></strong>
+                </div>
+
+                <div
+                  class="summary-line"
+                  id="discountRow"
+                  style="display: none"
                 >
-              </label>
-            </div>
-
-            <!-- Card Details (Hidden by default) -->
-            <div
-              id="cardDetails"
-              style="
-                display: none;
-                margin-top: 20px;
-                padding-top: 20px;
-                border-top: 1px solid var(--border);
-              "
-            >
-              <div class="form-group">
-                <label>Card Number *</label>
-                <input
-                  type="text"
-                  id="cardNumber"
-                  placeholder="1234 5678 9012 3456"
-                />
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Expiry Date *</label>
-                  <input type="text" id="cardExpiry" placeholder="MM/YY" />
+                  <span>Discount</span>
+                  <strong>-$<span id="summaryDiscount">0.00</span></strong>
                 </div>
-                <div class="form-group">
-                  <label>CVV *</label>
-                  <input type="text" id="cardCVV" placeholder="123" />
+
+                <div class="summary-divider"></div>
+
+                <div class="summary-total">
+                  <span>Total</span>
+                  <span>$<span id="summaryTotal">0.00</span></span>
                 </div>
               </div>
+
+              <div class="summary-note">
+                Your order will be sent to the restaurant as soon as you confirm
+                payment. You can track the latest status from pending to
+                delivered after checkout.
+              </div>
             </div>
-          </div>
 
-          <!-- Place Order Button -->
-          <button
-            class="place-order-btn"
-            onclick="placeOrder()"
-            style="margin-top: 30px"
-          >
-            Place Order
-          </button>
-        </div>
+            <div class="rewards-box">
+              <h4>Rewards preview</h4>
+              <p>
+                You’ll earn points on this order after it is delivered
+                successfully.
+              </p>
+              <div class="rewards-points" id="rewardPreview">+0 points</div>
 
-        <!-- Right: Order Summary -->
-        <div class="order-summary">
-          <h3>Order Summary</h3>
-          <div class="summary-item">
-            <span>Subtotal:</span>
-            <span>$<span id="summarySubtotal">0.00</span></span>
-          </div>
-          <div class="summary-item">
-            <span>Delivery Fee:</span>
-            <span>$5.00</span>
-          </div>
-          <div class="summary-item">
-            <span>Tax (10%):</span>
-            <span>$<span id="summaryTax">0.00</span></span>
-          </div>
-          <div class="summary-item total">
-            <span>Total:</span>
-            <span>$<span id="summaryTotal">0.00</span></span>
-          </div>
+              <div class="coupon-box">
+                <h5>Use reward coupon</h5>
+                <p>Apply an unlocked discount to this order.</p>
+
+                <div class="coupon-row">
+                  <select id="couponSelect">
+                    <option value="">Select a coupon</option>
+                  </select>
+                  <button type="button" id="applyCouponBtn">Apply</button>
+                </div>
+
+                <div id="couponMessage" class="coupon-message"></div>
+              </div>
+            </div>
+
+            <button id="placeOrderBtn" class="place-order-btn" type="button">
+              Place Order
+            </button>
+          </aside>
         </div>
       </div>
-    </div>
+    </main>
 
-    <!-- FOOTER -->
     <footer>
       <div class="footer-grid">
         <div>
@@ -376,91 +909,445 @@
       <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
     </footer>
 
+    <script src="../js/modules/profile.js"></script>
+    <script src="../js/shared.js"></script>
+    <script src="../js/modules/cart.js"></script>
+    <script src="../js/components/navbar.js"></script>
+    <script src="../js/reward.js"></script>
     <script>
-      // Load checkout totals
-      window.addEventListener("load", function () {
-        const subtotal = parseFloat(
-          localStorage.getItem("checkoutSubtotal") || 0,
+      function initNavbar() {
+        console.log(
+          "[payment.html] initNavbar called - renderNavbar available:",
+          typeof window.renderNavbar,
         );
-        const tax = parseFloat(localStorage.getItem("checkoutTax") || 0);
-        const total = parseFloat(localStorage.getItem("checkoutTotal") || 0);
+        if (typeof window.renderNavbar === "function") {
+          renderNavbar("payment");
+        } else {
+          console.error(
+            "[payment.html] renderNavbar not available, retrying in 100ms",
+          );
+          setTimeout(initNavbar, 100);
+        }
+      }
+      document.addEventListener("DOMContentLoaded", initNavbar);
+    </script>
 
-        document.getElementById("summarySubtotal").textContent =
-          subtotal.toFixed(2);
-        document.getElementById("summaryTax").textContent = tax.toFixed(2);
-        document.getElementById("summaryTotal").textContent = total.toFixed(2);
+    <script>
+      const ORDER_HISTORY_KEY = "foodExpressOrders";
+      const USER_PROFILE_KEY = "foodExpressUserProfile";
+      const DEFAULT_IMAGE = "https://via.placeholder.com/80?text=Food";
+
+      let checkoutItems = [];
+      let checkoutSummary = {
+        subtotal: 0,
+        deliveryFee: 5,
+        tax: 0,
+        discount: 0,
+        total: 0,
+      };
+      let checkoutRestaurant = {
+        id: "",
+        name: "Restaurant",
+      };
+
+      let appliedCouponId = "";
+      let appliedCouponData = null;
+
+      document.addEventListener("DOMContentLoaded", () => {
+        initializeCheckout();
+        initializePaymentMethods();
+        initializeCardFormatting();
+        initializeCoupons();
+
+        const placeOrderBtn = document.getElementById("placeOrderBtn");
+        if (placeOrderBtn) {
+          placeOrderBtn.addEventListener("click", placeOrder);
+        }
+
+        const applyCouponBtn = document.getElementById("applyCouponBtn");
+        if (applyCouponBtn) {
+          applyCouponBtn.addEventListener("click", applyCouponToCheckout);
+        }
       });
 
-      // Show/hide card details
-      document
-        .querySelectorAll('input[name="paymentMethod"]')
-        .forEach((radio) => {
-          radio.addEventListener("change", function () {
-            const cardDetails = document.getElementById("cardDetails");
-            const paymentMethod = document.querySelector(
-              'input[name="paymentMethod"]:checked',
-            );
+      function initializeCheckout() {
+        const preparedItems = readJson("checkoutItems", []);
+        const cartItems = readJson("foodDeliveryCartItems", []);
+        checkoutItems = preparedItems.length ? preparedItems : cartItems;
 
-            // Update selected styling
-            document
-              .querySelectorAll(".payment-method")
-              .forEach((m) => m.classList.remove("selected"));
-            paymentMethod.closest(".payment-method").classList.add("selected");
-
-            if (paymentMethod.value === "card") {
-              cardDetails.style.display = "block";
-            } else {
-              cardDetails.style.display = "none";
-            }
-          });
-        });
-
-      async function placeOrder() {
-        const fullName = document.getElementById("fullName").value;
-        const phoneNumber = document.getElementById("phoneNumber").value;
-        const address = document.getElementById("address").value;
-        const city = document.getElementById("city").value;
-        const postalCode = document.getElementById("postalCode").value;
-        const paymentMethod = document.querySelector(
-          'input[name="paymentMethod"]:checked',
-        ).value;
-
-        if (!fullName || !phoneNumber || !address || !city || !postalCode) {
-          alert("Please fill in all required fields");
+        if (!Array.isArray(checkoutItems) || !checkoutItems.length) {
+          showEmptyCheckout();
           return;
         }
 
-        const subtotal = parseFloat(
-          localStorage.getItem("checkoutSubtotal") || 0,
+        const storedRestaurantName =
+          localStorage.getItem("checkoutRestaurantName") ||
+          checkoutItems[0]?.restaurant_name ||
+          "Restaurant";
+
+        const storedRestaurantId =
+          localStorage.getItem("checkoutRestaurantId") ||
+          checkoutItems[0]?.restaurant_id ||
+          "";
+
+        checkoutRestaurant = {
+          id: String(storedRestaurantId || ""),
+          name: storedRestaurantName,
+        };
+
+        const subtotalFromStorage = parseFloat(
+          localStorage.getItem("checkoutSubtotal") || "0",
         );
-        const tax = parseFloat(localStorage.getItem("checkoutTax") || 0);
-        const total = parseFloat(localStorage.getItem("checkoutTotal") || 0);
-        const cartItems = JSON.parse(
-          localStorage.getItem("foodDeliveryCartItems") || "[]",
+        const taxFromStorage = parseFloat(
+          localStorage.getItem("checkoutTax") || "0",
         );
 
-        // Prepare order data for database
+        const calculatedSubtotal = checkoutItems.reduce((sum, item) => {
+          return sum + Number(item.price || 0) * Number(item.quantity || 0);
+        }, 0);
+
+        const subtotal =
+          subtotalFromStorage > 0 ? subtotalFromStorage : calculatedSubtotal;
+        const deliveryFee = checkoutItems.length ? 5 : 0;
+        const tax = taxFromStorage > 0 ? taxFromStorage : subtotal * 0.1;
+        const total = subtotal + deliveryFee + tax;
+
+        checkoutSummary = {
+          subtotal,
+          deliveryFee,
+          tax,
+          discount: 0,
+          total,
+        };
+
+        renderCheckoutHeader();
+        renderOrderItems();
+        renderSummary();
+        prefillUserDetails();
+      }
+
+      function initializeCoupons() {
+        const couponSelect = document.getElementById("couponSelect");
+        if (!couponSelect || typeof window.getAvailableCoupons !== "function") {
+          return;
+        }
+
+        const coupons = window.getAvailableCoupons();
+        couponSelect.innerHTML = `<option value="">Select a coupon</option>`;
+
+        if (!coupons.length) {
+          couponSelect.innerHTML = `<option value="">No active coupons available</option>`;
+          return;
+        }
+
+        coupons.forEach((coupon) => {
+          const option = document.createElement("option");
+          option.value = coupon.id;
+          option.textContent = `${coupon.discount}% OFF (${coupon.id})`;
+          couponSelect.appendChild(option);
+        });
+      }
+
+      function applyCouponToCheckout() {
+        const couponSelect = document.getElementById("couponSelect");
+        const couponMessage = document.getElementById("couponMessage");
+
+        if (!couponSelect) return;
+
+        const selectedCouponId = couponSelect.value;
+        if (!selectedCouponId) {
+          setCouponMessage("Please select a coupon first.", "error");
+          return;
+        }
+
+        if (typeof window.previewCouponDiscount !== "function") {
+          setCouponMessage("Rewards preview is not available.", "error");
+          return;
+        }
+
+        const baseTotal =
+          Number(checkoutSummary.subtotal) +
+          Number(checkoutSummary.deliveryFee) +
+          Number(checkoutSummary.tax);
+
+        const preview = window.previewCouponDiscount(
+          selectedCouponId,
+          baseTotal,
+        );
+
+        if (!preview.success) {
+          checkoutSummary.discount = 0;
+          checkoutSummary.total = baseTotal;
+          appliedCouponId = "";
+          appliedCouponData = null;
+          renderSummary();
+          setCouponMessage(
+            preview.message || "Could not apply coupon.",
+            "error",
+          );
+          return;
+        }
+
+        appliedCouponId = selectedCouponId;
+        appliedCouponData = preview.coupon;
+        checkoutSummary.discount = Number(preview.discountAmount || 0);
+        checkoutSummary.total = Math.max(0, Number(preview.finalTotal || 0));
+
+        renderSummary();
+        setCouponMessage(
+          `${preview.coupon.discount}% coupon applied successfully.`,
+          "success",
+        );
+      }
+
+      function setCouponMessage(message, type) {
+        const couponMessage = document.getElementById("couponMessage");
+        if (!couponMessage) return;
+        couponMessage.textContent = message;
+        couponMessage.className = `coupon-message ${type}`;
+      }
+
+      function showEmptyCheckout() {
+        const empty = document.getElementById("emptyCheckout");
+        const content = document.getElementById("checkoutContent");
+        if (empty) empty.style.display = "block";
+        if (content) content.style.display = "none";
+      }
+
+      function renderCheckoutHeader() {
+        const itemCount = checkoutItems.reduce(
+          (sum, item) => sum + Number(item.quantity || 0),
+          0,
+        );
+        const eta = generateEstimatedEta(itemCount);
+
+        const restaurantNameEl = document.getElementById("restaurantName");
+        const restaurantMetaEl = document.getElementById("restaurantMeta");
+        const estimatedEtaEl = document.getElementById("estimatedEta");
+        const pillEl = document.getElementById("checkoutRestaurantPill");
+
+        if (restaurantNameEl)
+          restaurantNameEl.textContent = checkoutRestaurant.name;
+        if (restaurantMetaEl) {
+          restaurantMetaEl.textContent = `${itemCount} item${itemCount !== 1 ? "s" : ""} • Fresh prep • Reliable delivery through FoodExpress`;
+        }
+        if (estimatedEtaEl) estimatedEtaEl.textContent = eta;
+        if (pillEl) pillEl.textContent = checkoutRestaurant.name;
+      }
+
+      function renderOrderItems() {
+        const container = document.getElementById("orderItems");
+        if (!container) return;
+
+        container.innerHTML = checkoutItems
+          .map((item) => {
+            const name = escapeHtml(item.name || "Unnamed Item");
+            const image = item.image_url || DEFAULT_IMAGE;
+            const quantity = Number(item.quantity || 0);
+            const unitPrice = Number(item.price || 0);
+            const lineTotal = unitPrice * quantity;
+
+            return `
+              <div class="order-item">
+                <img src="${image}" alt="${name}" onerror="this.src='${DEFAULT_IMAGE}'" />
+                <div class="item-info">
+                  <h4>${name}</h4>
+                  <div class="item-meta">
+                    <span>${escapeHtml(item.restaurant_name || checkoutRestaurant.name)}</span>
+                    <span>$${unitPrice.toFixed(2)} each</span>
+                  </div>
+                </div>
+                <div class="item-total">
+                  <span class="qty">Qty ${quantity}</span>
+                  <span class="price">$${lineTotal.toFixed(2)}</span>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function renderSummary() {
+        const itemCount = checkoutItems.reduce(
+          (sum, item) => sum + Number(item.quantity || 0),
+          0,
+        );
+
+        const baseTotal =
+          Number(checkoutSummary.subtotal) +
+          Number(checkoutSummary.deliveryFee) +
+          Number(checkoutSummary.tax);
+
+        if (!checkoutSummary.discount) {
+          checkoutSummary.total = baseTotal;
+        }
+
+        setText(
+          "summaryItemsLabel",
+          `${itemCount} item${itemCount !== 1 ? "s" : ""}`,
+        );
+        setText("summarySubtotal", checkoutSummary.subtotal.toFixed(2));
+        setText("summaryDelivery", checkoutSummary.deliveryFee.toFixed(2));
+        setText("summaryTax", checkoutSummary.tax.toFixed(2));
+        setText("summaryTotal", checkoutSummary.total.toFixed(2));
+
+        const discountRow = document.getElementById("discountRow");
+        if (checkoutSummary.discount > 0) {
+          if (discountRow) discountRow.style.display = "flex";
+          setText("summaryDiscount", checkoutSummary.discount.toFixed(2));
+        } else {
+          if (discountRow) discountRow.style.display = "none";
+          setText("summaryDiscount", "0.00");
+        }
+
+        setText(
+          "rewardPreview",
+          `+${Math.floor(Math.max(0, checkoutSummary.total) / 10)} points`,
+        );
+      }
+
+      function prefillUserDetails() {
+        const profile = readJson(USER_PROFILE_KEY, {});
+        const fallbackEmail = localStorage.getItem("userEmail") || "";
+
+        const derivedName =
+          profile.name ||
+          profile.full_name ||
+          [profile.first_name, profile.last_name].filter(Boolean).join(" ") ||
+          "";
+
+        document.getElementById("fullName").value = derivedName;
+        document.getElementById("phoneNumber").value =
+          profile.phone || profile.phone_number || "";
+        document.getElementById("address").value = profile.address || "";
+        document.getElementById("city").value = profile.city || "";
+        document.getElementById("postalCode").value = profile.postal_code || "";
+        document.getElementById("deliveryNote").value =
+          profile.delivery_note || "";
+
+        if (!derivedName && fallbackEmail) {
+          document.getElementById("fullName").placeholder =
+            `Order for ${fallbackEmail}`;
+        }
+      }
+
+      function initializePaymentMethods() {
+        document
+          .querySelectorAll('input[name="paymentMethod"]')
+          .forEach((radio) => {
+            radio.addEventListener("change", () => {
+              document.querySelectorAll(".payment-method").forEach((method) => {
+                method.classList.remove("selected");
+              });
+
+              const selected = document.querySelector(
+                'input[name="paymentMethod"]:checked',
+              );
+              if (selected) {
+                const wrapper = selected.closest(".payment-method");
+                if (wrapper) wrapper.classList.add("selected");
+              }
+
+              const cardFields = document.getElementById("cardFields");
+              if (cardFields) {
+                cardFields.style.display =
+                  selected && selected.value === "card" ? "block" : "none";
+              }
+            });
+          });
+      }
+
+      function initializeCardFormatting() {
+        const cardNumber = document.getElementById("cardNumber");
+        const cardExpiry = document.getElementById("cardExpiry");
+        const cardCVV = document.getElementById("cardCVV");
+
+        if (cardNumber) {
+          cardNumber.addEventListener("input", () => {
+            let value = cardNumber.value.replace(/\D/g, "").slice(0, 16);
+            value = value.replace(/(.{4})/g, "$1 ").trim();
+            cardNumber.value = value;
+          });
+        }
+
+        if (cardExpiry) {
+          cardExpiry.addEventListener("input", () => {
+            let value = cardExpiry.value.replace(/\D/g, "").slice(0, 4);
+            if (value.length >= 3) {
+              value = value.slice(0, 2) + "/" + value.slice(2);
+            }
+            cardExpiry.value = value;
+          });
+        }
+
+        if (cardCVV) {
+          cardCVV.addEventListener("input", () => {
+            cardCVV.value = cardCVV.value.replace(/\D/g, "").slice(0, 4);
+          });
+        }
+      }
+
+      async function placeOrder() {
+        const fullName = document.getElementById("fullName").value.trim();
+        const phoneNumber = document.getElementById("phoneNumber").value.trim();
+        const address = document.getElementById("address").value.trim();
+        const city = document.getElementById("city").value.trim();
+        const postalCode = document.getElementById("postalCode").value.trim();
+        const deliveryNote = document
+          .getElementById("deliveryNote")
+          .value.trim();
+        const selectedPayment = document.querySelector(
+          'input[name="paymentMethod"]:checked',
+        );
+        const paymentMethod = selectedPayment ? selectedPayment.value : "cash";
+
+        if (!fullName || !phoneNumber || !address || !city || !postalCode) {
+          alert("Please fill in all required delivery details.");
+          return;
+        }
+
+        if (paymentMethod === "card") {
+          const cardNumber = document.getElementById("cardNumber").value.trim();
+          const cardExpiry = document.getElementById("cardExpiry").value.trim();
+          const cardCVV = document.getElementById("cardCVV").value.trim();
+
+          if (!cardNumber || !cardExpiry || !cardCVV) {
+            alert("Please complete your card details.");
+            return;
+          }
+        }
+
+        if (!checkoutItems.length) {
+          alert("Your checkout is empty.");
+          return;
+        }
+
+        const btn = document.getElementById("placeOrderBtn");
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Placing Order...";
+
         const orderData = {
           customer_name: fullName,
           phone_number: phoneNumber,
-          address: address,
-          city: city,
+          address,
+          city,
           postal_code: postalCode,
+          delivery_note: deliveryNote,
           payment_method: paymentMethod,
-          subtotal: subtotal,
-          tax: tax,
-          delivery_fee: 5.0,
-          total: total,
-          items: cartItems,
+          subtotal: checkoutSummary.subtotal,
+          tax: checkoutSummary.tax,
+          delivery_fee: checkoutSummary.deliveryFee,
+          discount_amount: checkoutSummary.discount,
+          coupon_id: appliedCouponId || null,
+          coupon_discount: appliedCouponData ? appliedCouponData.discount : 0,
+          total: checkoutSummary.total,
+          restaurant_id: checkoutRestaurant.id,
+          restaurant_name: checkoutRestaurant.name,
+          items: checkoutItems,
         };
 
         try {
-          // Save order to database
-          console.log(
-            "📤 Sending order data:",
-            JSON.stringify(orderData, null, 2),
-          );
-
           const response = await fetch(
             "../../backend/controllers/OrderController.php?action=create",
             {
@@ -472,52 +1359,165 @@
             },
           );
 
-          console.log("📥 Response status:", response.status);
-          const responseText = await response.text();
-          console.log("📥 Raw response:", responseText);
+          const raw = await response.text();
+          let result = null;
 
-          const result = JSON.parse(responseText);
-
-          if (result.success) {
-            // Store order details locally
-            const orderDetails = {
-              orderId: result.order_id,
-              orderNumber: result.order_number,
-              fullName,
-              phoneNumber,
-              address,
-              city,
-              postalCode,
-              paymentMethod,
-              total: total,
-              items: cartItems,
-              timestamp: new Date().toISOString(),
-            };
-
-            localStorage.setItem("lastOrder", JSON.stringify(orderDetails));
-
-            // Clear cart after successful order
-            localStorage.removeItem("foodDeliveryCartCount");
-            localStorage.removeItem("foodDeliveryCartItems");
-            localStorage.removeItem("checkoutTotal");
-            localStorage.removeItem("checkoutSubtotal");
-            localStorage.removeItem("checkoutTax");
-
-            alert(
-              "✅ Order placed successfully!\n\nOrder Number: " +
-                result.order_number,
-            );
-            window.location.href = "dashboard.html";
-          } else {
-            alert("Failed to place order: " + result.message);
+          try {
+            result = JSON.parse(raw);
+          } catch (parseError) {
+            throw new Error("Invalid server response while creating order.");
           }
-        } catch (error) {
-          console.error("❌ Error placing order:", error);
+
+          if (!result.success) {
+            throw new Error(result.message || "Failed to place order.");
+          }
+
+          const newOrder = {
+            id: result.order_id || generateFallbackOrderId(),
+            orderId: result.order_id || generateFallbackOrderId(),
+            orderNumber: result.order_number || generateFallbackOrderNumber(),
+            restaurantId: checkoutRestaurant.id,
+            restaurantName: checkoutRestaurant.name,
+            fullName,
+            phoneNumber,
+            address,
+            city,
+            postalCode,
+            deliveryNote,
+            paymentMethod,
+            subtotal: checkoutSummary.subtotal,
+            tax: checkoutSummary.tax,
+            deliveryFee: checkoutSummary.deliveryFee,
+            discountAmount: checkoutSummary.discount,
+            couponId: appliedCouponId || null,
+            couponDiscount: appliedCouponData ? appliedCouponData.discount : 0,
+            total: checkoutSummary.total,
+            items: checkoutItems,
+            itemCount: checkoutItems.reduce(
+              (sum, item) => sum + Number(item.quantity || 0),
+              0,
+            ),
+            status: "pending",
+            timestamp: new Date().toISOString(),
+            estimatedDelivery: generateEstimatedEta(checkoutItems.length),
+          };
+
+          localStorage.setItem("latestOrder", JSON.stringify(newOrder));
+          localStorage.setItem("lastOrder", JSON.stringify(newOrder));
+          saveOrderHistory(newOrder);
+
+          if (
+            appliedCouponId &&
+            typeof window.markCouponAsUsed === "function"
+          ) {
+            window.markCouponAsUsed(appliedCouponId);
+          }
+
+          updateSavedDeliveryProfile({
+            fullName,
+            phoneNumber,
+            address,
+            city,
+            postalCode,
+            deliveryNote,
+          });
+
+          clearCheckoutState();
+
           alert(
-            "Error placing order. Please try again.\n\nCheck console for details: " +
-              error.message,
+            `✅ Order placed successfully!\n\nOrder Number: ${newOrder.orderNumber}`,
           );
+          window.location.href = "track-order.html";
+        } catch (error) {
+          console.error("Order placement failed:", error);
+          alert(`Failed to place order: ${error.message}`);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
         }
+      }
+
+      function saveOrderHistory(order) {
+        const orders = readJson(ORDER_HISTORY_KEY, []);
+        orders.unshift(order);
+        localStorage.setItem(
+          ORDER_HISTORY_KEY,
+          JSON.stringify(orders.slice(0, 25)),
+        );
+      }
+
+      function updateSavedDeliveryProfile(details) {
+        const profile = readJson(USER_PROFILE_KEY, {});
+        const existingName =
+          profile.name ||
+          profile.full_name ||
+          [profile.first_name, profile.last_name].filter(Boolean).join(" ");
+
+        const updatedProfile = {
+          ...profile,
+          name: existingName || details.fullName,
+          full_name: existingName || details.fullName,
+          phone: details.phoneNumber,
+          phone_number: details.phoneNumber,
+          address: details.address,
+          city: details.city,
+          postal_code: details.postalCode,
+          delivery_note: details.deliveryNote,
+        };
+
+        localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(updatedProfile));
+      }
+
+      function clearCheckoutState() {
+        localStorage.removeItem("foodDeliveryCartCount");
+        localStorage.removeItem("foodDeliveryCartItems");
+        localStorage.removeItem("checkoutItems");
+        localStorage.removeItem("checkoutRestaurantId");
+        localStorage.removeItem("checkoutRestaurantName");
+        localStorage.removeItem("checkoutTotal");
+        localStorage.removeItem("checkoutSubtotal");
+        localStorage.removeItem("checkoutTax");
+
+        if (typeof window.updateCartCount === "function") {
+          window.updateCartCount();
+        }
+      }
+
+      function generateEstimatedEta(itemCount) {
+        const baseMin = 25 + itemCount * 2;
+        const baseMax = 35 + itemCount * 3;
+        return `${baseMin}–${baseMax} min`;
+      }
+
+      function generateFallbackOrderId() {
+        return "FE-" + Date.now();
+      }
+
+      function generateFallbackOrderNumber() {
+        return "FDX-" + String(Date.now()).slice(-6);
+      }
+
+      function readJson(key, fallback) {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch (error) {
+          return fallback;
+        }
+      }
+
+      function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
       }
     </script>
   </body>

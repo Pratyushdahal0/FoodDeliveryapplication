@@ -8,15 +8,12 @@
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/dashboard.css" />
     <link rel="stylesheet" href="../css/shared.css" />
-
-    <!-- Font Awesome -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
   </head>
   <body>
-    <!-- AUTH PROTECTION -->
     <script>
       if (!localStorage.getItem("isLoggedIn")) {
         alert("Please login first");
@@ -24,42 +21,9 @@
       }
     </script>
 
-    <!-- ===== NAVBAR ===== -->
-    <nav class="navbar">
-      <div class="container">
-        <div class="navbar-brand"><a href="dashboard.html">FoodExpress</a></div>
+    <div id="navbarContainer"></div>
 
-        <div class="navbar-nav">
-          <a href="dashboard.html" class="nav-link">Home</a>
-          <a href="shop.html" class="nav-link">Shop</a>
-          <a href="food.html" class="nav-link">Food</a>
-          <a href="loggedContact.html" class="nav-link">Contact</a>
-        </div>
-
-        <div class="navbar-right">
-          <div class="search-box">
-            <i
-              class="fa-solid fa-magnifying-glass"
-              style="color: #9ca3af; font-size: 0.85rem"
-            ></i>
-            <input type="text" placeholder="Search food..." />
-          </div>
-          <div class="hamburger" id="hamburger">
-            <span></span><span></span><span></span>
-          </div>
-          <a href="#" onclick="logout()">
-            <button class="login-btn">
-              <i class="fa-regular fa-user"></i>
-              Log out
-            </button>
-          </a>
-        </div>
-      </div>
-    </nav>
-
-    <!-- ===== DASHBOARD ===== -->
     <div class="dashboard-container">
-      <!-- WELCOME CARD -->
       <div class="welcome-card">
         <div class="avatar" id="welcomeAvatar">
           <span id="welcomeAvatarText">JD</span>
@@ -87,11 +51,8 @@
         </div>
       </div>
 
-      <!-- MAIN GRID -->
       <div class="dashboard-grid">
-        <!-- ===== LEFT COLUMN ===== -->
         <div class="left-col">
-          <!-- REWARDS -->
           <div class="rewards-card">
             <div class="rewards-header">
               <h3>Rewards Program</h3>
@@ -113,13 +74,12 @@
             </div>
           </div>
 
-          <!-- ORDERS -->
           <div class="orders-card">
             <div class="tabs">
-              <button class="tab-btn active" id="recentTab">
+              <button class="tab-btn active" id="recentTab" type="button">
                 <i class="fa-solid fa-bag-shopping"></i> Recent Orders
               </button>
-              <button class="tab-btn" id="favoriteTab">
+              <button class="tab-btn" id="favoriteTab" type="button">
                 <i class="fa-regular fa-heart"></i> Favorites
               </button>
             </div>
@@ -130,7 +90,8 @@
                 No recent orders yet. Place an order to see it here.
               </p>
             </div>
-            <button class="view-all-btn">
+
+            <button class="view-all-btn" id="viewAllOrdersBtn" type="button">
               View All Orders <i class="fa-solid fa-chevron-right"></i>
             </button>
 
@@ -140,26 +101,20 @@
               style="display: none"
             >
               <div id="favoritesList"></div>
-              <p id="noFavoritesMsg" class="empty-msg">
+              <p id="noFavoritesMsg" class="empty-msg" style="display: none">
                 No favorites yet. Add items from Shop or Food.
               </p>
             </div>
           </div>
         </div>
 
-        <!-- ===== RIGHT COLUMN ===== -->
         <div class="right-col">
-          <!-- QUICK ACTIONS -->
           <div class="card quick-actions">
             <h3>Quick Actions</h3>
 
-            <div class="action-item">
+            <div class="action-item" id="actionBrowseMenu">
               <div class="action-icon red">🛒</div>
-              <span
-                class="action-label"
-                onclick="window.location.href = 'food.html'"
-                >Browse Menu</span
-              >
+              <span class="action-label">Browse Menu</span>
               <i class="fa-solid fa-chevron-right action-arrow"></i>
             </div>
 
@@ -180,7 +135,6 @@
             </div>
           </div>
 
-          <!-- ACCOUNT -->
           <div class="card account-card">
             <h3>Account</h3>
 
@@ -188,40 +142,43 @@
               <i class="fa-regular fa-user"></i>
               Edit Profile
             </div>
+
             <div class="account-item" id="actionAddresses">
               <i class="fa-solid fa-location-dot"></i>
               Addresses
             </div>
+
             <div class="account-item" id="actionPaymentMethods">
               <i class="fa-regular fa-credit-card"></i>
               Payment Methods
             </div>
+
             <div class="account-item" id="actionNotifications">
               <i class="fa-regular fa-bell"></i>
               Notifications
             </div>
+
             <div class="account-item" id="actionSettings">
               <i class="fa-solid fa-gear"></i>
               Settings
             </div>
+
             <div class="account-item logout" id="actionLogout">
               <i class="fa-solid fa-right-from-bracket"></i>
               Log Out
             </div>
           </div>
 
-          <!-- SPECIAL OFFER -->
           <div class="offer-card">
             <div class="offer-icon">📈</div>
             <h3>Special Offer!</h3>
             <p>Get 20% off your next order with code FOOD20</p>
-            <button class="offer-btn">Claim Offer</button>
+            <button class="offer-btn" type="button">Claim Offer</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ===== FOOTER ADDED HERE ===== -->
     <footer>
       <div class="footer-grid">
         <div>
@@ -270,7 +227,22 @@
     </footer>
 
     <script src="../js/api/productApi2.js"></script>
+    <script src="../js/modules/profile.js"></script>
     <script src="../js/shared.js"></script>
+    <script src="../js/modules/cart.js"></script>
+    <script src="../js/components/navbar.js"></script>
     <script src="../js/dashboard.js"></script>
+
+    <script>
+      function initNavbar() {
+        if (typeof window.renderNavbar === "function") {
+          renderNavbar("dashboard");
+        } else {
+          setTimeout(initNavbar, 100);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", initNavbar);
+    </script>
   </body>
 </html>

@@ -4,13 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FoodExpress Contact Page</title>
+
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/contact.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
   </head>
 
   <body>
-    <!-- AUTH PROTECTION -->
+    <!-- LOGIN CHECK -->
     <script>
       if (!localStorage.getItem("isLoggedIn")) {
         alert("Please login first");
@@ -18,37 +20,10 @@
       }
     </script>
 
-    <nav class="navbar" id="navbar">
-      <div class="container">
-        <div class="navbar-brand">FoodExpress</div>
+    <!-- NAVBAR -->
+    <div id="navbarContainer"></div>
 
-        <div class="navbar-nav">
-          <a href="dashboard.html" class="nav-link">Home</a>
-          <a href="shop.html" class="nav-link">Shop</a>
-          <a href="food.html" class="nav-link">Food</a>
-          <a href="loggedContact.html" class="nav-link">Contact</a>
-        </div>
-
-        <div class="navbar-right">
-          <div class="search-box">
-            <input type="text" placeholder="Search food..." />
-          </div>
-          <div class="hamburger" id="hamburger">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-          <a href="#" onclick="logout()">
-            <button class="login-btn">
-              <i class="fa-regular fa-user"></i>
-              Log out
-            </button>
-          </a>
-        </div>
-      </div>
-    </nav>
-
-    <!-- HERO SECTION -->
+    <!-- HERO -->
     <div class="hero">
       <h1>Get In <span>Touch</span></h1>
       <p>
@@ -59,73 +34,135 @@
 
     <!-- CONTACT SECTION -->
     <div class="container">
+      <!-- LEFT SIDE -->
       <div class="left">
         <div class="card">
           <h3>Address</h3>
-          <p>123 Food Street<br />Culinary City, FC 12345<br />United States</p>
+          <p>
+            123 Food Street<br />
+            Culinary City, FC 12345<br />
+            United States
+          </p>
         </div>
+
         <div class="card">
           <h3>Phone</h3>
           <p>
-            Main: (555) 123-4567<br />Support: (555) 123-4568<br />Toll Free:
-            1-800-FOOD-EXPRESS
+            Main: (555) 123-4567<br />
+            Support: (555) 123-4568<br />
+            Toll Free: 1-800-FOOD-EXPRESS
           </p>
         </div>
+
         <div class="card">
           <h3>Email</h3>
           <p>
-            hello@foodexpress.com<br />support@foodexpress.com<br />business@foodexpress.com
+            hello@foodexpress.com<br />
+            support@foodexpress.com<br />
+            business@foodexpress.com
           </p>
         </div>
+
         <div class="card">
           <h3>Business Hours</h3>
           <p>
-            Monday – Friday: 8AM – 10PM<br />Saturday – Sunday: 9AM – 11PM<br />Delivery:
-            24/7
+            Monday – Friday: 8AM – 10PM<br />
+            Saturday – Sunday: 9AM – 11PM<br />
+            Delivery: 24/7
           </p>
         </div>
       </div>
 
+      <!-- RIGHT SIDE (FORM) -->
       <div class="right">
         <div class="form-box">
           <h2>Send Us a Message</h2>
-          <div class="form-row">
-            <input type="text" placeholder="First Name" />
-            <input type="text" placeholder="Last Name" />
-          </div>
-          <input type="email" placeholder="Email Address" />
-          <input type="text" placeholder="Phone Number" />
-          <input type="text" placeholder="Subject" />
-          <textarea placeholder="Tell us more about your inquiry..."></textarea>
-          <button>Send Message</button>
+
+          <form id="contactForm">
+            <div class="form-row">
+              <input
+                type="text"
+                id="firstName"
+                name="firstName"
+                placeholder="First Name"
+                required
+              />
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                placeholder="Last Name"
+                required
+              />
+            </div>
+
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="Email Address"
+              required
+            />
+
+            <input
+              type="text"
+              id="phone"
+              name="phone"
+              placeholder="Phone Number"
+            />
+
+            <input
+              type="text"
+              id="subject"
+              name="subject"
+              placeholder="Subject"
+              required
+            />
+
+            <textarea
+              id="message"
+              name="message"
+              placeholder="Tell us more about your inquiry..."
+              required
+            ></textarea>
+
+            <button type="submit" id="contactSubmitBtn">Send Message</button>
+
+            <p id="contactFormMessage" class="contact-form-message"></p>
+          </form>
         </div>
       </div>
     </div>
+    <!-- IMPORTANT: container CLOSED here -->
 
-    <!-- FAQ SECTION -->
+    <!-- FAQ -->
     <div class="faq">
       <h1>Frequently Asked <span>Questions</span></h1>
+
       <div class="faq-grid">
         <div class="faq-card">
           <h3>How long does delivery take?</h3>
-          <p>Most deliveries arrive within 30-45 minutes.</p>
+          <p>Most deliveries arrive within 30–45 minutes.</p>
         </div>
+
         <div class="faq-card">
           <h3>What are your delivery fees?</h3>
           <p>Delivery starts at $2.99 depending on distance.</p>
         </div>
+
         <div class="faq-card">
           <h3>Can I schedule delivery?</h3>
           <p>Yes! Schedule orders up to 7 days earlier.</p>
         </div>
+
         <div class="faq-card">
-          <h3>Which payments accepted?</h3>
+          <h3>Which payments are accepted?</h3>
           <p>Credit cards, PayPal, Apple Pay & Google Pay.</p>
         </div>
       </div>
     </div>
 
-    <!-- MAP SECTION -->
+    <!-- MAP -->
     <div class="map-section">
       <div class="map-box">
         <h2>Map Location Here</h2>
@@ -140,12 +177,14 @@
           <h2>FoodExpress</h2>
           <p>Delivering happiness to your doorstep.</p>
         </div>
+
         <div>
           <h3>Quick Links</h3>
           <a href="dashboard.html">Home</a>
           <a href="food.html">Menu</a>
-          <a href="">Recipes</a>
+          <a href="#">Recipes</a>
         </div>
+
         <div>
           <h3>Support</h3>
           <a href="#">Help Center</a>
@@ -153,6 +192,7 @@
           <a href="#">Terms</a>
           <a href="loggedContact.html">Contact</a>
         </div>
+
         <div>
           <h3>Contact</h3>
           <p>123 Food Street</p>
@@ -160,24 +200,27 @@
           <p>hello@foodexpress.com</p>
         </div>
       </div>
+
       <div class="footer-bottom">© 2026 FoodExpress</div>
     </div>
 
-    <script>
-      function logout() {
-        localStorage.removeItem("isLoggedIn");
-        localStorage.removeItem("userEmail");
-        localStorage.removeItem("foodDeliveryCartCount");
-        localStorage.removeItem("foodDeliveryCartItems");
-        localStorage.removeItem("checkoutTotal");
-        localStorage.removeItem("checkoutSubtotal");
-        localStorage.removeItem("checkoutTax");
-        localStorage.removeItem("lastOrder");
-        alert("You have been logged out");
-        window.location.href = "landingpage.html";
-      }
-    </script>
-
+    <!-- SCRIPTS -->
+    <script src="../js/modules/profile.js"></script>
+    <script src="../js/shared.js"></script>
+    <script src="../js/modules/cart.js"></script>
+    <script src="../js/components/navbar.js"></script>
     <script src="../js/contact.js"></script>
+
+    <script>
+      function initNavbar() {
+        if (typeof window.renderNavbar === "function") {
+          renderNavbar("contact");
+        } else {
+          setTimeout(initNavbar, 100);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", initNavbar);
+    </script>
   </body>
 </html>

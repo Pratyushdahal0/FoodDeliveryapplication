@@ -18,19 +18,50 @@ let currentRatingFilter = 'all';
 let currentSort = 'recommended';
 let currentPopularOnly = false;
 
+function parseRatingValue(value) {
+  if (typeof value === 'number' && !Number.isNaN(value)) {
+    return value;
+  }
+
+  const text = String(value ?? '').trim();
+  const match = text.match(/(\d+(\.\d+)?)/);
+
+  if (match) {
+    const parsed = Number(match[1]);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+
+  return 0;
+}
+
 function normalizeMenuItem(item, index = 0) {
+  const rawCategory = String(item.category || '').trim().toLowerCase();
+
+  let normalizedCategory = rawCategory;
+  if (rawCategory.includes('fast')) normalizedCategory = 'fast food';
+  else if (rawCategory.includes('pizza')) normalizedCategory = 'pizza';
+  else if (rawCategory.includes('sushi')) normalizedCategory = 'sushi';
+  else if (rawCategory.includes('salad')) normalizedCategory = 'salad';
+  else if (rawCategory.includes('indian')) normalizedCategory = 'indian';
+  else if (rawCategory.includes('nepali')) normalizedCategory = 'nepali';
+
+  const parsedRating = parseRatingValue(item.rating);
+
   return {
     id: String(item.id ?? `menu-${index + 1}`),
     name: item.name || 'Untitled Item',
     description: item.description || 'Freshly prepared dish',
     price: Number(item.price ?? 0),
     image_url: item.image_url || DEFAULT_IMAGE,
-    rating: Number(item.rating ?? 4.5),
+    rating: parsedRating,
     delivery_time: item.delivery_time || '30 min',
-    category: String(item.category || '').trim().toLowerCase(),
-    originalCategory: String(item.category || '').trim().toLowerCase(),
+    category: normalizedCategory,
+    originalCategory: rawCategory,
     diet: normalizeDiet(item),
-    is_popular: Number(item.is_popular) === 1 || item.is_popular === true,
+    is_popular:
+      Number(item.is_popular) === 1 ||
+      item.is_popular === true ||
+      String(item.badge || '').toLowerCase().includes('popular'),
     restaurant_id: String(item.restaurant_id ?? ''),
     restaurant_name:
       item.restaurant_name ||
@@ -109,15 +140,20 @@ function matchesPrice(price) {
 }
 
 function matchesRating(rating) {
+  const current = parseRatingValue(rating);
+
   if (currentRatingFilter === 'all') return true;
-  return rating >= Number(currentRatingFilter);
+  if (current === 0) return false;
+
+  return current >= Number(currentRatingFilter);
 }
 
 function getFilteredItems() {
   const filtered = allMenuItems.filter((item) => {
     const matchesCategory =
       currentCategory === 'all' ||
-      String(item.originalCategory || '').toLowerCase() === currentCategory;
+      String(item.category || '').toLowerCase() === currentCategory ||
+      String(item.originalCategory || '').toLowerCase().includes(currentCategory);
 
     const matchesDiet =
       currentDiet === 'all' ||
@@ -125,9 +161,8 @@ function getFilteredItems() {
       (currentDiet === 'vegan' && item.diet === 'vegan');
 
     const matchesPopular = !currentPopularOnly || item.is_popular === true;
-
     const matchesPriceRange = matchesPrice(Number(item.price || 0));
-    const matchesMinRating = matchesRating(Number(item.rating || 0));
+    const matchesMinRating = matchesRating(item.rating);
 
     const query = currentSearch.trim().toLowerCase();
     const matchesSearch =
@@ -177,9 +212,26 @@ function sortItems(items) {
   return sorted;
 }
 
+function updateResultsSummary(items) {
+  const summary = document.getElementById('resultsSummary');
+  if (!summary) return;
+
+  const parts = [];
+  if (currentCategory !== 'all') parts.push(currentCategory);
+  if (currentDiet !== 'all') parts.push(currentDiet === 'veggie' ? 'vegetarian' : currentDiet);
+  if (currentPopularOnly) parts.push('popular');
+  if (currentPriceFilter !== 'all') parts.push('price filtered');
+  if (currentRatingFilter !== 'all') parts.push(`${currentRatingFilter}+ rated`);
+
+  const label = parts.length ? `Filtered by ${parts.join(', ')}` : 'Showing all items';
+  summary.textContent = `${label} • ${items.length} item${items.length !== 1 ? 's' : ''}`;
+}
+
 function renderMenuItems(items) {
   const grid = document.getElementById('menuGrid');
   if (!grid) return;
+
+  updateResultsSummary(items);
 
   if (!items.length) {
     grid.innerHTML = `
@@ -229,7 +281,7 @@ function renderMenuItems(items) {
             </div>
 
             <div class="card-meta">
-              <span><span class="meta-star">★</span> ${escapeHtml(item.rating.toFixed(1))}</span>
+              <span><span class="meta-star">★</span> ${item.rating > 0 ? escapeHtml(item.rating.toFixed(1)) : 'New'}</span>
               <span>
                 <svg class="meta-icon" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10"></circle>
@@ -281,21 +333,22 @@ function setActiveButton(selector, predicate) {
 function setCategory(_btn, category) {
   currentCategory = category;
   setActiveButton('.cat-tab', (element) => {
-    return element.textContent.trim().toLowerCase() === category ||
-      (category === 'all' && element.textContent.trim().toLowerCase() === 'all');
+    return (
+      element.textContent.trim().toLowerCase() === category ||
+      (category === 'all' && element.textContent.trim().toLowerCase() === 'all')
+    );
   });
+  console.log('Category changed:', currentCategory);
   rerenderMenu();
 }
 
 function setDiet(_btn, diet) {
   currentDiet = diet;
   setActiveButton('.diet-pill', (element) => {
-    const text = element.textContent.trim().toLowerCase();
-    if (diet === 'all') return text.includes('all');
-    if (diet === 'veggie') return text.includes('vegetarian');
-    if (diet === 'vegan') return text.includes('vegan');
-    return false;
+    const value = element.getAttribute('data-diet-pill');
+    return value === diet;
   });
+  console.log('Diet changed:', currentDiet);
   rerenderMenu();
 }
 
@@ -355,6 +408,7 @@ async function loadMenuItems() {
   }
 
   allMenuItems = products.map(normalizeMenuItem);
+  console.log('Normalized items:', allMenuItems);
   rerenderMenu();
 }
 
@@ -380,6 +434,7 @@ function setupSearch() {
 
   function handleSearch(value) {
     currentSearch = value || '';
+    console.log('Search changed:', currentSearch);
     rerenderMenu();
   }
 
@@ -407,6 +462,7 @@ function setupFilterControls() {
   if (priceFilter) {
     priceFilter.addEventListener('change', (e) => {
       currentPriceFilter = e.target.value;
+      console.log('Price filter changed:', currentPriceFilter);
       rerenderMenu();
     });
   }
@@ -414,6 +470,7 @@ function setupFilterControls() {
   if (ratingFilter) {
     ratingFilter.addEventListener('change', (e) => {
       currentRatingFilter = e.target.value;
+      console.log('Rating filter changed:', currentRatingFilter);
       rerenderMenu();
     });
   }
@@ -421,6 +478,7 @@ function setupFilterControls() {
   if (sortFilter) {
     sortFilter.addEventListener('change', (e) => {
       currentSort = e.target.value;
+      console.log('Sort changed:', currentSort);
       rerenderMenu();
     });
   }
@@ -428,6 +486,7 @@ function setupFilterControls() {
   if (popularOnly) {
     popularOnly.addEventListener('change', (e) => {
       currentPopularOnly = e.target.checked;
+      console.log('Popular only changed:', currentPopularOnly);
       rerenderMenu();
     });
   }

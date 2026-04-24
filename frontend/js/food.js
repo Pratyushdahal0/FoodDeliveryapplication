@@ -1,9 +1,4 @@
-// ══════════════════════════
-// food.js
-// Premium UI version with filter drawer + pill filters
-// ══════════════════════════
-
-console.log("NEW FOOD JS LOADED - PREMIUM FILTER VERSION");
+console.log("NEW FOOD JS LOADED - FILTERS AND SORTING VERSION");
 
 const FOOD_FAVORITES_KEY = 'foodDeliveryFavorites';
 const DEFAULT_IMAGE =
@@ -15,7 +10,6 @@ let currentDiet = 'all';
 let currentSearch = '';
 let currentPriceFilter = 'all';
 let currentRatingFilter = 'all';
-let currentDeliveryFilter = 'all';
 let currentSort = 'recommended';
 let currentPopularOnly = false;
 
@@ -114,11 +108,6 @@ function matchesRating(rating) {
   return rating >= Number(currentRatingFilter);
 }
 
-function matchesDelivery(deliveryTime) {
-  if (currentDeliveryFilter === 'all') return true;
-  return getDeliveryMinutes(deliveryTime) <= Number(currentDeliveryFilter);
-}
-
 function getFilteredItems() {
   const filtered = allMenuItems.filter((item) => {
     const matchesCategory =
@@ -133,7 +122,6 @@ function getFilteredItems() {
     const matchesPopular = !currentPopularOnly || item.is_popular === true;
     const matchesPriceRange = matchesPrice(Number(item.price || 0));
     const matchesMinRating = matchesRating(Number(item.rating || 0));
-    const matchesDeliveryTime = matchesDelivery(item.delivery_time);
 
     const query = currentSearch.trim().toLowerCase();
     const matchesSearch =
@@ -149,7 +137,6 @@ function getFilteredItems() {
       matchesPopular &&
       matchesPriceRange &&
       matchesMinRating &&
-      matchesDeliveryTime &&
       matchesSearch
     );
   });
@@ -209,7 +196,7 @@ function renderMenuItems(items) {
     grid.innerHTML = `
       <div class="empty-menu-state">
         <h3>No items found</h3>
-        <p>Try changing the filters, sort, category, or search term.</p>
+        <p>Try changing the category, filters, or search term.</p>
       </div>
     `;
     return;
@@ -245,12 +232,8 @@ function renderMenuItems(items) {
 
           <div class="card-body">
             <div class="card-name">${escapeHtml(item.name)}</div>
-
             <div class="card-desc">${escapeHtml(item.description)}</div>
-
-            <div class="card-restaurant">
-              from ${escapeHtml(item.restaurant_name)}
-            </div>
+            <div class="card-restaurant">from ${escapeHtml(item.restaurant_name)}</div>
 
             <div class="card-meta">
               <span><span class="meta-star">★</span> ${escapeHtml(item.rating.toFixed(1))}</span>
@@ -305,17 +288,15 @@ function setActiveButton(selector, predicate) {
 function setCategory(_btn, category) {
   currentCategory = category;
   setActiveButton('.cat-tab', (element) => {
-    return (
-      element.textContent.trim().toLowerCase() === category ||
-      (category === 'all' && element.textContent.trim().toLowerCase() === 'all')
-    );
+    return element.textContent.trim().toLowerCase() === category ||
+      (category === 'all' && element.textContent.trim().toLowerCase() === 'all');
   });
   rerenderMenu();
 }
 
 function setDiet(_btn, diet) {
   currentDiet = diet;
-  setActiveButton('.quick-pill', (element) => {
+  setActiveButton('.diet-pill', (element) => {
     const value = element.getAttribute('data-diet-pill');
     return value === diet;
   });
@@ -421,93 +402,39 @@ function setupSearch() {
   }
 }
 
-function setupSortControl() {
+function setupFilterControls() {
+  const priceFilter = document.getElementById('priceFilter');
+  const ratingFilter = document.getElementById('ratingFilter');
   const sortFilter = document.getElementById('sortFilter');
-  if (!sortFilter) return;
-
-  sortFilter.addEventListener('change', (e) => {
-    currentSort = e.target.value;
-    rerenderMenu();
-  });
-}
-
-function updateDrawerPillState(groupSelector, selectedValue, dataAttr) {
-  document.querySelectorAll(groupSelector).forEach((pill) => {
-    pill.classList.toggle('active', pill.getAttribute(dataAttr) === selectedValue);
-  });
-}
-
-function applyFilterStateToUI() {
-  updateDrawerPillState('.drawer-pill[data-price]', currentPriceFilter, 'data-price');
-  updateDrawerPillState('.drawer-pill[data-rating]', currentRatingFilter, 'data-rating');
-  updateDrawerPillState('.drawer-pill[data-delivery]', currentDeliveryFilter, 'data-delivery');
-
-  const popularOnly = document.getElementById('popularOnly');
-  if (popularOnly) popularOnly.checked = currentPopularOnly;
-}
-
-function setupFilterDrawer() {
-  const drawer = document.getElementById('filterDrawer');
-  const overlay = document.getElementById('filterOverlay');
-  const openBtn = document.getElementById('openFilterDrawer');
-  const closeBtn = document.getElementById('closeFilterDrawer');
-  const applyBtn = document.getElementById('applyFiltersBtn');
-  const resetBtn = document.getElementById('resetFiltersBtn');
   const popularOnly = document.getElementById('popularOnly');
 
-  function openDrawer() {
-    drawer?.classList.add('open');
-    overlay?.classList.add('open');
-    applyFilterStateToUI();
+  if (priceFilter) {
+    priceFilter.addEventListener('change', (e) => {
+      currentPriceFilter = e.target.value;
+      rerenderMenu();
+    });
   }
 
-  function closeDrawer() {
-    drawer?.classList.remove('open');
-    overlay?.classList.remove('open');
+  if (ratingFilter) {
+    ratingFilter.addEventListener('change', (e) => {
+      currentRatingFilter = e.target.value;
+      rerenderMenu();
+    });
   }
 
-  openBtn?.addEventListener('click', openDrawer);
-  closeBtn?.addEventListener('click', closeDrawer);
-  overlay?.addEventListener('click', closeDrawer);
-
-  document.querySelectorAll('.drawer-pill[data-price]').forEach((pill) => {
-    pill.addEventListener('click', () => {
-      currentPriceFilter = pill.getAttribute('data-price') || 'all';
-      applyFilterStateToUI();
+  if (sortFilter) {
+    sortFilter.addEventListener('change', (e) => {
+      currentSort = e.target.value;
+      rerenderMenu();
     });
-  });
+  }
 
-  document.querySelectorAll('.drawer-pill[data-rating]').forEach((pill) => {
-    pill.addEventListener('click', () => {
-      currentRatingFilter = pill.getAttribute('data-rating') || 'all';
-      applyFilterStateToUI();
+  if (popularOnly) {
+    popularOnly.addEventListener('change', (e) => {
+      currentPopularOnly = e.target.checked;
+      rerenderMenu();
     });
-  });
-
-  document.querySelectorAll('.drawer-pill[data-delivery]').forEach((pill) => {
-    pill.addEventListener('click', () => {
-      currentDeliveryFilter = pill.getAttribute('data-delivery') || 'all';
-      applyFilterStateToUI();
-    });
-  });
-
-  popularOnly?.addEventListener('change', (e) => {
-    currentPopularOnly = e.target.checked;
-  });
-
-  applyBtn?.addEventListener('click', () => {
-    rerenderMenu();
-    closeDrawer();
-  });
-
-  resetBtn?.addEventListener('click', () => {
-    currentPriceFilter = 'all';
-    currentRatingFilter = 'all';
-    currentDeliveryFilter = 'all';
-    currentPopularOnly = false;
-    applyFilterStateToUI();
-    rerenderMenu();
-  });
+  }
 }
 
 function setupPage() {
@@ -522,8 +449,7 @@ function setupPage() {
   }
 
   setupSearch();
-  setupSortControl();
-  setupFilterDrawer();
+  setupFilterControls();
 
   const grid = document.getElementById('menuGrid');
   if (grid) {

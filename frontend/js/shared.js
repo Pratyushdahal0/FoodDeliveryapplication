@@ -1,36 +1,23 @@
-const USER_PROFILE_KEY = 'foodExpressUserProfile';
 const FAVORITES_KEY = 'foodDeliveryFavorites';
-const CART_COUNT_KEY = 'foodDeliveryCartCount';
-const CART_ITEMS_KEY = 'foodDeliveryCartItems';
 
-function getUserProfile() {
-  try {
-    return JSON.parse(localStorage.getItem(USER_PROFILE_KEY) || 'null');
-  } catch (error) {
-    console.error('Error reading user profile from localStorage', error);
-    return null;
-  }
-}
-
-function saveUserProfile(profile) {
-  if (!profile || typeof profile !== 'object') return;
-  localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profile));
-}
-
-function clearSession() {
+function logout() {
   localStorage.removeItem('isLoggedIn');
   localStorage.removeItem('userEmail');
-  localStorage.removeItem(USER_PROFILE_KEY);
-  localStorage.removeItem(CART_COUNT_KEY);
-  localStorage.removeItem(CART_ITEMS_KEY);
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('foodDeliveryCartCount');
+  localStorage.removeItem('foodDeliveryCartItems');
+  localStorage.removeItem('checkoutItems');
+  localStorage.removeItem('checkoutRestaurantId');
+  localStorage.removeItem('checkoutRestaurantName');
   localStorage.removeItem('checkoutTotal');
   localStorage.removeItem('checkoutSubtotal');
   localStorage.removeItem('checkoutTax');
   localStorage.removeItem('lastOrder');
-}
 
-function logout() {
-  clearSession();
+  if (typeof clearStoredProfile === 'function') {
+    clearStoredProfile();
+  }
+
   window.location.href = 'landingpage.html';
 }
 
@@ -44,41 +31,22 @@ function requireAuth() {
 }
 
 function getCurrentUserEmail() {
-  const profile = getUserProfile();
-  return profile?.email || localStorage.getItem('userEmail') || '';
+  if (typeof getSafeProfile === 'function') {
+    return getSafeProfile().email || '';
+  }
+  return localStorage.getItem('userEmail') || '';
 }
 
 function getCurrentUserRole() {
-  const profile = getUserProfile();
-  return profile?.role || '';
-}
-
-async function fetchUserProfile(email) {
-  if (!email) return null;
-
-  try {
-    const url = `../../backend/controllers/AuthController.php?action=profile&email=${encodeURIComponent(email)}`;
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!res.ok) {
-      throw new Error('Profile request failed: ' + res.status);
-    }
-
-    const data = await res.json();
-    return data.success ? data.data : null;
-  } catch (error) {
-    console.warn('Unable to fetch user profile from backend:', error);
-    return null;
+  if (typeof getSafeProfile === 'function') {
+    return getSafeProfile().role || '';
   }
+  return localStorage.getItem('userRole') || '';
 }
 
 function requireOwnerAuth() {
   if (!requireAuth()) return false;
+
   const role = getCurrentUserRole();
   if (role !== 'restaurant-owner') {
     alert('Owner access only. Redirecting to customer dashboard.');
@@ -90,6 +58,7 @@ function requireOwnerAuth() {
 
 function requireCustomerAuth() {
   if (!requireAuth()) return false;
+
   const role = getCurrentUserRole();
   if (role === 'restaurant-owner') {
     alert('Customer access only. Redirecting to owner dashboard.');
@@ -101,7 +70,8 @@ function requireCustomerAuth() {
 
 function getFavoriteIds() {
   try {
-    return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+    const parsed = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed.map(String) : [];
   } catch (error) {
     console.error('Error parsing favorites from localStorage', error);
     return [];
@@ -114,19 +84,18 @@ function saveFavoriteIds(ids) {
 }
 
 function isFavorite(productId) {
-  return getFavoriteIds().includes(String(productId));
+  return getFavoriteIds().includes(String(productId || ''));
 }
 
 function renderFavoriteButton(btn, isActive) {
   if (!btn) return;
-
   btn.textContent = isActive ? '♥' : '♡';
   btn.classList.toggle('liked', isActive);
   btn.style.color = isActive ? '#e53935' : '';
 }
 
 function toggleFavorite(productId, btn) {
-  if (!productId) return;
+  if (!productId) return [];
 
   const ids = getFavoriteIds();
   const id = String(productId);
@@ -148,9 +117,7 @@ function updateFavoriteButton(btn) {
   if (!btn) return;
   const productId = btn.dataset.productId;
   if (!productId) return;
-
-  const active = isFavorite(productId);
-  renderFavoriteButton(btn, active);
+  renderFavoriteButton(btn, isFavorite(productId));
 }
 
 function initFavoriteButtons(root = document) {
@@ -159,36 +126,15 @@ function initFavoriteButtons(root = document) {
   });
 }
 
-function getUserStats(profile) {
-  const points = Number(profile?.points ?? 850);
-  const orders = Number(profile?.orders ?? 0);
-  const saved = Number(profile?.saved ?? 25);
-  const nextThreshold = 1000;
-  const progress = Math.min(100, Math.round((points / nextThreshold) * 100));
-
-  return {
-    points,
-    orders,
-    saved,
-    nextThreshold,
-    progress
-  };
-}
-
-window.getUserProfile = getUserProfile;
-window.saveUserProfile = saveUserProfile;
-window.clearSession = clearSession;
 window.logout = logout;
 window.requireAuth = requireAuth;
 window.getCurrentUserEmail = getCurrentUserEmail;
-window.fetchUserProfile = fetchUserProfile;
+window.getCurrentUserRole = getCurrentUserRole;
+window.requireOwnerAuth = requireOwnerAuth;
+window.requireCustomerAuth = requireCustomerAuth;
 window.getFavoriteIds = getFavoriteIds;
 window.saveFavoriteIds = saveFavoriteIds;
 window.isFavorite = isFavorite;
 window.toggleFavorite = toggleFavorite;
 window.updateFavoriteButton = updateFavoriteButton;
 window.initFavoriteButtons = initFavoriteButtons;
-window.getUserStats = getUserStats;
-window.getCurrentUserRole = getCurrentUserRole;
-window.requireOwnerAuth = requireOwnerAuth;
-window.requireCustomerAuth = requireCustomerAuth;

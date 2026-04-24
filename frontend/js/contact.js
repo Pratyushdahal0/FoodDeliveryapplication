@@ -1,113 +1,71 @@
-// form elements
-const form = document.querySelector(".form-box");
-const button = form.querySelector("button");
+document.addEventListener("DOMContentLoaded", () => {
+  const contactForm = document.getElementById("contactForm");
+  const submitBtn = document.getElementById("contactSubmitBtn");
+  const formMessage = document.getElementById("contactFormMessage");
 
-// toast notification
-function showToast(messageText, color) {
-  const toast = document.createElement("div");
+  if (!contactForm) return;
 
-  toast.textContent = messageText;
-  toast.style.position = "fixed";
-  toast.style.bottom = "30px";
-  toast.style.right = "30px";
-  toast.style.padding = "14px 22px";
-  toast.style.background = color;
-  toast.style.color = "#fff";
-  toast.style.borderRadius = "12px";
-  toast.style.boxShadow = "0 8px 25px rgba(0,0,0,0.2)";
-  toast.style.opacity = "0";
-  toast.style.transform = "translateY(20px)";
-  toast.style.transition = "all 0.4s ease";
+  function showMessage(message, type = "success") {
+    formMessage.textContent = message;
+    formMessage.className = `contact-form-message ${type}`;
+  }
 
-  document.body.appendChild(toast);
+  contactForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  setTimeout(() => {
-    toast.style.opacity = "1";
-    toast.style.transform = "translateY(0)";
-  }, 100);
+    const payload = {
+      firstName: document.getElementById("firstName")?.value.trim() || "",
+      lastName: document.getElementById("lastName")?.value.trim() || "",
+      email: document.getElementById("email")?.value.trim() || "",
+      phone: document.getElementById("phone")?.value.trim() || "",
+      subject: document.getElementById("subject")?.value.trim() || "",
+      message: document.getElementById("message")?.value.trim() || "",
+    };
 
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(20px)";
-    setTimeout(() => toast.remove(), 400);
-  }, 3000);
-}
-
-// shake effect
-function shake(el) {
-  el.style.transform = "translateX(-5px)";
-  setTimeout(() => (el.style.transform = "translateX(5px)"), 100);
-  setTimeout(() => (el.style.transform = "translateX(0)"), 200);
-}
-
-// form submit
-button.addEventListener("click", function (e) {
-  e.preventDefault();
-
-  const inputs = form.querySelectorAll("input, textarea");
-
-  let isValid = true;
-  let formData = {};
-
-  inputs.forEach((input) => {
-    if (input.value.trim() === "") {
-      input.style.border = "2px solid red";
-      shake(input);
-      isValid = false;
-    } else {
-      input.style.border = "1px solid #ddd";
-      formData[input.placeholder] = input.value;
+    if (!payload.firstName || !payload.lastName || !payload.email || !payload.subject || !payload.message) {
+      showMessage("Please fill all required fields.", "error");
+      return;
     }
-  });
 
-  if (!isValid) {
-    showToast("Please fill all fields", "#e74c3c");
-    return;
-  }
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Sending...";
+    showMessage("", "");
 
-  // loading
-  button.disabled = true;
-  button.innerHTML = "Sending <span class='loader'></span>";
+    try {
+      const response = await fetch("../../backend/controllers/ContactController.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-  setTimeout(() => {
-    button.disabled = false;
-    button.innerHTML = "Send Message";
+      const text = await response.text();
 
-    ```
-localStorage.setItem("contactForm", JSON.stringify(formData));
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        console.error("Raw server response:", text);
+        throw new Error("Server did not return valid JSON.");
+      }
 
-showToast("Message sent successfully", "#27ae60");
+      if (!response.ok) {
+        throw new Error(result.message || "Request failed.");
+      }
 
-inputs.forEach(input => (input.value = ""));
-```;
-  }, 1500);
-});
-
-// email validation
-const emailInput = document.querySelector('input[type="email"]');
-
-emailInput.addEventListener("blur", function () {
-  const pattern = /^[^ ]+@[^ ]+.[a-z]{2,3}$/;
-
-  if (!pattern.test(emailInput.value)) {
-    emailInput.style.border = "2px solid red";
-    shake(emailInput);
-  } else {
-    emailInput.style.border = "1px solid #ddd";
-  }
-});
-
-// search filter
-const searchBox = document.querySelector(".search-box");
-
-searchBox.addEventListener("keyup", function () {
-  const value = searchBox.value.toLowerCase();
-
-  const links = document.querySelectorAll(".nav-links a");
-
-  links.forEach((link) => {
-    link.style.display = link.textContent.toLowerCase().includes(value)
-      ? "inline-block"
-      : "none";
+      if (result.success) {
+        showMessage(result.message || "Message submitted successfully.", "success");
+        contactForm.reset();
+      } else {
+        showMessage(result.message || "Failed to save your message.", "error");
+      }
+    } catch (error) {
+      console.error("Contact submit error:", error);
+      showMessage(error.message || "Something went wrong while sending your message.", "error");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Send Message";
+    }
   });
 });

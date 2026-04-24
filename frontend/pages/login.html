@@ -165,9 +165,13 @@
           </div>
           <div class="form-group">
             <label for="regRole">Register As</label>
-            <select class="role-select" id="regRole">
+            <select
+              class="role-select"
+              id="regRole"
+              onchange="handleRoleRedirect()"
+            >
               <option value="customer">Customer</option>
-              <option value="restaurant-owner">Restaurant Owner</option>
+              <option value="restaurant_owner">Restaurant Owner</option>
               <option value="rider">Delivery Rider</option>
             </select>
           </div>

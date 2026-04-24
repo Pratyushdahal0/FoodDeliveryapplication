@@ -4,144 +4,227 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Track Order - FoodExpress</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/track-order.css" />
   </head>
   <body>
-    <nav class="navbar" id="navbar">
-      <div class="container">
-        <div class="navbar-brand"><a href="dashboard.html">FoodExpress</a></div>
+    <div id="navbarContainer"></div>
 
-        <div class="navbar-nav">
-          <a href="dashboard.html" class="nav-link">Home</a>
-          <a href="shop.html" class="nav-link">Shop</a>
-          <a href="food.html" class="nav-link">Food</a>
-          <a href="contact.html" class="nav-link">Contact</a>
-        </div>
-
-        <div class="navbar-right">
-          <div class="search-box">
-            <input type="text" placeholder="Search food..." />
-          </div>
-          <div class="hamburger" id="hamburger">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-          <a href="login.html">
-            <button class="login-btn">
-              <i class="fa-regular fa-user"></i>
-              Login
-            </button>
-          </a>
-        </div>
-      </div>
-    </nav>
-
-    <main class="track-page">
-      <section class="track-header-card">
-        <div>
-          <h1>Track Your Order</h1>
-          <p>See the live status of your latest order</p>
-        </div>
-        <div class="track-order-badge" id="orderNumberBadge">#ORDER</div>
+    <main class="track-shell">
+      <section id="emptyOrderState" class="empty-order">
+        <h1>No recent order to track</h1>
+        <p>
+          Once you place an order on FoodExpress, you’ll be able to follow its
+          progress here from restaurant confirmation to delivery at your
+          doorstep.
+        </p>
+        <a href="shop.html">Start a new order</a>
       </section>
 
-      <section class="track-grid">
-        <div class="track-main-card">
-          <div class="track-main-top">
-            <div>
-              <h2 id="restaurantName">Restaurant</h2>
-              <p id="deliveryAddress">Delivery address will appear here</p>
-            </div>
-            <div class="status-pill" id="statusPill">Pending</div>
+      <section id="trackContent" class="track-content">
+        <div class="track-hero">
+          <div>
+            <h1>Track your latest order</h1>
+            <p>
+              Stay updated in real time as your restaurant confirms, prepares,
+              and sends your order out for delivery.
+            </p>
           </div>
-
-          <div class="progress-line-wrap">
-            <div class="progress-line">
-              <div class="progress-fill" id="progressFill"></div>
-            </div>
-          </div>
-
-          <div class="steps-list" id="stepsList">
-            <div class="step-item" data-step="pending">
-              <div class="step-dot"></div>
-              <div>
-                <h3>Order Received</h3>
-                <p>Your order has been placed successfully.</p>
-              </div>
-            </div>
-
-            <div class="step-item" data-step="confirmed">
-              <div class="step-dot"></div>
-              <div>
-                <h3>Order Confirmed</h3>
-                <p>The restaurant has confirmed your order.</p>
-              </div>
-            </div>
-
-            <div class="step-item" data-step="preparing">
-              <div class="step-dot"></div>
-              <div>
-                <h3>Preparing</h3>
-                <p>Your food is being prepared fresh.</p>
-              </div>
-            </div>
-
-            <div class="step-item" data-step="on_the_way">
-              <div class="step-dot"></div>
-              <div>
-                <h3>On The Way</h3>
-                <p>Your rider is heading to your location.</p>
-              </div>
-            </div>
-
-            <div class="step-item" data-step="delivered">
-              <div class="step-dot"></div>
-              <div>
-                <h3>Delivered</h3>
-                <p>Your order has arrived. Enjoy your meal!</p>
-              </div>
-            </div>
-          </div>
+          <div class="order-pill" id="orderNumberBadge">#ORDER</div>
         </div>
 
-        <aside class="track-side-card">
-          <h2>Order Summary</h2>
+        <div class="track-layout">
+          <div class="main-stack">
+            <section class="card">
+              <div class="order-top">
+                <div>
+                  <h2 id="restaurantName">Restaurant</h2>
+                  <p id="deliveryAddress">Delivery address will appear here</p>
+                </div>
+                <div class="status-pill status-pending" id="statusPill">
+                  Pending
+                </div>
+              </div>
 
-          <div class="summary-list" id="summaryItems"></div>
+              <div class="meta-grid">
+                <div class="meta-box">
+                  <span class="label">Estimated arrival</span>
+                  <span class="value" id="etaValue">30–40 min</span>
+                </div>
+                <div class="meta-box">
+                  <span class="label">Payment method</span>
+                  <span class="value" id="paymentMethodValue"
+                    >Cash on Delivery</span
+                  >
+                </div>
+                <div class="meta-box">
+                  <span class="label">Items</span>
+                  <span class="value" id="itemCountValue">0 items</span>
+                </div>
+                <div class="meta-box">
+                  <span class="label">Order placed</span>
+                  <span class="value" id="placedTimeValue">Just now</span>
+                </div>
+              </div>
 
-          <div class="summary-divider"></div>
+              <div class="timeline-wrap">
+                <div class="progress-track">
+                  <div class="progress-fill" id="progressFill"></div>
+                </div>
 
-          <div class="summary-row">
-            <span>Subtotal</span>
-            <span id="subtotalValue">$0.00</span>
-          </div>
-          <div class="summary-row">
-            <span>Tax</span>
-            <span id="taxValue">$0.00</span>
-          </div>
-          <div class="summary-row">
-            <span>Delivery Fee</span>
-            <span id="deliveryFeeValue">$5.00</span>
-          </div>
-          <div class="summary-row total">
-            <span>Total</span>
-            <span id="totalValue">$0.00</span>
+                <div class="steps" id="stepsList">
+                  <div class="step-item" data-step="pending">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Order received</h3>
+                      <p>
+                        Your order has been placed successfully and is waiting
+                        for restaurant confirmation.
+                      </p>
+                      <div class="step-time" id="time-pending"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="confirmed">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Order confirmed</h3>
+                      <p>
+                        The restaurant has accepted your order and is getting
+                        ready to prepare it.
+                      </p>
+                      <div class="step-time" id="time-confirmed"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="preparing">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Preparing your food</h3>
+                      <p>
+                        Your dishes are being freshly prepared in the kitchen.
+                      </p>
+                      <div class="step-time" id="time-preparing"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="on_the_way">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>On the way</h3>
+                      <p>
+                        Your rider is heading to your location with your order.
+                      </p>
+                      <div class="step-time" id="time-on_the_way"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="delivered">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Delivered</h3>
+                      <p>
+                        Your order has arrived. Enjoy your meal and come back
+                        for your next craving.
+                      </p>
+                      <div class="step-time" id="time-delivered"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="live-note" id="liveNote">
+                Your order is now in progress. FoodExpress will keep this page
+                updated as your restaurant and delivery flow moves forward.
+              </div>
+            </section>
+
+            <section class="card delivery-card">
+              <h3>Delivery destination</h3>
+              <p id="deliveryFullText">
+                Delivery details will appear here once your order is placed.
+              </p>
+            </section>
           </div>
 
-          <button class="back-btn" type="button" onclick="goBackToDashboard()">
-            Back to Dashboard
-          </button>
-        </aside>
+          <aside class="sidebar">
+            <section class="card">
+              <h2 class="summary-title">Order summary</h2>
+
+              <div id="summaryItems" class="summary-items"></div>
+
+              <div class="divider"></div>
+
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <strong id="subtotalValue">$0.00</strong>
+              </div>
+              <div class="summary-row">
+                <span>Tax</span>
+                <strong id="taxValue">$0.00</strong>
+              </div>
+              <div class="summary-row">
+                <span>Delivery fee</span>
+                <strong id="deliveryFeeValue">$0.00</strong>
+              </div>
+              <div class="summary-row" id="discountRow" style="display: none">
+                <span>Discount</span>
+                <strong id="discountValue">-$0.00</strong>
+              </div>
+              <div class="summary-row total">
+                <span>Total</span>
+                <span id="totalValue">$0.00</span>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="action-stack">
+                <button
+                  class="primary-btn"
+                  type="button"
+                  onclick="reorderLatestOrder()"
+                >
+                  Reorder these items
+                </button>
+                <button
+                  class="secondary-btn"
+                  type="button"
+                  onclick="goBackToDashboard()"
+                >
+                  Back to dashboard
+                </button>
+              </div>
+            </section>
+          </aside>
+        </div>
       </section>
     </main>
 
+    <script src="../js/modules/profile.js"></script>
+    <script src="../js/shared.js"></script>
+    <script src="../js/modules/cart.js"></script>
+    <script src="../js/components/navbar.js"></script>
+    <script src="../js/reward.js"></script>
     <script src="../js/track-order.js"></script>
+    <script>
+      function initNavbar() {
+        console.log(
+          "[track-order.html] initNavbar called - renderNavbar available:",
+          typeof window.renderNavbar,
+        );
+        if (typeof window.renderNavbar === "function") {
+          renderNavbar("track");
+        } else {
+          console.error(
+            "[track-order.html] renderNavbar not available, retrying in 100ms",
+          );
+          setTimeout(initNavbar, 100);
+        }
+      }
+      document.addEventListener("DOMContentLoaded", initNavbar);
+    </script>
   </body>
 </html>
