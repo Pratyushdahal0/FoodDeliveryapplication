@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rider History - FoodExpress</title>
+
+    <link rel="stylesheet" href="../css/rider-layout.css" />
+    <link rel="stylesheet" href="../css/rider-history.css" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <!-- SIDEBAR -->
+    <div id="sidebar"></div>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <button class="icon-btn" id="menuToggle">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <div class="topbar-right">
+          <span class="online-pill"><span></span> Online</span>
+
+          <button class="notification-btn">
+            <i class="fa-regular fa-bell"></i>
+            <small>2</small>
+          </button>
+
+          <div class="rider-profile">
+            <img src="https://i.pravatar.cc/80?img=12" />
+            <div>
+              <h4>Ramesh Tamang</h4>
+              <p>Rider ID: RID-1001</p>
+            </div>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+        </div>
+      </header>
+
+      <!-- PAGE HEADER -->
+      <section class="page-header">
+        <div>
+          <h1>Delivery History</h1>
+          <p>Review your completed and cancelled deliveries.</p>
+        </div>
+
+        <div class="history-actions">
+          <button class="date-btn">
+            <i class="fa-regular fa-calendar"></i>
+            Apr 01, 2026 - Apr 26, 2026
+          </button>
+
+          <button class="filter-btn">
+            <i class="fa-solid fa-filter"></i>
+          </button>
+
+          <button class="csv-btn" id="downloadCsv">Download CSV</button>
+        </div>
+      </section>
+
+      <!-- STATS -->
+      <section class="history-stats">
+        <div class="stat-card">
+          <div class="stat-icon success">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <p>Total Delivered</p>
+          <h2>142</h2>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon money">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+          <p>Total Earnings</p>
+          <h2>Rs. 18,450</h2>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon cancelled">
+            <i class="fa-solid fa-circle-xmark"></i>
+          </div>
+          <p>Cancelled</p>
+          <h2>3</h2>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon rating">
+            <i class="fa-solid fa-star-half-stroke"></i>
+          </div>
+          <p>Avg. Rating</p>
+          <h2>4.9</h2>
+        </div>
+      </section>
+
+      <!-- TABLE -->
+      <section class="history-table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Restaurant</th>
+              <th>Date</th>
+              <th>Earnings</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody id="historyTableBody"></tbody>
+        </table>
+
+        <div class="table-footer">
+          <p>Showing <b>1-4</b> of <span>145</span> results</p>
+
+          <div class="pagination">
+            <button><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="active-page">1</button>
+            <button>2</button>
+            <button>3</button>
+            <span>...</span>
+            <button>36</button>
+            <button><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- INFO -->
+      <section class="info-box">
+        <i class="fa-solid fa-circle-question"></i>
+        <div>
+          <h4>Missing an order?</h4>
+          <p>
+            Orders usually appear within 15 minutes. If missing after 24 hours,
+            contact support.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- SCRIPTS -->
+    <script src="../js/components/rider-sidebar.js"></script>
+    <script src="../js/rider-history.js"></script>
+  </body>
+</html>

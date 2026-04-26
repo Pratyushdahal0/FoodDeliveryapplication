@@ -1,13 +1,16 @@
 console.log("Rider dashboard JS loaded");
 
-// 🔹 FAKE DATABASE (localStorage)
+// Fake database
 let riderData = JSON.parse(localStorage.getItem("riderData")) || {
   deliveriesToday: 8,
   activeDelivery: 0,
   earningsToday: 720,
 };
 
-// 🔹 UPDATE UI FUNCTION
+function saveRiderData() {
+  localStorage.setItem("riderData", JSON.stringify(riderData));
+}
+
 function updateUI() {
   const todayDelivery = document.querySelector(".stat-card:nth-child(1) h2");
   const activeDelivery = document.querySelector(".stat-card:nth-child(2) h2");
@@ -15,26 +18,40 @@ function updateUI() {
 
   if (todayDelivery) todayDelivery.innerText = riderData.deliveriesToday;
   if (activeDelivery) activeDelivery.innerText = riderData.activeDelivery;
-  if (todayEarnings) todayEarnings.innerText = `Rs. ${riderData.earningsToday}`;
+  if (todayEarnings) {
+    todayEarnings.innerText = `Rs. ${Number(riderData.earningsToday).toLocaleString("en-IN")}`;
+  }
+}
+
+function showToast(message, type = "success") {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+
+  const icon =
+    type === "success"
+      ? "fa-circle-check"
+      : type === "warning"
+      ? "fa-circle-exclamation"
+      : "fa-circle-info";
+
+  toast.innerHTML = `
+    <i class="fa-solid ${icon}"></i>
+    <span>${message}</span>
+  `;
+
+  toast.className = `toast show ${type}`;
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2600);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  updateUI();
 
-  updateUI(); // 🔥 INITIAL LOAD
+  // ❌ REMOVED SIDEBAR TOGGLE FROM HERE (handled in rider-sidebar.js)
 
-  // 👉 SIDEBAR TOGGLE
-  const menuToggle = document.getElementById("menuToggle");
-  const sidebar = document.querySelector(".sidebar");
-  const main = document.querySelector(".main");
-
-  if (menuToggle && sidebar && main) {
-    menuToggle.addEventListener("click", () => {
-      sidebar.classList.toggle("hide");
-      main.classList.toggle("full");
-    });
-  }
-
-  // 👉 ONLINE / OFFLINE
+  // Online / offline
   const toggleBtn = document.getElementById("toggleStatus");
   const onlinePill = document.querySelector(".online-pill");
 
@@ -49,23 +66,38 @@ document.addEventListener("DOMContentLoaded", () => {
           ? `<span style="background:#999"></span> Offline`
           : `<span></span> Online`;
       }
+
+      showToast(isOnline ? "You are now offline." : "You are back online.");
     });
   }
 
-  // 👉 DELIVERY PROGRESS
+  // Delivery progress
   const steps = document.querySelectorAll(".progress-steps .step");
   const actionButtons = document.querySelectorAll(".delivery-actions button");
 
   let currentStep = 1;
 
+  function resetSteps() {
+    steps.forEach((step, index) => {
+      const circle = step.querySelector("span");
+
+      if (index <= 1) {
+        step.classList.add("done");
+        if (circle) circle.innerHTML = `<i class="fa-solid fa-check"></i>`;
+      } else {
+        step.classList.remove("done");
+        if (circle) circle.innerHTML = "";
+      }
+    });
+  }
+
   function updateSteps(stepIndex) {
     steps.forEach((step, index) => {
+      const circle = step.querySelector("span");
+
       if (index <= stepIndex) {
         step.classList.add("done");
-        const circle = step.querySelector("span");
-        if (circle && !circle.querySelector("i")) {
-          circle.innerHTML = `<i class="fa-solid fa-check"></i>`;
-        }
+        if (circle) circle.innerHTML = `<i class="fa-solid fa-check"></i>`;
       }
     });
   }
@@ -77,36 +109,36 @@ document.addEventListener("DOMContentLoaded", () => {
       if (text === "Picked Up") {
         currentStep = 2;
         updateSteps(currentStep);
+        showToast("Order picked up from restaurant.");
       }
 
       if (text === "On The Way") {
         currentStep = 3;
         updateSteps(currentStep);
+        showToast("You are now on the way to customer.");
       }
 
       if (text === "Delivered") {
         currentStep = 4;
         updateSteps(currentStep);
 
-        // 🔥 UPDATE DATA
         riderData.deliveriesToday += 1;
         riderData.activeDelivery = 0;
         riderData.earningsToday += 105;
 
-        // 💾 SAVE
-        localStorage.setItem("riderData", JSON.stringify(riderData));
-
-        // 🔄 UPDATE UI
+        saveRiderData();
         updateUI();
 
         btn.innerText = "Completed";
         btn.disabled = true;
         btn.style.opacity = "0.6";
+
+        showToast("Delivery completed. Rs. 105 added to earnings.");
       }
     });
   });
 
-  // 👉 ACCEPT ORDER
+  // Accept order
   const acceptButtons = document.querySelectorAll(".accept-btn");
 
   acceptButtons.forEach((btn) => {
@@ -129,14 +161,11 @@ document.addEventListener("DOMContentLoaded", () => {
         restaurantLocation.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${location}`;
       }
 
-      // 🔥 UPDATE DATA
       riderData.activeDelivery = 1;
-
-      // 💾 SAVE
-      localStorage.setItem("riderData", JSON.stringify(riderData));
-
-      // 🔄 UPDATE UI
+      saveRiderData();
       updateUI();
+
+      resetSteps();
 
       btn.innerText = "Accepted";
       btn.disabled = true;
@@ -145,8 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
       orderCard.style.opacity = "0.5";
       orderCard.style.pointerEvents = "none";
 
-      alert(`${orderId} accepted from ${restaurantName}. Estimated payout: ${payout}`);
+      showToast(`${orderId} accepted from ${restaurantName}. Estimated payout: ${payout}`);
     });
   });
-
 });
