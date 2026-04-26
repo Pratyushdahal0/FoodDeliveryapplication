@@ -113,21 +113,17 @@
         <div id="rewardHistoryList"></div>
       </section>
     </main>
-
+    <footer class="footer" id="footer"></footer>
     <!-- SCRIPTS -->
     <script src="../js/modules/profile.js"></script>
     <script src="../js/components/navbar.js"></script>
     <script src="../js/reward.js"></script>
 
+    <script src="../js/components/footer.js"></script>
     <script>
-      function initNavbar() {
-        if (typeof window.renderNavbar === "function") {
-          renderNavbar("rewards");
-        } else {
-          setTimeout(initNavbar, 100);
-        }
-      }
-      document.addEventListener("DOMContentLoaded", initNavbar);
+      document.addEventListener("DOMContentLoaded", function () {
+        renderFooter("app");
+      });
     </script>
   </body>
 </html>

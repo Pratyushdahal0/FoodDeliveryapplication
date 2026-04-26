@@ -202,29 +202,19 @@
         </div>
       </section>
     </main>
-
+    <footer class="footer" id="footer"></footer>
     <script src="../js/modules/profile.js"></script>
     <script src="../js/shared.js"></script>
     <script src="../js/modules/cart.js"></script>
     <script src="../js/components/navbar.js"></script>
     <script src="../js/reward.js"></script>
     <script src="../js/track-order.js"></script>
+
+    <script src="../js/components/footer.js"></script>
     <script>
-      function initNavbar() {
-        console.log(
-          "[track-order.html] initNavbar called - renderNavbar available:",
-          typeof window.renderNavbar,
-        );
-        if (typeof window.renderNavbar === "function") {
-          renderNavbar("track");
-        } else {
-          console.error(
-            "[track-order.html] renderNavbar not available, retrying in 100ms",
-          );
-          setTimeout(initNavbar, 100);
-        }
-      }
-      document.addEventListener("DOMContentLoaded", initNavbar);
+      document.addEventListener("DOMContentLoaded", function () {
+        renderFooter("none");
+      });
     </script>
   </body>
 </html>

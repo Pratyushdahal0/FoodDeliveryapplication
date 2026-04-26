@@ -178,71 +178,28 @@
         </div>
       </div>
     </div>
-
-    <footer>
-      <div class="footer-grid">
-        <div>
-          <div class="footer-logo">FoodExpress</div>
-          <p class="footer-desc">
-            Delivering happiness to your doorstep, one meal at a time.
-          </p>
-          <div class="footer-socials">
-            <a href="#"><i class="fa-brands fa-facebook"></i></a>
-            <a href="#"><i class="fa-brands fa-x-twitter"></i></a>
-            <a href="#"><i class="fa-brands fa-instagram"></i></a>
-          </div>
-        </div>
-
-        <div class="footer-col">
-          <h4>Quick Links</h4>
-          <ul>
-            <li><a href="dashboard.html">Home</a></li>
-            <li><a href="shop.html">Our Menu</a></li>
-            <li><a href="food.html">Food</a></li>
-          </ul>
-        </div>
-
-        <div class="footer-col">
-          <h4>Support</h4>
-          <ul>
-            <li><a href="#">Help Center</a></li>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">Terms of Service</a></li>
-            <li><a href="contact.html">Contact Us</a></li>
-          </ul>
-        </div>
-
-        <div class="footer-col">
-          <h4>Contact</h4>
-          <div class="contact-item">📍 <span>Kathmandu, Nepal</span></div>
-          <div class="contact-item">📞 <span>+977-9841223344</span></div>
-          <div class="contact-item">
-            ✉️
-            <span><a href="mailto:lovely@gmail.com">lovely@gmail.com</a></span>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
-    </footer>
+    <footer class="footer" id="footer"></footer>
 
     <script src="../js/api/productApi2.js"></script>
-    <script src="../js/modules/profile.js"></script>
+    <script src="../js/profile.js"></script>
     <script src="../js/shared.js"></script>
     <script src="../js/modules/cart.js"></script>
+
     <script src="../js/components/navbar.js"></script>
+    <script src="../js/components/footer.js"></script>
+
     <script src="../js/dashboard.js"></script>
 
     <script>
-      function initNavbar() {
+      document.addEventListener("DOMContentLoaded", function () {
         if (typeof window.renderNavbar === "function") {
-          renderNavbar("dashboard");
-        } else {
-          setTimeout(initNavbar, 100);
+          window.renderNavbar("home");
         }
-      }
 
-      document.addEventListener("DOMContentLoaded", initNavbar);
+        if (typeof window.renderFooter === "function") {
+          window.renderFooter("app");
+        }
+      });
     </script>
   </body>
 </html>

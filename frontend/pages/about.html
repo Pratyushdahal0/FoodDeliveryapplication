@@ -153,37 +153,13 @@
     </section>
 
     <!-- FOOTER -->
-    <footer class="footer">
-      <div class="footer-grid">
-        <div>
-          <h3>FoodExpress</h3>
-          <p>Delivering happiness to your doorstep, one meal at a time.</p>
-        </div>
+    <footer class="footer" id="footer"></footer>
 
-        <div>
-          <h4>Quick Links</h4>
-          <p>Home</p>
-          <p>About Us</p>
-          <p>Our Menu</p>
-          <p>Recipes</p>
-        </div>
-
-        <div>
-          <h4>Support</h4>
-          <p>Help Center</p>
-          <p>Privacy Policy</p>
-          <p>Terms of Service</p>
-        </div>
-
-        <div>
-          <h4>Contact</h4>
-          <p>123 Food Street</p>
-          <p>(555) 123-4567</p>
-          <p>hello@foodexpress.com</p>
-        </div>
-      </div>
-
-      <p class="copy">©️ 2026 FoodExpress. All rights reserved.</p>
-    </footer>
+    <script src="../js/components/footer.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        renderFooter("public");
+      });
+    </script>
   </body>
 </html>

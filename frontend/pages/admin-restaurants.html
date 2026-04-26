@@ -11,432 +11,7 @@
     />
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
-
-    <style>
-      * {
-        box-sizing: border-box;
-      }
-
-      :root {
-        --admin-bg: #f6f8fb;
-        --surface: #ffffff;
-        --surface-soft: #f9fafb;
-        --text-strong: #111827;
-        --text-muted: #6b7280;
-        --border-soft: #e5e7eb;
-        --success: #16a34a;
-        --warning: #f59e0b;
-        --danger: #dc2626;
-        --shadow-soft: 0 14px 35px rgba(17, 24, 39, 0.08);
-        --radius-xl: 26px;
-        --radius-lg: 20px;
-        --radius-md: 16px;
-      }
-
-      body {
-        margin: 0;
-        background: var(--admin-bg);
-        color: var(--text-strong);
-        font-family: "Inter", sans-serif;
-      }
-
-      .admin-navbar {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        background: rgba(255, 255, 255, 0.94);
-        backdrop-filter: blur(14px);
-        border-bottom: 1px solid var(--border-soft);
-      }
-
-      .admin-navbar .container {
-        max-width: 1380px;
-        margin: 0 auto;
-        padding: 0 24px;
-        min-height: 84px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-      }
-
-      .admin-brand {
-        font-size: 2rem;
-        font-weight: 800;
-        color: var(--primary);
-        text-decoration: none;
-        white-space: nowrap;
-      }
-
-      .admin-nav-links {
-        display: flex;
-        align-items: center;
-        gap: 26px;
-        flex-wrap: wrap;
-      }
-
-      .admin-nav-links a {
-        text-decoration: none;
-        color: var(--text-strong);
-        font-weight: 700;
-        font-size: 1rem;
-      }
-
-      .admin-nav-links a.active,
-      .admin-nav-links a:hover {
-        color: var(--primary);
-      }
-
-      .admin-nav-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .admin-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 14px;
-        border-radius: 999px;
-        background: rgba(var(--primary-rgb), 0.08);
-        color: var(--primary);
-        border: 1px solid rgba(var(--primary-rgb), 0.14);
-        font-size: 0.9rem;
-        font-weight: 700;
-      }
-
-      .admin-logout-btn {
-        min-height: 48px;
-        border: none;
-        border-radius: 999px;
-        padding: 0 20px;
-        background: var(--primary);
-        color: #fff;
-        font: inherit;
-        font-weight: 800;
-        cursor: pointer;
-      }
-
-      .page-shell {
-        max-width: 1380px;
-        margin: 0 auto;
-        padding: 34px 24px 48px;
-      }
-
-      .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 20px;
-        flex-wrap: wrap;
-        margin-bottom: 28px;
-      }
-
-      .page-header h1 {
-        margin: 0 0 8px;
-        font-size: clamp(2rem, 4vw, 2.8rem);
-        line-height: 1.08;
-        font-weight: 800;
-      }
-
-      .page-header p {
-        margin: 0;
-        color: var(--text-muted);
-        font-size: 1rem;
-      }
-
-      .page-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 16px;
-        border-radius: 999px;
-        background: rgba(var(--primary-rgb), 0.08);
-        color: var(--primary);
-        border: 1px solid rgba(var(--primary-rgb), 0.16);
-        font-weight: 700;
-        font-size: 0.95rem;
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 18px;
-        margin-bottom: 24px;
-      }
-
-      .stat-card {
-        background: var(--surface);
-        border: 1px solid var(--border-soft);
-        border-radius: var(--radius-xl);
-        box-shadow: var(--shadow-soft);
-        padding: 22px;
-      }
-
-      .stat-label {
-        color: var(--text-muted);
-        font-size: 0.92rem;
-        font-weight: 600;
-        margin-bottom: 10px;
-      }
-
-      .stat-value {
-        font-size: 2rem;
-        font-weight: 800;
-      }
-
-      .controls-card {
-        background: var(--surface);
-        border: 1px solid var(--border-soft);
-        border-radius: var(--radius-xl);
-        box-shadow: var(--shadow-soft);
-        padding: 22px;
-        margin-bottom: 24px;
-      }
-
-      .controls-row {
-        display: grid;
-        grid-template-columns: 1.5fr 220px 220px;
-        gap: 16px;
-        align-items: center;
-      }
-
-      .search-input,
-      .filter-select {
-        width: 100%;
-        min-height: 54px;
-        border: 1px solid var(--border-soft);
-        border-radius: 16px;
-        padding: 14px 16px;
-        font: inherit;
-        color: var(--text-strong);
-        background: #fff;
-      }
-
-      .search-input:focus,
-      .filter-select:focus {
-        outline: none;
-        border-color: rgba(var(--primary-rgb), 0.45);
-        box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.12);
-      }
-
-      .refresh-btn {
-        min-height: 54px;
-        border: none;
-        border-radius: 16px;
-        background: var(--primary);
-        color: white;
-        font: inherit;
-        font-weight: 800;
-        cursor: pointer;
-      }
-
-      .message-bar {
-        display: none;
-        margin-bottom: 18px;
-        padding: 14px 16px;
-        border-radius: 16px;
-        font-weight: 700;
-      }
-
-      .message-bar.show {
-        display: block;
-      }
-
-      .message-bar.success {
-        background: #ecfdf3;
-        border: 1px solid #86efac;
-        color: #166534;
-      }
-
-      .message-bar.error {
-        background: #fef2f2;
-        border: 1px solid #fca5a5;
-        color: #991b1b;
-      }
-
-      .table-card {
-        background: var(--surface);
-        border: 1px solid var(--border-soft);
-        border-radius: var(--radius-xl);
-        box-shadow: var(--shadow-soft);
-        overflow: hidden;
-      }
-
-      .table-scroll {
-        overflow-x: auto;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 1100px;
-      }
-
-      th,
-      td {
-        padding: 18px 16px;
-        text-align: left;
-        border-bottom: 1px solid var(--border-soft);
-        vertical-align: middle;
-      }
-
-      th {
-        background: #fafafa;
-        font-size: 0.84rem;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: var(--text-muted);
-        font-weight: 800;
-      }
-
-      td {
-        font-size: 0.96rem;
-        color: var(--text-strong);
-      }
-
-      .restaurant-cell {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .restaurant-logo {
-        width: 52px;
-        height: 52px;
-        border-radius: 14px;
-        object-fit: cover;
-        background: #f3f4f6;
-        border: 1px solid var(--border-soft);
-      }
-
-      .restaurant-info strong {
-        display: block;
-        font-size: 0.98rem;
-      }
-
-      .restaurant-info span {
-        color: var(--text-muted);
-        font-size: 0.88rem;
-      }
-
-      .status-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 9px 14px;
-        border-radius: 999px;
-        font-size: 0.82rem;
-        font-weight: 800;
-        border: 1px solid transparent;
-      }
-
-      .status-pending {
-        background: #fff7ed;
-        color: #c2410c;
-        border-color: #fdba74;
-      }
-
-      .status-approved {
-        background: #ecfdf3;
-        color: #166534;
-        border-color: #86efac;
-      }
-
-      .status-rejected {
-        background: #fef2f2;
-        color: #991b1b;
-        border-color: #fca5a5;
-      }
-
-      .action-wrap {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .action-btn {
-        min-height: 40px;
-        border: none;
-        border-radius: 12px;
-        padding: 0 14px;
-        font: inherit;
-        font-weight: 800;
-        cursor: pointer;
-      }
-
-      .btn-approve {
-        background: var(--success);
-        color: #fff;
-      }
-
-      .btn-reject {
-        background: var(--danger);
-        color: #fff;
-      }
-
-      .btn-view {
-        background: #eef2ff;
-        color: #3730a3;
-      }
-
-      .empty-state,
-      .loading-state {
-        padding: 40px 24px;
-        text-align: center;
-      }
-
-      .empty-state h3,
-      .loading-state h3 {
-        margin: 0 0 10px;
-        font-size: 1.4rem;
-        font-weight: 800;
-      }
-
-      .empty-state p,
-      .loading-state p {
-        margin: 0;
-        color: var(--text-muted);
-        line-height: 1.6;
-      }
-
-      @media (max-width: 1100px) {
-        .stats-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .controls-row {
-          grid-template-columns: 1fr;
-        }
-
-        .admin-navbar .container {
-          flex-direction: column;
-          align-items: stretch;
-          padding-top: 14px;
-          padding-bottom: 14px;
-        }
-
-        .admin-nav-links,
-        .admin-nav-right {
-          justify-content: center;
-        }
-      }
-
-      @media (max-width: 720px) {
-        .page-shell {
-          padding: 24px 16px 36px;
-        }
-
-        .stats-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .admin-nav-links {
-          gap: 14px;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="../css/admin.css" />
   </head>
   <body>
     <nav class="admin-navbar">
@@ -448,6 +23,7 @@
           <a href="adminfoodexpress.html">Approvals</a>
           <a href="admin-restaurants.html" class="active">Restaurants</a>
           <a href="admin-orders.html">Orders</a>
+          <a href="admin-users.html">Users</a>
           <a href="admin-messages.html">Messages</a>
         </div>
 
@@ -559,6 +135,33 @@
           </table>
         </div>
       </section>
+      <div id="viewModal" class="modal">
+        <div class="modal-content">
+          <span class="modal-close" id="closeModal">&times;</span>
+          <div id="modalBody"></div>
+        </div>
+      </div>
+      <div id="rejectModal" class="modal">
+        <div class="modal-content">
+          <button id="closeRejectModal" class="modal-close">&times;</button>
+
+          <h3>Reject Restaurant</h3>
+
+          <textarea
+            id="rejectReason"
+            placeholder="Enter reason for rejection..."
+            style="width: 100%; height: 120px; margin-top: 12px"
+          ></textarea>
+
+          <div style="margin-top: 16px; display: flex; gap: 10px">
+            <button id="confirmRejectBtn" class="btn-reject action-btn">
+              Confirm Reject
+            </button>
+
+            <button id="cancelRejectBtn" class="action-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
     </main>
 
     <script>

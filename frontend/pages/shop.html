@@ -3,105 +3,371 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FoodExpress — Shop</title>
+    <title>FoodExpress — Restaurants</title>
+
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
-    <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/shop.css" />
+
+    <!-- ✅ FONT AWESOME -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
   </head>
+
   <body>
     <div id="navbarContainer"></div>
 
-    <div class="shop-page">
-      <div class="shop-hero">
-        <h1>Our <span>Shop</span></h1>
-        <p>
-          Browse our wide selection of delicious meals and place your order
-          today
-        </p>
-      </div>
-
-      <div class="filter-bar">
-        <span class="filter-icon">⋮≡</span>
-        <button class="filter-btn active">All Items</button>
-        <button class="filter-btn">Popular</button>
-        <button class="filter-btn">Breakfast</button>
-        <button class="filter-btn">Lunch</button>
-        <button class="filter-btn">Dinner</button>
-        <button class="filter-btn">Desserts</button>
-        <button class="filter-btn">Drinks</button>
-      </div>
-
-      <div class="products-section">
-        <div class="products-count">Loading products...</div>
-        <div class="products-grid" id="productsGrid"></div>
-      </div>
-
-      <div class="cta-banner">
-        <h2>Can't Find What You're Looking For?</h2>
-        <p>Contact us and we'll help you find the perfect meal</p>
-        <button class="btn-contact">Contact Us</button>
-      </div>
-    </div>
-
-    <footer>
-      <div class="footer-grid">
+    <main class="restaurant-page">
+      <section class="restaurant-hero">
         <div>
-          <div class="footer-logo">FoodExpress</div>
-          <p class="footer-desc">
-            Delivering happiness to your doorstep, one meal at a time.
-          </p>
-          <div class="footer-socials">
-            <a href="#">f</a>
-            <a href="#">𝕏</a>
-            <a href="#">◎</a>
+          <span class="breadcrumb">Home › Restaurants</span>
+          <h1>Restaurants List</h1>
+          <p id="restaurantCount">Loading approved restaurants...</p>
+        </div>
+
+        <div class="restaurant-search">
+          <input
+            type="text"
+            id="restaurantSearchInput"
+            placeholder="Search restaurants..."
+          />
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+      </section>
+
+      <section class="restaurant-layout">
+        <aside class="restaurant-filter">
+          <div class="filter-title-row">
+            <h3>Filter</h3>
+            <button type="button" id="clearFilterBtn">Clear Filter</button>
           </div>
-        </div>
 
-        <div class="footer-col">
-          <h4>Quick Links</h4>
-          <ul>
-            <li><a href="dashboard.html">Home</a></li>
-            <li><a href="shop.html">Our Menu</a></li>
-          </ul>
-        </div>
+          <div class="filter-group">
+            <h4>Sort By</h4>
+            <label>
+              <input type="radio" name="sort" value="asc" checked />
+              A-Z Ascending
+            </label>
+            <label>
+              <input type="radio" name="sort" value="desc" />
+              Z-A Descending
+            </label>
+          </div>
 
-        <div class="footer-col">
-          <h4>Support</h4>
-          <ul>
-            <li><a href="#">Help Center</a></li>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">Terms of Service</a></li>
-            <li><a href="loggedContact.html">Contact Us</a></li>
-          </ul>
-        </div>
+          <div class="filter-group">
+            <h4>Open Status</h4>
+            <label>
+              <input type="radio" name="openStatus" value="all" checked />
+              All
+            </label>
+            <label>
+              <input type="radio" name="openStatus" value="open" />
+              Open Now
+            </label>
+          </div>
 
-        <div class="footer-col">
-          <h4>Contact</h4>
-          <div class="contact-item">📍 <span>Kathmandu, Nepal</span></div>
-          <div class="contact-item">📞 <span>+977 - 9841223344</span></div>
-          <div class="contact-item">✉️ <span>Lovely@gmail.com</span></div>
-        </div>
-      </div>
-      <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
-    </footer>
+          <div class="filter-group">
+            <h4>Cuisine</h4>
+            <div id="cuisineFilters">
+              <p class="filter-muted">Loading cuisines...</p>
+            </div>
+          </div>
+        </aside>
 
-    <div class="help-bubble">?</div>
+        <section class="restaurant-results" id="restaurantList">
+          <div class="restaurant-loading">Loading approved restaurants...</div>
+        </section>
+      </section>
+    </main>
 
-    <script src="../js/api/productApi2.js"></script>
-    <script src="../js/modules/profile.js"></script>
-    <script src="../js/shared.js"></script>
+    <footer class="footer" id="footer"></footer>
+
+    <script src="../js/api/restaurantApi.js"></script>
     <script src="../js/modules/cart.js"></script>
     <script src="../js/components/navbar.js"></script>
-    <script src="../js/shop.js"></script>
+    <script src="../js/components/footer.js"></script>
+
     <script>
+      let approvedRestaurants = [];
+      let selectedCuisine = "all";
+
       document.addEventListener("DOMContentLoaded", function () {
         if (typeof window.renderNavbar === "function") {
           window.renderNavbar("shop");
-        } else {
-          console.error("navbar.js did not load correctly");
         }
+
+        if (typeof window.renderFooter === "function") {
+          window.renderFooter("app");
+        }
+
+        setupRestaurantPage();
       });
+
+      async function setupRestaurantPage() {
+        approvedRestaurants = await getApprovedRestaurants();
+
+        buildCuisineFilters();
+        attachFilterEvents();
+        renderRestaurants();
+      }
+
+      function attachFilterEvents() {
+        const searchInput = document.getElementById("restaurantSearchInput");
+        const clearBtn = document.getElementById("clearFilterBtn");
+
+        searchInput.addEventListener("input", renderRestaurants);
+
+        document.querySelectorAll("input[name='sort']").forEach((input) => {
+          input.addEventListener("change", renderRestaurants);
+        });
+
+        document
+          .querySelectorAll("input[name='openStatus']")
+          .forEach((input) => {
+            input.addEventListener("change", renderRestaurants);
+          });
+
+        clearBtn.addEventListener("click", () => {
+          searchInput.value = "";
+          selectedCuisine = "all";
+
+          document.querySelector("input[name='sort'][value='asc']").checked =
+            true;
+          document.querySelector(
+            "input[name='openStatus'][value='all']",
+          ).checked = true;
+
+          buildCuisineFilters();
+          renderRestaurants();
+        });
+      }
+
+      function buildCuisineFilters() {
+        const cuisineContainer = document.getElementById("cuisineFilters");
+
+        const cuisines = [
+          ...new Set(
+            approvedRestaurants
+              .map((restaurant) => restaurant.cuisine_type)
+              .filter(Boolean),
+          ),
+        ];
+
+        if (!cuisines.length) {
+          cuisineContainer.innerHTML = `<p class="filter-muted">No cuisines yet</p>`;
+          return;
+        }
+
+        cuisineContainer.innerHTML = `
+          <button
+            type="button"
+            class="cuisine-chip ${selectedCuisine === "all" ? "active" : ""}"
+            onclick="setCuisineFilter('all')"
+          >
+            All
+          </button>
+          ${cuisines
+            .map(
+              (cuisine) => `
+              <button
+                type="button"
+                class="cuisine-chip ${selectedCuisine === cuisine ? "active" : ""}"
+                onclick="setCuisineFilter('${escapeAttribute(cuisine)}')"
+              >
+                ${escapeHtml(cuisine)}
+              </button>
+            `,
+            )
+            .join("")}
+        `;
+      }
+
+      function setCuisineFilter(cuisine) {
+        selectedCuisine = cuisine;
+        buildCuisineFilters();
+        renderRestaurants();
+      }
+
+      function renderRestaurants() {
+        const container = document.getElementById("restaurantList");
+        const count = document.getElementById("restaurantCount");
+
+        const query =
+          document
+            .getElementById("restaurantSearchInput")
+            ?.value.trim()
+            .toLowerCase() || "";
+
+        const sort =
+          document.querySelector("input[name='sort']:checked")?.value || "asc";
+
+        const openStatus =
+          document.querySelector("input[name='openStatus']:checked")?.value ||
+          "all";
+
+        let restaurants = approvedRestaurants.filter((restaurant) => {
+          const searchText = [
+            restaurant.restaurant_name,
+            restaurant.cuisine_type,
+            restaurant.city,
+            restaurant.location,
+          ]
+            .map((value) => String(value || "").toLowerCase())
+            .join(" ");
+
+          const matchesSearch = query ? searchText.includes(query) : true;
+          const matchesCuisine =
+            selectedCuisine === "all"
+              ? true
+              : restaurant.cuisine_type === selectedCuisine;
+
+          const matchesOpen =
+            openStatus === "all" ? true : isRestaurantOpen(restaurant);
+
+          return matchesSearch && matchesCuisine && matchesOpen;
+        });
+
+        restaurants.sort((a, b) => {
+          const nameA = String(a.restaurant_name || "").toLowerCase();
+          const nameB = String(b.restaurant_name || "").toLowerCase();
+
+          return sort === "asc"
+            ? nameA.localeCompare(nameB)
+            : nameB.localeCompare(nameA);
+        });
+
+        count.textContent = `${restaurants.length} restaurant${
+          restaurants.length === 1 ? "" : "s"
+        } found`;
+
+        if (!restaurants.length) {
+          container.innerHTML = `
+            <div class="restaurant-empty">
+              <h3>No restaurants found</h3>
+              <p>Try changing your search or filters.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = restaurants
+          .map((restaurant) => createRestaurantCard(restaurant))
+          .join("");
+      }
+
+      function createRestaurantCard(restaurant) {
+        const open = isRestaurantOpen(restaurant);
+
+        // ✅ FIX IMAGE (no more 404)
+        const image =
+          restaurant.logo_url && restaurant.logo_url !== "null"
+            ? restaurant.logo_url
+            : "https://via.placeholder.com/120x120?text=Restaurant";
+
+        return `
+    <article class="restaurant-row-card">
+
+      <!-- IMAGE -->
+      <div class="restaurant-logo-wrap">
+        <img
+          src="${escapeHtml(image)}"
+          alt="${escapeHtml(restaurant.restaurant_name || "Restaurant")}"
+          onerror="this.onerror=null; this.src='https://via.placeholder.com/120x120?text=Restaurant';"
+        />
+      </div>
+
+      <!-- INFO -->
+      <div class="restaurant-main-info">
+
+        <div class="restaurant-title-line">
+          <h3>${escapeHtml(restaurant.restaurant_name || "Unnamed Restaurant")}</h3>
+          <span class="open-badge ${open ? "open" : "closed"}">
+            ${open ? "Open" : "Closed"}
+          </span>
+        </div>
+
+        <!-- LOCATION -->
+        <p class="restaurant-meta">
+          <i class="fa-solid fa-location-dot"></i>
+          ${escapeHtml(restaurant.location || restaurant.city || "Location not added")}
+        </p>
+
+        <!-- CUISINE -->
+        <p class="restaurant-meta">
+          <i class="fa-solid fa-utensils"></i>
+          ${escapeHtml(restaurant.cuisine_type || "Restaurant")}
+        </p>
+
+        <!-- ⭐ NEW: RATING -->
+        <p class="restaurant-rating">
+          <i class="fa-solid fa-star"></i>
+          <span>4.8</span>
+        </p>
+
+        <!-- DESCRIPTION -->
+        <p class="restaurant-desc">
+          ${escapeHtml(restaurant.description || "Fresh food available from this restaurant.")}
+        </p>
+
+        <!-- DELIVERY -->
+        <div class="restaurant-offer">
+          ${
+            restaurant.delivery_available == 1
+              ? '<i class="fa-solid fa-truck"></i> Delivery available'
+              : '<i class="fa-solid fa-store"></i> Pickup only'
+          }
+        </div>
+      </div>
+
+      <!-- BUTTON -->
+      <div class="restaurant-action">
+        <button onclick="viewRestaurantMenu(${restaurant.id})">
+          View Menu
+        </button>
+      </div>
+
+    </article>
+  `;
+      }
+
+      function viewRestaurantMenu(id) {
+        localStorage.setItem("selectedRestaurantId", id);
+        alert("Next step: show menu for restaurant ID " + id);
+      }
+
+      function isRestaurantOpen(restaurant) {
+        if (!restaurant.opening_time || !restaurant.closing_time) return true;
+
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        const [openHour, openMinute] = restaurant.opening_time
+          .split(":")
+          .map(Number);
+        const [closeHour, closeMinute] = restaurant.closing_time
+          .split(":")
+          .map(Number);
+
+        const openMinutes = openHour * 60 + openMinute;
+        const closeMinutes = closeHour * 60 + closeMinute;
+
+        return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function escapeAttribute(value) {
+        return String(value ?? "").replace(/'/g, "\\'");
+      }
     </script>
   </body>
 </html>
