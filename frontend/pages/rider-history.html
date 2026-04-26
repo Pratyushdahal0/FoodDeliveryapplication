@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="../css/rider-layout.css" />
     <link rel="stylesheet" href="../css/rider-history.css" />
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,7 +15,6 @@
       rel="stylesheet"
     />
 
-    <!-- Icons -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
@@ -24,12 +22,9 @@
   </head>
 
   <body>
-    <!-- SIDEBAR -->
     <div id="sidebar"></div>
 
-    <!-- MAIN CONTENT -->
     <main class="main">
-      <!-- TOPBAR -->
       <header class="topbar">
         <button class="icon-btn" id="menuToggle">
           <i class="fa-solid fa-bars"></i>
@@ -44,7 +39,7 @@
           </button>
 
           <div class="rider-profile">
-            <img src="https://i.pravatar.cc/80?img=12" />
+            <img src="https://i.pravatar.cc/80?img=12" alt="Rider profile" />
             <div>
               <h4>Ramesh Tamang</h4>
               <p>Rider ID: RID-1001</p>
@@ -54,107 +49,248 @@
         </div>
       </header>
 
-      <!-- PAGE HEADER -->
-      <section class="page-header">
-        <div>
-          <h1>Delivery History</h1>
-          <p>Review your completed and cancelled deliveries.</p>
-        </div>
-
-        <div class="history-actions">
-          <button class="date-btn">
-            <i class="fa-regular fa-calendar"></i>
-            Apr 01, 2026 - Apr 26, 2026
-          </button>
-
-          <button class="filter-btn">
-            <i class="fa-solid fa-filter"></i>
-          </button>
-
-          <button class="csv-btn" id="downloadCsv">Download CSV</button>
-        </div>
-      </section>
-
-      <!-- STATS -->
-      <section class="history-stats">
-        <div class="stat-card">
-          <div class="stat-icon success">
-            <i class="fa-solid fa-circle-check"></i>
+      <section class="history-page">
+        <div class="page-header">
+          <div>
+            <span class="eyebrow">Rider Performance</span>
+            <h1>Delivery History</h1>
+            <p>
+              Track completed, cancelled, and recent rider delivery records.
+            </p>
           </div>
-          <p>Total Delivered</p>
-          <h2>142</h2>
-        </div>
 
-        <div class="stat-card">
-          <div class="stat-icon money">
-            <i class="fa-solid fa-coins"></i>
-          </div>
-          <p>Total Earnings</p>
-          <h2>Rs. 18,450</h2>
-        </div>
+          <div class="history-actions">
+            <button class="date-btn">
+              <i class="fa-regular fa-calendar"></i>
+              Apr 01 - Apr 26, 2026
+            </button>
 
-        <div class="stat-card">
-          <div class="stat-icon cancelled">
-            <i class="fa-solid fa-circle-xmark"></i>
-          </div>
-          <p>Cancelled</p>
-          <h2>3</h2>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-icon rating">
-            <i class="fa-solid fa-star-half-stroke"></i>
-          </div>
-          <p>Avg. Rating</p>
-          <h2>4.9</h2>
-        </div>
-      </section>
-
-      <!-- TABLE -->
-      <section class="history-table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Order ID</th>
-              <th>Restaurant</th>
-              <th>Date</th>
-              <th>Earnings</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-
-          <tbody id="historyTableBody"></tbody>
-        </table>
-
-        <div class="table-footer">
-          <p>Showing <b>1-4</b> of <span>145</span> results</p>
-
-          <div class="pagination">
-            <button><i class="fa-solid fa-chevron-left"></i></button>
-            <button class="active-page">1</button>
-            <button>2</button>
-            <button>3</button>
-            <span>...</span>
-            <button>36</button>
-            <button><i class="fa-solid fa-chevron-right"></i></button>
+            <button class="csv-btn" id="downloadCsv">
+              <i class="fa-solid fa-download"></i>
+              CSV
+            </button>
           </div>
         </div>
-      </section>
 
-      <!-- INFO -->
-      <section class="info-box">
-        <i class="fa-solid fa-circle-question"></i>
-        <div>
-          <h4>Missing an order?</h4>
-          <p>
-            Orders usually appear within 15 minutes. If missing after 24 hours,
-            contact support.
-          </p>
-        </div>
+        <section class="history-stats">
+          <div class="stat-card">
+            <div class="stat-icon success">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+              <p>Total Delivered</p>
+              <h2 id="totalDelivered">0</h2>
+              <span>Completed orders</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon money">
+              <i class="fa-solid fa-coins"></i>
+            </div>
+            <div>
+              <p>Total Earnings</p>
+              <h2 id="totalEarnings">Rs. 0</h2>
+              <span>This period</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon cancelled">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </div>
+            <div>
+              <p>Cancelled</p>
+              <h2 id="totalCancelled">0</h2>
+              <span>Failed orders</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon rating">
+              <i class="fa-solid fa-star-half-stroke"></i>
+            </div>
+            <div>
+              <p>Avg. Rating</p>
+              <h2>4.9</h2>
+              <span>Customer score</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="history-panel">
+          <div class="history-toolbar">
+            <div>
+              <h3>Order Records</h3>
+              <p>
+                Showing <b id="visibleCount">0</b> of
+                <span id="totalResults">0</span> results
+              </p>
+            </div>
+
+            <div class="filters">
+              <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input
+                  type="text"
+                  id="historySearch"
+                  placeholder="Search order or restaurant"
+                />
+              </div>
+
+              <select id="statusFilter">
+                <option value="All">All Status</option>
+                <option value="Delivered">Delivered</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Restaurant</th>
+                  <th>Date & Time</th>
+                  <th>Earnings</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+
+              <tbody id="historyTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="table-footer">
+            <p>Page 1 of 36</p>
+
+            <div class="pagination">
+              <button><i class="fa-solid fa-chevron-left"></i></button>
+              <button class="active-page">1</button>
+              <button>2</button>
+              <button>3</button>
+              <button><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="info-box">
+          <i class="fa-solid fa-circle-question"></i>
+          <div>
+            <h4>Missing an order?</h4>
+            <p>
+              Orders usually appear within 15 minutes. If missing after 24
+              hours, contact support.
+            </p>
+          </div>
+        </section>
       </section>
     </main>
 
-    <!-- SCRIPTS -->
+    <!-- DRAWER OVERLAY -->
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+
+    <!-- ORDER DETAILS DRAWER -->
+    <aside class="order-drawer" id="orderDrawer">
+      <div class="drawer-header">
+        <div>
+          <span class="drawer-eyebrow">Order Details</span>
+          <h2 id="drawerOrderId">#ORD-0000</h2>
+        </div>
+
+        <button class="drawer-close" id="drawerClose">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="drawer-status-row">
+        <span id="drawerStatus" class="status delivered">
+          <i class="fa-solid fa-circle-check"></i>
+          Delivered
+        </span>
+
+        <strong id="drawerEarning">Rs. 0</strong>
+      </div>
+
+      <div class="drawer-card restaurant-summary">
+        <div class="drawer-icon">
+          <i id="drawerRestaurantIcon" class="fa-solid fa-utensils"></i>
+        </div>
+        <div>
+          <small>Restaurant</small>
+          <h3 id="drawerRestaurant">Restaurant Name</h3>
+          <p id="drawerDate">Date and time</p>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <h4>Route Summary</h4>
+
+        <div class="route-detail">
+          <div class="route-dot pickup"></div>
+          <div>
+            <small>Pickup Location</small>
+            <p id="drawerPickup">New Baneshwor, Kathmandu</p>
+          </div>
+        </div>
+
+        <div class="route-line"></div>
+
+        <div class="route-detail">
+          <div class="route-dot dropoff"></div>
+          <div>
+            <small>Drop-off Location</small>
+            <p id="drawerDropoff">Koteshwor, Kathmandu</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-grid">
+        <div class="mini-detail">
+          <i class="fa-solid fa-route"></i>
+          <small>Distance</small>
+          <strong id="drawerDistance">0 km</strong>
+        </div>
+
+        <div class="mini-detail">
+          <i class="fa-regular fa-clock"></i>
+          <small>Duration</small>
+          <strong id="drawerDuration">0 mins</strong>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <h4>Payment Breakdown</h4>
+
+        <div class="price-row">
+          <span>Base fare</span>
+          <strong id="drawerBaseFare">Rs. 0</strong>
+        </div>
+
+        <div class="price-row">
+          <span>Distance bonus</span>
+          <strong id="drawerBonus">Rs. 0</strong>
+        </div>
+
+        <div class="price-row muted-row">
+          <span>Platform fee</span>
+          <strong>Rs. 0</strong>
+        </div>
+
+        <div class="price-row total-row">
+          <span>Total earned</span>
+          <strong id="drawerTotal">Rs. 0</strong>
+        </div>
+      </div>
+
+      <button class="drawer-primary-btn">
+        <i class="fa-solid fa-headset"></i>
+        Contact Support
+      </button>
+    </aside>
+
     <script src="../js/components/rider-sidebar.js"></script>
     <script src="../js/rider-history.js"></script>
   </body>

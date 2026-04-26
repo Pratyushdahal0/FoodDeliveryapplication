@@ -1,5 +1,6 @@
 :root {
   --sidebar-width: 280px;
+  --mini-sidebar-width: 90px;
   --orange: #ff4d1c;
   --orange-soft: #fff1e9;
   --text: #17172a;
@@ -16,13 +17,15 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   min-height: 100%;
   font-family: "Inter", sans-serif;
   background: var(--bg);
   color: var(--text);
   overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 /* ================= SIDEBAR ================= */
@@ -35,18 +38,15 @@ html, body {
   z-index: 1000;
   background: var(--card);
   border-right: 1px solid var(--border);
-
   overflow-y: auto;
   overflow-x: hidden;
-
-  transition: all 0.3s ease;
+  transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 #sidebar.hide {
   transform: translateX(-100%);
 }
 
-/* INNER */
 .sidebar {
   min-height: 100vh;
   padding: 36px 22px 30px;
@@ -72,27 +72,23 @@ html, body {
   font-weight: 700;
 }
 
-/* ================= MENU ================= */
-
+/* MENU */
 .menu {
   list-style: none;
   flex: 1;
 }
 
 .menu li {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
-
-  padding: 14px 14px;
+  padding: 14px;
   margin-bottom: 18px;
-
   border-radius: 14px;
-
   font-size: 15px;
   font-weight: 500;
   color: #6b6b6b;
-
   cursor: pointer;
   transition: all 0.25s ease;
 }
@@ -103,21 +99,18 @@ html, body {
   opacity: 0.7;
 }
 
-/* HOVER */
 .menu li:hover {
   background: #fff7f2;
   color: var(--orange);
   transform: translateX(4px);
 }
 
-/* ACTIVE */
 .menu li.active {
   background: var(--orange-soft);
   color: var(--orange);
   font-weight: 600;
 }
 
-/* LEFT INDICATOR */
 .menu li.active::before {
   content: "";
   position: absolute;
@@ -129,8 +122,7 @@ html, body {
   border-radius: 999px;
 }
 
-/* ================= STATUS CARD ================= */
-
+/* STATUS CARD */
 .status-card {
   margin-top: 60px;
   background: #fff7f2;
@@ -171,17 +163,15 @@ html, body {
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
-
   transition: all 0.2s ease;
 }
 
 .status-card button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 25px rgba(255,77,28,0.25);
+  box-shadow: 0 12px 25px rgba(255, 77, 28, 0.25);
 }
 
-/* ================= SCROLLBAR ================= */
-
+/* SCROLLBAR */
 #sidebar::-webkit-scrollbar {
   width: 6px;
 }
@@ -198,8 +188,7 @@ html, body {
   width: calc(100% - var(--sidebar-width));
   min-height: 100vh;
   padding: 0 44px 40px;
-
-  transition: all 0.3s ease;
+  transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .main.full {
@@ -209,29 +198,21 @@ html, body {
 
 /* ================= TOPBAR ================= */
 
-/* ================= TOPBAR ================= */
-
 .topbar {
   width: 100%;
-  height: 72px;
-
+  height: 68px;
   display: flex;
   align-items: center;
-
-  padding: 0 32px;
-
-  background: rgba(255, 255, 255, 0.85);
+  padding: 0 24px;
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-
   border-bottom: 1px solid #eee;
-
   position: sticky;
   top: 0;
   z-index: 999;
 }
 
-/* LEFT (menu button) */
 .topbar-left {
   display: flex;
   align-items: center;
@@ -239,54 +220,60 @@ html, body {
 
 /* MENU BUTTON */
 .icon-btn {
-  width: 36px;
-  height: 36px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
   border-radius: 10px;
   background: transparent;
   border: none;
-
-  font-size: 18px;
+  outline: none;
   color: #6b6b6b;
+  font-size: 18px;
   cursor: pointer;
-
-  transition: 0.2s ease;
+  transition: background 0.2s ease, transform 0.1s ease, color 0.2s ease;
 }
 
 .icon-btn:hover {
-  background: #f5f5f5;
-  color: #17172a;
+  background: #fff1e9;
+  color: var(--orange);
 }
 
-/* RIGHT SIDE */
+.icon-btn:active {
+  transform: scale(0.95);
+}
+
+.icon-btn:focus,
+.icon-btn:focus-visible,
+.notification-btn:focus,
+.notification-btn:focus-visible,
+button:focus,
+button:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* TOPBAR RIGHT */
 .topbar-right {
   margin-left: auto;
-
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 
-/* ONLINE STATUS */
+/* ONLINE */
 .online-pill {
   display: flex;
   align-items: center;
   gap: 8px;
-
-  height: 36px;
+  height: 34px;
   padding: 0 14px;
-
   border-radius: 999px;
-  background: #f5f7f6;
+  background: #f7f7f7;
   border: 1px solid #e6e6e6;
-
-  font-size: 14px;
-  font-weight: 600;
   color: #17172a;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .online-pill span {
@@ -299,22 +286,17 @@ html, body {
 /* NOTIFICATION */
 .notification-btn {
   position: relative;
-
-  width: 36px;
-  height: 36px;
-
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-radius: 10px;
   background: transparent;
   border: none;
-
-  font-size: 18px;
   color: #6b6b6b;
+  font-size: 18px;
   cursor: pointer;
-
   transition: 0.2s ease;
 }
 
@@ -325,32 +307,45 @@ html, body {
 
 .notification-btn small {
   position: absolute;
-  top: -3px;
-  right: -3px;
-
+  top: -5px;
+  right: -5px;
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-
   border-radius: 999px;
-  background: #ff4d1c;
+  background: var(--orange);
   color: white;
-
-  font-size: 10px;
+  font-size: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.18);
+    opacity: 0.75;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* PROFILE */
 .rider-profile {
   display: flex;
   align-items: center;
-  gap: 10px;
-
-  padding: 4px 10px 4px 4px;
+  gap: 8px;
+  padding: 4px 8px 4px 4px;
   border-radius: 14px;
-
   cursor: pointer;
   transition: 0.2s ease;
 }
@@ -360,9 +355,9 @@ html, body {
 }
 
 .rider-profile img {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
   object-fit: cover;
 }
 
@@ -373,13 +368,13 @@ html, body {
 }
 
 .rider-profile h4 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.1;
 }
 
 .rider-profile p {
-  font-size: 11px;
+  font-size: 10px;
   color: #8a8a8a;
 }
 
@@ -388,73 +383,50 @@ html, body {
   color: #17172a;
 }
 
-/* 🔥 HAMBURGER BUTTON FIX (SMOOTH) */
-.icon-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: transparent;
-  border: none;            
-  outline: none;
-  display: grid;
-  place-items: center;
+/* REFRESH BUTTON */
+.refresh-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  background: #fafafa;
+  color: #6b6b6b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition: 0.2s ease;
 }
 
-.icon-btn:hover {
-  background: #fff1e9; /* soft orange */
+.refresh-btn:hover {
+  background: #fff1e9;
+  color: var(--orange);
+  border-color: #ffd5c5;
 }
 
-.icon-btn:active {
-  transform: scale(0.95);
+.refresh-btn.loading i {
+  animation: spin 0.8s linear infinite;
 }
 
-.icon-btn i {
-  font-size: 20px;
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-
-/* RIGHT SIDE */
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-}
-
-/* ONLINE PILL */
-.online-pill {
-  border: 1px solid var(--border);
-  padding: 10px 20px;
-  border-radius: 999px;
-  font-weight: 600;
-}
-
-.online-pill span {
-  width: 8px;
-  height: 8px;
-  background: #16b957;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 6px;
-}
-
-/* PROFILE */
-.rider-profile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.rider-profile img {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+/* BUTTON PRESS */
+button:active {
+  transform: scale(0.96);
 }
 
 /* ================= MINI SIDEBAR ================= */
+
 #sidebar.mini {
-  width: 90px;
+  width: var(--mini-sidebar-width);
 }
 
 #sidebar.mini .sidebar {
@@ -468,12 +440,17 @@ html, body {
   display: none;
 }
 
-/* clean single version */
+#sidebar.mini .menu li {
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+}
+
 #sidebar.mini .status-card {
   display: flex;
   justify-content: center;
   align-items: center;
-
   width: 60px;
   height: 60px;
   padding: 0;
@@ -501,15 +478,9 @@ html, body {
   font-size: 16px;
 }
 
-#sidebar.mini .menu li {
-  justify-content: center;
-  width: 50px;
-  height: 50px;
-}
-
 .main.mini {
-  margin-left: 90px;
-  width: calc(100% - 90px);
+  margin-left: var(--mini-sidebar-width);
+  width: calc(100% - var(--mini-sidebar-width));
 }
 
 /* ================= MOBILE ================= */
@@ -527,5 +498,13 @@ html, body {
     margin-left: 0;
     width: 100%;
     padding: 0 20px;
+  }
+
+  .topbar-right {
+    gap: 10px;
+  }
+
+  .rider-profile div {
+    display: none;
   }
 }

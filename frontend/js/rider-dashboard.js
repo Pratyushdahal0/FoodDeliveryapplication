@@ -178,3 +178,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+const refreshBtn = document.querySelector(".refresh-btn");
+
+refreshBtn.addEventListener("click", () => {
+  refreshBtn.classList.add("loading");
+
+  // simulate API call
+  setTimeout(() => {
+    refreshBtn.classList.remove("loading");
+  }, 1500);
+});
