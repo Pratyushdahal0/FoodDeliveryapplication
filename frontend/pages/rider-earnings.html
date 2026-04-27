@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Rider Earnings | FoodExpress</title>
+
+    <link rel="stylesheet" href="../css/rider-layout.css" />
+    <link rel="stylesheet" href="../css/rider-earnings.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+
+  <body>
+    <aside id="sidebar"></aside>
+
+    <main class="rider-main">
+      <header class="topbar">
+        <button class="menu-btn" id="menuToggle">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <div class="topbar-right">
+          <span class="online-pill"><span></span> Online</span>
+          <i class="fa-regular fa-bell bell-icon"></i>
+
+          <div class="user-box">
+            <img src="https://i.pravatar.cc/80?img=12" alt="Rider" />
+            <div>
+              <h4>Ramesh Tamang</h4>
+              <p>Rider ID: RID-1001</p>
+            </div>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+        </div>
+      </header>
+
+      <section class="earnings-page">
+        <div class="page-head">
+          <div>
+            <p class="section-label">RIDER EARNINGS</p>
+            <h1>Earnings Overview</h1>
+            <p class="page-subtitle">
+              Track your income, payouts, bonuses, and delivery performance.
+            </p>
+          </div>
+
+          <div class="head-actions">
+            <button class="date-btn">
+              <i class="fa-regular fa-calendar"></i>
+              Apr 01 - Apr 26, 2026
+            </button>
+
+            <button class="withdraw-btn" id="withdrawBtn">
+              <i class="fa-solid fa-arrow-down"></i>
+              Withdraw
+            </button>
+          </div>
+        </div>
+
+        <section class="earning-stats">
+          <div class="earning-card">
+            <div class="card-icon orange">
+              <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+            <div>
+              <p>Today Earnings</p>
+              <h2 id="todayEarnings">Rs. 0</h2>
+              <span class="positive">+12% vs yesterday</span>
+            </div>
+          </div>
+
+          <div class="earning-card">
+            <div class="card-icon green">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div>
+              <p>This Week</p>
+              <h2 id="weekEarnings">Rs. 0</h2>
+              <span>Weekly target Rs. 4,000</span>
+            </div>
+          </div>
+
+          <div class="earning-card dark-card">
+            <div class="card-icon dark">
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+            <div>
+              <p>Available Balance</p>
+              <h2 id="availableBalance">Rs. 0</h2>
+              <span>Ready to withdraw</span>
+            </div>
+          </div>
+
+          <div class="earning-card">
+            <div class="card-icon blue">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <div>
+              <p>Pending Payout</p>
+              <h2 id="pendingPayout">Rs. 0</h2>
+              <span>Processing soon</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="earning-grid">
+          <div class="chart-card">
+            <div class="card-head">
+              <div>
+                <h2>Earnings Activity</h2>
+                <p>Daily earnings for the last 7 days</p>
+              </div>
+
+              <div class="toggle-tabs">
+                <button class="active" data-chart="weekly">Weekly</button>
+                <button data-chart="monthly">Monthly</button>
+              </div>
+            </div>
+
+            <div class="chart-wrap">
+              <canvas id="earningChartCanvas"></canvas>
+            </div>
+          </div>
+
+          <div class="side-stack">
+            <div class="cashout-card">
+              <div class="card-head">
+                <div>
+                  <h2>Cash Out</h2>
+                  <p>Manage rider payout</p>
+                </div>
+                <i class="fa-solid fa-building-columns"></i>
+              </div>
+
+              <div class="cash-row">
+                <span>Available</span>
+                <strong id="cashAvailable">Rs. 0</strong>
+              </div>
+
+              <div class="cash-row">
+                <span>Pending</span>
+                <strong id="cashPending">Rs. 0</strong>
+              </div>
+
+              <div class="cash-row">
+                <span>Last payout</span>
+                <strong id="lastPayoutDate">Apr 21</strong>
+              </div>
+
+              <button class="full-btn" id="cashoutBtn">Withdraw to Bank</button>
+            </div>
+
+            <div class="bonus-card">
+              <h2>Weekly Boost</h2>
+              <p>Complete 40 orders this week and earn Rs. 500 bonus.</p>
+
+              <div class="bonus-bottom">
+                <div>
+                  <h3 id="bonusPercent">0%</h3>
+                  <span id="bonusOrders">0/40 Orders</span>
+                </div>
+                <div class="progress-bar">
+                  <div id="bonusProgress"></div>
+                </div>
+              </div>
+            </div>
+            <div class="insight-card">
+              <h3>Insights</h3>
+
+              <ul>
+                <li>
+                  <i class="fa-solid fa-fire"></i>
+                  Best day: <strong id="bestDay"></strong>
+                </li>
+
+                <li>
+                  <i class="fa-solid fa-arrow-trend-down"></i>
+                  Lowest day: <strong id="worstDay"></strong>
+                </li>
+
+                <li>
+                  <i class="fa-solid fa-bullseye"></i>
+                  Remaining target: <strong id="remainingTarget"></strong>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="performance-grid">
+          <div class="mini-card">
+            <i class="fa-solid fa-motorcycle"></i>
+            <p>Total Deliveries</p>
+            <h3 id="totalDeliveries">0</h3>
+          </div>
+
+          <div class="mini-card">
+            <i class="fa-solid fa-coins"></i>
+            <p>Avg. Per Order</p>
+            <h3 id="avgPerOrder">Rs. 0</h3>
+          </div>
+
+          <div class="mini-card">
+            <i class="fa-solid fa-hourglass-half"></i>
+            <p>Online Hours</p>
+            <h3 id="onlineHours">0h</h3>
+          </div>
+
+          <div class="mini-card">
+            <i class="fa-solid fa-circle-check"></i>
+            <p>Completion Rate</p>
+            <h3 id="completionRate">0%</h3>
+          </div>
+        </section>
+
+        <section class="breakdown-card">
+          <div class="card-head">
+            <div>
+              <h2>Earnings Breakdown</h2>
+              <p>Understand where your rider income comes from.</p>
+            </div>
+          </div>
+
+          <div class="breakdown-list">
+            <div class="breakdown-item">
+              <span>Base Pay</span>
+              <strong id="basePay">Rs. 0</strong>
+            </div>
+
+            <div class="breakdown-item">
+              <span>Distance Pay</span>
+              <strong id="distancePay">Rs. 0</strong>
+            </div>
+
+            <div class="breakdown-item">
+              <span>Bonus</span>
+              <strong id="bonusPay">Rs. 0</strong>
+            </div>
+
+            <div class="breakdown-item">
+              <span>Tips</span>
+              <strong id="tipsPay">Rs. 0</strong>
+            </div>
+
+            <div class="breakdown-item danger">
+              <span>Deductions</span>
+              <strong id="deductions">Rs. 0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="transactions-card">
+          <div class="card-head">
+            <div>
+              <h2>Recent Transactions</h2>
+              <p>Latest earnings, bonuses, and payouts.</p>
+            </div>
+
+            <button class="view-btn">View All</button>
+          </div>
+
+          <div class="transaction-list" id="transactionList"></div>
+
+          <div class="empty-state" id="emptyState">
+            <i class="fa-solid fa-wallet"></i>
+            <h3>No earnings yet</h3>
+            <p>Completed delivery earnings will appear here.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <!-- Withdraw Modal -->
+    <div class="withdraw-modal" id="withdrawModal">
+      <div class="withdraw-box">
+        <button class="modal-close" id="closeWithdrawBtn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="modal-icon">
+          <i class="fa-solid fa-building-columns"></i>
+        </div>
+
+        <h2>Withdraw Earnings</h2>
+        <p>Transfer your available rider balance to your bank account.</p>
+
+        <div class="modal-balance">
+          <span>Available Balance</span>
+          <strong id="modalAvailableBalance">Rs. 0</strong>
+        </div>
+
+        <label for="withdrawAmount">Withdraw Amount</label>
+        <input type="number" id="withdrawAmount" placeholder="Enter amount" />
+
+        <div class="modal-actions">
+          <button class="confirm-withdraw" id="confirmWithdrawBtn">
+            Confirm Withdraw
+          </button>
+          <button class="cancel-withdraw" id="cancelWithdrawBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/components/rider-sidebar.js"></script>
+    <script src="../js/rider-earnings.js"></script>
+  </body>
+</html>

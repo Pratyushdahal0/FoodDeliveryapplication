@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deliveries - FoodExpress</title>
+
+    <link rel="stylesheet" href="../css/rider-layout.css" />
+    <link rel="stylesheet" href="../css/rider-deliveries.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <div id="sidebar"></div>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn" id="menuToggle">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <div class="topbar-right">
+          <span class="online-pill"><span></span> Online</span>
+
+          <button class="notification-btn">
+            <i class="fa-regular fa-bell"></i>
+            <small>2</small>
+          </button>
+
+          <div class="rider-profile">
+            <img src="https://i.pravatar.cc/80?img=12" alt="Rider profile" />
+            <div>
+              <h4>Ramesh Tamang</h4>
+              <p>Rider ID: RID-1001</p>
+            </div>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+        </div>
+      </header>
+
+      <section class="deliveries-page">
+        <div class="page-header">
+          <div>
+            <span class="eyebrow">Live Orders</span>
+            <h1>My Deliveries</h1>
+            <p>
+              Accept orders, manage your active trip, and update delivery
+              progress.
+            </p>
+          </div>
+
+          <div class="page-actions">
+            <button class="zone-btn">
+              <i class="fa-solid fa-location-dot"></i>
+              Kathmandu Zone
+            </button>
+            <button class="refresh-btn" id="refreshOrders">
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <section class="delivery-stats">
+          <div class="stat-card">
+            <div class="stat-icon orange"><i class="fa-solid fa-box"></i></div>
+            <div>
+              <p>Available</p>
+              <h2 id="availableCount">0</h2>
+              <span>New tasks</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon green">
+              <i class="fa-solid fa-motorcycle"></i>
+            </div>
+            <div>
+              <p>Active Trip</p>
+              <h2 id="activeCount">0</h2>
+              <span>In progress</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon yellow">
+              <i class="fa-solid fa-coins"></i>
+            </div>
+            <div>
+              <p>Potential Earnings</p>
+              <h2 id="potentialEarnings">Rs. 0</h2>
+              <span>From available</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon purple">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <div>
+              <p>Avg. Pickup</p>
+              <h2>12m</h2>
+              <span>Today</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="delivery-grid-layout">
+          <div class="left-column">
+            <section class="active-card" id="activeDelivery"></section>
+
+            <section class="available-panel">
+              <div class="panel-header">
+                <div>
+                  <h3>Available Deliveries</h3>
+                  <p>Choose one delivery task to accept.</p>
+                </div>
+
+                <div class="filters">
+                  <button class="filter-chip active">All</button>
+                  <button class="filter-chip">Nearby</button>
+                  <button class="filter-chip">High Pay</button>
+                </div>
+              </div>
+
+              <div class="available-list" id="availableList"></div>
+            </section>
+          </div>
+
+          <aside class="right-column">
+            <section class="summary-card">
+              <h3>Trip Summary</h3>
+
+              <div class="summary-row">
+                <span>Today Earnings</span>
+                <strong>Rs. 825</strong>
+              </div>
+
+              <div class="summary-row">
+                <span>Completed</span>
+                <strong>9 orders</strong>
+              </div>
+
+              <div class="summary-row">
+                <span>Online Time</span>
+                <strong>5h 20m</strong>
+              </div>
+
+              <div class="summary-row">
+                <span>Acceptance Rate</span>
+                <strong>94%</strong>
+              </div>
+            </section>
+
+            <section class="help-card">
+              <div>
+                <h4>Need help?</h4>
+                <p>Contact dispatch for order delays or customer issues.</p>
+              </div>
+              <button>
+                <i class="fa-solid fa-headset"></i>
+                Dispatch
+              </button>
+            </section>
+          </aside>
+        </section>
+      </section>
+    </main>
+
+    <div class="toast" id="toast">
+      <i class="fa-solid fa-circle-check"></i>
+      <span>Order accepted successfully.</span>
+    </div>
+
+    <script src="../js/components/rider-sidebar.js"></script>
+    <script src="../js/rider-deliveries.js"></script>
+  </body>
+</html>

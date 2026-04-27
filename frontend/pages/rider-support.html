@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>FoodExpress Rider Support</title>
+
+    <link rel="stylesheet" href="../css/rider-layout.css" />
+    <link rel="stylesheet" href="../css/rider-support.css" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <div id="sidebar"></div>
+
+    <main class="support-main">
+      <section class="support-header">
+        <div class="support-title-block">
+          <p class="support-kicker">Rider Support</p>
+          <h1>Support Chat</h1>
+          <span>
+            Get real-time help for deliveries, payouts, customer issues, and
+            account support.
+          </span>
+        </div>
+
+        <div class="support-header-actions">
+          <div class="agent-status">
+            <span class="online-dot"></span>
+            <span id="agentStatusText">Agent Online</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="support-shell">
+        <!-- LEFT PANEL -->
+        <aside class="ticket-panel">
+          <div class="ticket-panel-head">
+            <div>
+              <h3>Conversations</h3>
+              <p>Live rider support tickets</p>
+            </div>
+
+            <button
+              id="newTicketBtn"
+              class="new-ticket-btn"
+              type="button"
+              title="Create new support ticket"
+            >
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+
+          <div class="quick-issue-box">
+            <button
+              type="button"
+              class="quick-reply"
+              data-message="I have a delay issue with my delivery."
+            >
+              <i class="fa-solid fa-clock"></i>
+              Delay issue
+            </button>
+
+            <button
+              type="button"
+              class="quick-reply"
+              data-message="I have a payment issue with my earnings."
+            >
+              <i class="fa-solid fa-wallet"></i>
+              Payment issue
+            </button>
+
+            <button
+              type="button"
+              class="quick-reply"
+              data-message="Customer is not responding."
+            >
+              <i class="fa-solid fa-user-clock"></i>
+              Customer issue
+            </button>
+          </div>
+
+          <div id="ticketList" class="ticket-list"></div>
+        </aside>
+
+        <!-- CHAT PANEL -->
+        <section class="chat-panel">
+          <div class="chat-topbar">
+            <div class="chat-ticket-info">
+              <div class="chat-agent-avatar" id="activeAgentAvatar">
+                <i class="fa-solid fa-robot"></i>
+              </div>
+
+              <div>
+                <h3 id="activeTicketTitle">Select a conversation</h3>
+                <p id="activeTicketSubtitle">FoodExpress AI • Active now</p>
+              </div>
+            </div>
+
+            <div class="chat-actions">
+              <span id="ticketPriorityBadge" class="priority medium"
+                >Medium</span
+              >
+              <span id="ticketStatusBadge" class="status-badge active"
+                >ACTIVE</span
+              >
+
+              <button
+                id="closeTicketBtn"
+                class="close-ticket-btn"
+                type="button"
+              >
+                Close Ticket
+              </button>
+            </div>
+          </div>
+
+          <div class="chat-notice">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span id="supportModeNotice">
+              FoodExpress AI is handling this chat. You can switch to human
+              support anytime.
+            </span>
+          </div>
+
+          <div id="chatMessages" class="chat-messages"></div>
+
+          <div id="typingIndicator" class="typing-indicator hidden">
+            <div class="typing-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <strong id="typingText">Agent is typing...</strong>
+          </div>
+
+          <div class="smart-suggestions">
+            <button
+              type="button"
+              class="suggestion-chip"
+              data-message="Can you check my latest payout status?"
+            >
+              Check payout
+            </button>
+
+            <button
+              type="button"
+              class="suggestion-chip"
+              data-message="Can you explain why my earning is pending?"
+            >
+              Pending earnings
+            </button>
+
+            <button
+              type="button"
+              class="suggestion-chip"
+              data-message="Please escalate this ticket to human support."
+            >
+              Escalate
+            </button>
+          </div>
+
+          <div class="chat-input-bar">
+            <input
+              type="text"
+              id="messageInput"
+              placeholder="Type your message to support..."
+              autocomplete="off"
+            />
+
+            <button id="sendMessageBtn" type="button" title="Send message">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </section>
+
+        <!-- RIGHT PANEL -->
+        <aside class="support-info-panel">
+          <div class="info-card">
+            <div class="info-card-head">
+              <h3>Support Summary</h3>
+              <div class="info-icon green">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </div>
+
+            <div class="info-row">
+              <span>Average reply</span>
+              <strong id="avgReplyText">2 sec</strong>
+            </div>
+
+            <div class="info-row">
+              <span>Agent</span>
+              <strong id="currentAgentText">FoodExpress AI</strong>
+            </div>
+
+            <div class="info-row">
+              <span>Mode</span>
+              <strong id="currentModeText">Friendly</strong>
+            </div>
+
+            <div class="info-row">
+              <span>Status</span>
+              <strong id="currentStatusText" class="green-text">Online</strong>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="info-card-head">
+              <h3>Agent Type</h3>
+              <div class="info-icon blue">
+                <i class="fa-solid fa-headset"></i>
+              </div>
+            </div>
+
+            <div class="agent-switcher">
+              <button
+                type="button"
+                class="agent-toggle active"
+                data-agent="ai"
+                id="aiAgentBtn"
+              >
+                <i class="fa-solid fa-robot"></i>
+                AI Agent
+              </button>
+
+              <button
+                type="button"
+                class="agent-toggle"
+                data-agent="human"
+                id="humanAgentBtn"
+              >
+                <i class="fa-solid fa-user-tie"></i>
+                Human Agent
+              </button>
+            </div>
+
+            <p class="small-note">
+              Demo mode: human support is simulated now. Later this connects to
+              admin dashboard.
+            </p>
+          </div>
+
+          <div class="info-card">
+            <div class="info-card-head">
+              <h3>Reply Style</h3>
+              <div class="info-icon orange">
+                <i class="fa-solid fa-sliders"></i>
+              </div>
+            </div>
+
+            <div class="personality-switcher">
+              <button
+                type="button"
+                class="personality-chip active"
+                data-personality="friendly"
+              >
+                Friendly
+              </button>
+
+              <button
+                type="button"
+                class="personality-chip"
+                data-personality="fast"
+              >
+                Fast
+              </button>
+
+              <button
+                type="button"
+                class="personality-chip"
+                data-personality="strict"
+              >
+                Strict
+              </button>
+            </div>
+
+            <p class="small-note">
+              Friendly = warm replies, Fast = short replies, Strict =
+              professional policy-style replies.
+            </p>
+          </div>
+
+          <div class="info-card warning">
+            <div class="info-card-head">
+              <h3>Smart Actions</h3>
+              <div class="info-icon orange">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+            </div>
+
+            <p>
+              Use support commands for payout corrections, delivery issues, and
+              ticket escalation.
+            </p>
+
+            <button
+              type="button"
+              class="command-chip quick-reply"
+              data-message="adjust earnings"
+            >
+              adjust earnings
+            </button>
+
+            <p class="small-note">
+              Demo mode: this adds Rs. 100 to rider earnings using localStorage.
+            </p>
+          </div>
+
+          <div class="info-card">
+            <div class="info-card-head">
+              <h3>Ticket Quality</h3>
+              <div class="info-icon blue">
+                <i class="fa-solid fa-chart-line"></i>
+              </div>
+            </div>
+
+            <div class="quality-list">
+              <div>
+                <span>Resolution rate</span>
+                <strong>96%</strong>
+              </div>
+
+              <div>
+                <span>Escalation</span>
+                <strong id="escalationLevelText">Low</strong>
+              </div>
+
+              <div>
+                <span>AI confidence</span>
+                <strong id="aiConfidenceText">High</strong>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="../js/components/rider-sidebar.js"></script>
+    <script src="../js/rider-support.js"></script>
+  </body>
+</html>
