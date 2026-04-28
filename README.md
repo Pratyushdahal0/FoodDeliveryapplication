@@ -1,24 +1,24 @@
 # FoodDeliveryapplication
 
-FoodDeliveryapplication is a full-stack food delivery web application built using **HTML, CSS, JavaScript, PHP, and MySQL**.
+FoodDeliveryapplication is an **ongoing full-stack food delivery web application** currently being built using **HTML, CSS, JavaScript, PHP, and MySQL**.
 
-The project simulates a real-world food ordering platform where customers can browse food items, add products to cart, place orders, track delivery status, and interact with platform features. It also includes separate workflows for admin, restaurant owners, and riders, making the system closer to a real delivery marketplace rather than a simple food website.
+The goal of this project is to create a realistic food ordering platform where customers can browse food items, add products to cart, place orders, track delivery status, and interact with platform features. The project is also being developed with separate workflows for customers, restaurant owners, riders, and admins to make it closer to a real-world food delivery marketplace.
 
-## Features
+## Current Features
 
 - Customer registration and login
 - Restaurant and food item browsing
-- Add to cart and checkout flow
+- Add to cart functionality
+- Checkout flow
 - Order placement and order tracking
-- Customer profile and avatar update
+- Customer profile section
 - Favorites and recent orders
 - Rewards/points system
 - Contact/support message system
-- Restaurant owner dashboard for managing orders
-- Admin dashboard for platform management
-- Restaurant approval and management
-- Rider dashboard and delivery history
-- Responsive user interface
+- Admin dashboard interface
+- Restaurant owner dashboard interface
+- Rider dashboard interface
+- Responsive frontend pages
 
 ## Tech Stack
 
