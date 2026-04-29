@@ -365,15 +365,37 @@ function bindAvailabilityEvents() {
 
 function saveAvailabilityImmediately() {
   const settings = collectSettingsFromUI();
+  
+  // normalizeSettings enforces the rules:
+  // - If online=false → breakMode=false, autoAccept=false
+  // - If breakMode=true → online=true, autoAccept=false
+  const normalized = normalizeSettings(settings);
 
-  const saved = saveSettings(settings, false);
+  // Save to localStorage
+  localStorage.setItem(RIDER_SETTINGS_KEY, JSON.stringify(normalized));
+  localStorage.setItem(RIDER_LAST_UPDATED_KEY, new Date().toISOString());
 
-  populateSettings(saved);
-  applyStatusUI(saved);
-  updateAlertMessage(saved);
-  updateDisabledStates(saved);
+  // Sync status key (offline/break/online)
+  syncSettingsToLocalStatus(normalized);
 
-  return saved;
+  // Update UI
+  populateSettings(normalized);
+  applyStatusUI(normalized);
+  updateAlertMessage(normalized);
+  updateDisabledStates(normalized);
+
+  // Notify other pages
+  if (typeof window.applyGlobalRiderStatus === "function") {
+    window.applyGlobalRiderStatus();
+  }
+
+  window.dispatchEvent(
+    new CustomEvent("foodExpressRiderSettingsUpdated", {
+      detail: normalized
+    })
+  );
+
+  return normalized;
 }
 
 function bindPreferenceEvents() {
@@ -417,13 +439,12 @@ function bindPayoutEvents() {
   const walletNumber = document.getElementById("walletNumber");
 
   if (payoutMethod) {
-  payoutMethod.addEventListener("change", () => {
-    updatePayoutFields();
-
-    // Do not show success toast here.
-    // Payout method will be saved when rider clicks Save Changes.
-  });
-}
+    payoutMethod.addEventListener("change", () => {
+      // Just update fields - do NOT save or show toast
+      // Payout method will be saved when rider clicks Save Changes
+      updatePayoutFields();
+    });
+  }
 
   [bankName, accountName, accountNumber, walletNumber].forEach((input) => {
     if (!input) return;
@@ -465,32 +486,50 @@ function bindAccountActions() {
 ================================ */
 
 function handleSave() {
-  const settings = collectSettingsFromUI();
-  const validation = validateSettings(settings);
+  try {
+    const settings = collectSettingsFromUI();
+    const validation = validateSettings(settings);
 
-  if (!validation.valid) {
-    showToast(validation.message, "error");
-    focusElement(validation.fieldId);
-    return;
+    console.log("🧪 Save clicked");
+    console.log("Selected payout method:", settings.payout.method);
+    console.log("Wallet number:", settings.payout.walletNumber);
+    console.log("Validation result:", validation);
+
+    if (!validation || validation.valid !== true) {
+      showToast(
+        validation?.message || "Please check your settings and try again.",
+        "error"
+      );
+
+      if (validation?.fieldId) {
+        focusElement(validation.fieldId);
+      }
+
+      return;
+    }
+
+    const saved = saveSettings(settings, false);
+
+    populateSettings(saved);
+    applyStatusUI(saved);
+    applyPreferenceClasses(saved);
+    updatePayoutFields();
+    updateAlertMessage(saved);
+    updateDisabledStates(saved);
+
+    if (typeof window.applyGlobalRiderStatus === "function") {
+      window.applyGlobalRiderStatus();
+    }
+
+    console.log("✅ Rider settings saved successfully:", saved);
+
+    showToast("Settings saved successfully.", "success");
+  } catch (error) {
+    console.error("❌ Failed to save rider settings:", error);
+    showToast("Something went wrong while saving settings.", "error");
   }
-
-  const saved = saveSettings(settings, false);
-
-  populateSettings(saved);
-  applyStatusUI(saved);
-  applyPreferenceClasses(saved);
-  updatePayoutFields();
-  updateAlertMessage(saved);
-  updateDisabledStates(saved);
-
-  if (typeof window.applyGlobalRiderStatus === "function") {
-    window.applyGlobalRiderStatus();
-  }
-
-  showToast("Settings saved successfully.", "success");
-
-  console.log("✅ Rider settings saved:", saved);
 }
+
 
 function handleReset() {
   const confirmReset = confirm(
@@ -507,7 +546,7 @@ function handleReset() {
 ================================ */
 
 function validateSettings(settings) {
-  const area = settings.availability.preferredArea.trim();
+  const area = String(settings?.availability?.preferredArea || "").trim();
 
   if (area.length < 2) {
     return {
@@ -525,41 +564,49 @@ function validateSettings(settings) {
     };
   }
 
-  if (settings.payout.method === "Bank Transfer") {
-  if (!settings.payout.bankName.trim()) {
-    return {
-      valid: false,
-      fieldId: "bankName",
-      message: "Please enter your bank name."
-    };
+  const payoutMethod = String(settings?.payout?.method || "Bank Transfer");
+
+  if (payoutMethod === "Bank Transfer") {
+    if (!String(settings?.payout?.bankName || "").trim()) {
+      return {
+        valid: false,
+        fieldId: "bankName",
+        message: "Please enter your bank name."
+      };
+    }
+
+    if (!String(settings?.payout?.accountName || "").trim()) {
+      return {
+        valid: false,
+        fieldId: "accountName",
+        message: "Please enter the account holder name."
+      };
+    }
+
+    if (!isValidAccountNumber(settings?.payout?.accountNumber)) {
+      return {
+        valid: false,
+        fieldId: "accountNumber",
+        message: "Please enter a valid account number."
+      };
+    }
   }
 
-  if (!settings.payout.accountName.trim()) {
-    return {
-      valid: false,
-      fieldId: "accountName",
-      message: "Please enter the account holder name."
-    };
+  if (payoutMethod === "eSewa" || payoutMethod === "Khalti") {
+    if (!isValidNepaliPhone(settings?.payout?.walletNumber)) {
+      return {
+        valid: false,
+        fieldId: "walletNumber",
+        message: "Please enter a valid eSewa/Khalti phone number."
+      };
+    }
   }
 
-  if (!isValidAccountNumber(settings.payout.accountNumber)) {
-    return {
-      valid: false,
-      fieldId: "accountNumber",
-      message: "Please enter a valid account number."
-    };
-  }
-}
-
-if (settings.payout.method === "eSewa" || settings.payout.method === "Khalti") {
-  if (!isValidNepaliPhone(settings.payout.walletNumber)) {
-    return {
-      valid: false,
-      fieldId: "walletNumber",
-      message: "Please enter a valid eSewa/Khalti phone number."
-    };
-  }
-}
+  return {
+    valid: true,
+    fieldId: null,
+    message: "Valid settings."
+  };
 }
 
 function isValidAccountNumber(value) {
@@ -572,10 +619,27 @@ function isValidAccountNumber(value) {
 }
 
 function isValidNepaliPhone(value) {
-  const clean = String(value || "").replace(/\s+/g, "");
+  let clean = String(value || "").trim();
 
-  // Nepal mobile examples: 98XXXXXXXX, 97XXXXXXXX, +97798XXXXXXXX
-  return /^(\+977)?9[78][0-9]{8}$/.test(clean);
+  // Remove spaces, hyphens, and brackets
+  clean = clean.replace(/[\s\-()]/g, "");
+
+  // Accept numbers written as 9779849220167
+  if (clean.startsWith("977")) {
+    clean = `+${clean}`;
+  }
+
+  // 10-digit Nepal mobile: 98XXXXXXXX or 97XXXXXXXX
+  if (/^9[78]\d{8}$/.test(clean)) {
+    return true;
+  }
+
+  // Country-code format: +97798XXXXXXXX or +97797XXXXXXXX
+  if (/^\+9779[78]\d{8}$/.test(clean)) {
+    return true;
+  }
+
+  return false;
 }
 
 /* ================================
@@ -942,8 +1006,9 @@ function focusElement(id) {
 function showToast(message, type = "success") {
   const toast = document.getElementById("toast");
   const toastMessage = document.getElementById("toastMessage");
+  const toastIcon = toast?.querySelector("i");
 
-  if (!toast) return;
+  if (!toast || !toastMessage || !toastIcon) return;
 
   let icon = "fa-circle-check";
 
@@ -955,10 +1020,8 @@ function showToast(message, type = "success") {
     icon = "fa-triangle-exclamation";
   }
 
-  toast.innerHTML = `
-    <i class="fa-solid ${icon}"></i>
-    <span id="toastMessage">${message}</span>
-  `;
+  toastIcon.className = `fa-solid ${icon}`;
+  toastMessage.textContent = message;
 
   toast.className = `toast show ${type}`;
 
