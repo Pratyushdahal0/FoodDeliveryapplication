@@ -508,3 +508,14 @@ button:active {
     display: none;
   }
 }
+.online-pill.offline span {
+  background: #ef4444 !important;
+}
+
+.online-pill.break span {
+  background: #f4a000 !important;
+}
+
+.online-pill.online span {
+  background: #0fa958 !important;
+}

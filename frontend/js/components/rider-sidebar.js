@@ -62,3 +62,108 @@ if (menuToggle && sidebar && main) {
     main.classList.toggle("mini");
   });
 }
+/* =====================================================
+   GLOBAL RIDER STATUS SYNC
+   Works on Dashboard, Deliveries, History, Earnings,
+   Settings, Profile, Support
+===================================================== */
+
+(function syncRiderStatusEverywhere() {
+  const RIDER_STATUS_KEY = "foodExpressRiderStatus";
+  const RIDER_SETTINGS_KEY = "foodExpressRiderSettings";
+
+  function getGlobalRiderStatus() {
+    try {
+      const settings = JSON.parse(localStorage.getItem(RIDER_SETTINGS_KEY));
+
+      if (settings && settings.availability) {
+        if (!settings.availability.online) return "offline";
+        if (settings.availability.breakMode) return "break";
+        return "online";
+      }
+    } catch (error) {
+      console.warn("Could not read rider settings for global status.", error);
+    }
+
+    const status = localStorage.getItem(RIDER_STATUS_KEY);
+
+    if (status === "offline" || status === "break" || status === "online") {
+      return status;
+    }
+
+    return "online";
+  }
+
+  function applyGlobalRiderStatus() {
+    const status = getGlobalRiderStatus();
+
+    const label =
+      status === "offline"
+        ? "Offline"
+        : status === "break"
+        ? "On Break"
+        : "Online";
+
+    const dotColor =
+      status === "offline"
+        ? "#ef4444"
+        : status === "break"
+        ? "#f4a000"
+        : "#0fa958";
+
+    // Topbar pill on every rider page
+    document.querySelectorAll(".online-pill").forEach((pill) => {
+      pill.classList.remove("offline", "break", "online");
+
+      if (status === "offline") pill.classList.add("offline");
+      if (status === "break") pill.classList.add("break");
+      if (status === "online") pill.classList.add("online");
+
+      pill.innerHTML = `<span></span> ${label}`;
+
+      const dot = pill.querySelector("span");
+      if (dot) dot.style.background = dotColor;
+    });
+
+    // Bottom sidebar status if present
+    const sidebarStatus = document.querySelector(
+      ".sidebar-status, .rider-bottom-status, .sidebar-footer"
+    );
+
+    if (sidebarStatus) {
+      const text =
+        status === "offline"
+          ? "You are Offline"
+          : status === "break"
+          ? "You are On Break"
+          : "You are Online";
+
+      const dot = sidebarStatus.querySelector("span");
+
+      if (dot) {
+        dot.style.background = dotColor;
+      }
+
+      const textNode = Array.from(sidebarStatus.childNodes).find(
+        (node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim()
+      );
+
+      if (textNode) {
+        textNode.textContent = ` ${text}`;
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", applyGlobalRiderStatus);
+
+  window.addEventListener("storage", (event) => {
+    if (
+      event.key === RIDER_STATUS_KEY ||
+      event.key === RIDER_SETTINGS_KEY
+    ) {
+      applyGlobalRiderStatus();
+    }
+  });
+
+  window.applyGlobalRiderStatus = applyGlobalRiderStatus;
+})();

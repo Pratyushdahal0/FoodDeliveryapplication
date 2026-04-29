@@ -748,3 +748,41 @@
     grid-template-columns: 1fr;
   }
 }
+.offline-state {
+  border: 1px dashed #ffd1c1;
+  background: #fff8f4;
+  border-radius: 18px;
+  padding: 26px;
+  text-align: center;
+  color: #777;
+}
+
+.offline-state i {
+  width: 48px;
+  height: 48px;
+  border-radius: 17px;
+  background: #fff1e9;
+  color: var(--orange);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+  font-size: 20px;
+}
+
+.offline-state h4 {
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.offline-state p {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.online-pill.offline span {
+  background: #ef4444 !important;
+}
+
+.online-pill.break span {
+  background: #f4a000 !important;
+}
