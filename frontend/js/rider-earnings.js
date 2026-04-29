@@ -93,8 +93,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   window.addEventListener("focus", () => {
-    renderEarningsPage();
-  });
+  updateLastPayoutOnly();
+});
 
   document.getElementById("withdrawBtn")?.addEventListener("click", openWithdrawModal);
   document.getElementById("cashoutBtn")?.addEventListener("click", openWithdrawModal);
@@ -240,6 +240,13 @@ function renderInsights(data) {
 function renderChart(chartData) {
   const canvas = document.getElementById("earningChartCanvas");
   if (!canvas || typeof Chart === "undefined") return;
+  if (!Array.isArray(chartData) || chartData.length === 0) return;
+
+  const chartSignature = JSON.stringify(chartData);
+
+  if (earningsChart && earningsChart.__signature === chartSignature) {
+    return;
+  }
 
   const ctx = canvas.getContext("2d");
   const labels = chartData.map((item) => item.day);
@@ -276,21 +283,12 @@ function renderChart(chartData) {
         },
       ],
     },
-
     options: {
       responsive: true,
       maintainAspectRatio: false,
       animation: {
         duration: 900,
         easing: "easeOutQuart",
-      },
-      animations: {
-        tension: {
-          duration: 1000,
-          easing: "easeOutQuart",
-          from: 0.2,
-          to: 0.42,
-        },
       },
       interaction: {
         intersect: false,
@@ -340,6 +338,8 @@ function renderChart(chartData) {
       },
     },
   });
+
+  earningsChart.__signature = chartSignature;
 }
 
 /* ================= WITHDRAW MODAL ================= */
@@ -528,46 +528,24 @@ function animateMoney(id, target) {
   const el = document.getElementById(id);
   if (!el) return;
 
-  let start = 0;
-  const duration = 700;
-  const increment = Number(target) / (duration / 16);
+  const finalText = formatMoney(target);
 
-  function update() {
-    start += increment;
+  // Prevent shaking: if value is already correct, do not animate again
+  if (el.textContent.trim() === finalText) return;
 
-    if (start >= target) {
-      el.textContent = formatMoney(target);
-      return;
-    }
-
-    el.textContent = formatMoney(Math.floor(start));
-    requestAnimationFrame(update);
-  }
-
-  update();
+  // For earnings page stability, set direct value instead of counting from 0 every render
+  el.textContent = finalText;
 }
 
 function animateNumber(id, target) {
   const el = document.getElementById(id);
   if (!el) return;
 
-  let start = 0;
-  const duration = 650;
-  const increment = Number(target) / (duration / 16);
+  const finalText = String(target);
 
-  function update() {
-    start += increment;
+  if (el.textContent.trim() === finalText) return;
 
-    if (start >= target) {
-      el.textContent = target;
-      return;
-    }
-
-    el.textContent = Math.floor(start);
-    requestAnimationFrame(update);
-  }
-
-  update();
+  el.textContent = finalText;
 }
 
 /* ================= HELPERS ================= */
