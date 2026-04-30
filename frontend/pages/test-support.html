@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test Support Ticket</title>
+  </head>
+  <body>
+    <h1>Test Support Ticket</h1>
+
+    <button id="testBtn">Create Test Ticket</button>
+
+    <pre id="result"></pre>
+
+    <script>
+      document.getElementById("testBtn").addEventListener("click", async () => {
+        const payload = {
+          user_type: "customer",
+          user_id: "test_user_001",
+
+          first_name: "Pratyush",
+          last_name: "Dahal",
+          email: "foodexpressnp.support@gmail.com",
+          phone: "9800000000",
+
+          issue_type: "order_late",
+          issue_title: "My order is late",
+          message: "This is a test support ticket from FoodExpress.",
+
+          related_order_id: "ORD-TEST-001",
+          related_restaurant_id: "",
+          related_rider_id: "",
+
+          source_page: "test_support_page",
+        };
+
+        try {
+          const response = await fetch(
+            "../../backend/controllers/SupportTicketController.php",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
+            },
+          );
+
+          const result = await response.json();
+
+          document.getElementById("result").textContent = JSON.stringify(
+            result,
+            null,
+            2,
+          );
+        } catch (error) {
+          document.getElementById("result").textContent = error.message;
+        }
+      });
+    </script>
+  </body>
+</html>
