@@ -24,11 +24,13 @@ class Order {
             $delivery_fee = isset($data['delivery_fee']) ? floatval($data['delivery_fee']) : 5.00;
             $total = isset($data['total']) ? floatval($data['total']) : 0;
 
+            $customer_email = isset($data['customer_email']) ? trim($data['customer_email']) : null;
+
             $query = "INSERT INTO " . $this->table . "
-                      (order_number, user_id, restaurant_id, customer_name, phone_number, address, city, postal_code,
+                      (order_number, user_id, restaurant_id, customer_name, customer_email, phone_number, address, city, postal_code,
                        payment_method, subtotal, tax, delivery_fee, total, status, notes)
                       VALUES
-                      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $stmt = $this->conn->prepare($query);
 
@@ -40,11 +42,12 @@ class Order {
             }
 
             $bind_result = $stmt->bind_param(
-                "siissssssddddss",
+                "siisssssssddddss",
                 $order_number,
                 $user_id,
                 $restaurant_id,
                 $data['customer_name'],
+                $customer_email,
                 $data['phone_number'],
                 $data['address'],
                 $data['city'],
@@ -156,6 +159,7 @@ class Order {
         while ($row = $result->fetch_assoc()) {
             $items[] = $row;
         }
+
         return $items;
     }
 
@@ -171,6 +175,7 @@ class Order {
         while ($row = $result->fetch_assoc()) {
             $orders[] = $row;
         }
+
         return $orders;
     }
 
@@ -194,6 +199,7 @@ class Order {
         while ($row = $result->fetch_assoc()) {
             $orders[] = $row;
         }
+
         return $orders;
     }
 
@@ -204,6 +210,7 @@ class Order {
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
+
         return isset($row['total_sales']) ? floatval($row['total_sales']) : 0;
     }
 
@@ -214,6 +221,7 @@ class Order {
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
+
         return isset($row['count']) ? intval($row['count']) : 0;
     }
 

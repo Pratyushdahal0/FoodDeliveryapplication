@@ -25,6 +25,195 @@ function sendErrorResponse($message, $statusCode = 500) {
     ], $statusCode);
 }
 
+function cleanText($value) {
+    return htmlspecialchars($value ?? "", ENT_QUOTES, "UTF-8");
+}
+
+function formatMoney($amount) {
+    return number_format(floatval($amount), 2);
+}
+
+function formatPaymentMethod($method) {
+    $map = [
+        "cash" => "Cash on Delivery",
+        "card" => "Card Payment",
+        "digital" => "Digital Wallet"
+    ];
+
+    return $map[$method] ?? $method;
+}
+
+function queueEmail($conn, $ticketId, $toEmail, $toName, $subject, $body, $emailType = "other") {
+    $stmt = $conn->prepare("
+        INSERT INTO email_queue (
+            ticket_id,
+            to_email,
+            to_name,
+            subject,
+            body,
+            email_type,
+            status,
+            attempts,
+            created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', 0, NOW())
+    ");
+
+    if (!$stmt) {
+        throw new Exception("Email queue prepare failed: " . $conn->error);
+    }
+
+    $stmt->bind_param(
+        "isssss",
+        $ticketId,
+        $toEmail,
+        $toName,
+        $subject,
+        $body,
+        $emailType
+    );
+
+    return $stmt->execute();
+}
+
+function buildOrderItemsHtml($items) {
+    $html = "";
+
+    foreach ($items as $item) {
+        $name = cleanText($item['name'] ?? $item['product_name'] ?? "Food item");
+        $quantity = intval($item['quantity'] ?? 1);
+        $price = floatval($item['price'] ?? 0);
+        $lineTotal = $price * $quantity;
+
+        $html .= "
+            <tr>
+                <td style='padding:10px 0; border-bottom:1px solid #eee;'>{$name}</td>
+                <td style='padding:10px 0; border-bottom:1px solid #eee; text-align:center;'>x{$quantity}</td>
+                <td style='padding:10px 0; border-bottom:1px solid #eee; text-align:right;'>Rs. " . formatMoney($lineTotal) . "</td>
+            </tr>
+        ";
+    }
+
+    return $html;
+}
+
+function queueOrderConfirmationEmail($conn, $orderId, $orderNumber, $input, $restaurantId, $restaurantItems, $subtotal, $tax, $deliveryFee, $total) {
+    $customerEmail = trim($input['customer_email'] ?? "");
+
+    if ($customerEmail === "" || !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+
+    $customerName = trim($input['customer_name'] ?? "FoodExpress Customer");
+    if ($customerName === "") {
+        $customerName = "FoodExpress Customer";
+    }
+
+    $restaurantName = trim($input['restaurant_name'] ?? "");
+    if ($restaurantName === "") {
+        foreach ($restaurantItems as $item) {
+            if (!empty($item['restaurant_name'])) {
+                $restaurantName = $item['restaurant_name'];
+                break;
+            }
+        }
+    }
+
+    if ($restaurantName === "") {
+        $restaurantName = "Restaurant #" . $restaurantId;
+    }
+
+    $addressParts = array_filter([
+        $input['address'] ?? "",
+        $input['city'] ?? "",
+        $input['postal_code'] ?? ""
+    ]);
+
+    $deliveryAddress = implode(", ", $addressParts);
+    $deliveryNote = trim($input['delivery_note'] ?? $input['notes'] ?? "");
+    $paymentMethod = formatPaymentMethod($input['payment_method'] ?? "cash");
+
+    $safeCustomerName = cleanText($customerName);
+    $safeOrderNumber = cleanText($orderNumber);
+    $safeRestaurantName = cleanText($restaurantName);
+    $safeDeliveryAddress = cleanText($deliveryAddress);
+    $safeDeliveryNote = cleanText($deliveryNote);
+    $safePaymentMethod = cleanText($paymentMethod);
+
+    $itemsHtml = buildOrderItemsHtml($restaurantItems);
+
+    $subject = "Your FoodExpress order has been received - {$orderNumber}";
+
+    $body = "
+        <div style='font-family: Arial, sans-serif; background:#f7f7f7; padding:24px;'>
+            <div style='max-width:680px; margin:auto; background:#ffffff; border-radius:16px; padding:24px;'>
+                <h2 style='color:#e53935; margin-top:0;'>Your FoodExpress order has been received</h2>
+
+                <p>Hello {$safeCustomerName},</p>
+
+                <p style='line-height:1.6;'>
+                    Thank you for ordering from FoodExpress. We have received your order and it is now waiting for restaurant processing.
+                </p>
+
+                <div style='background:#fff5f5; border:1px solid #fecaca; border-radius:12px; padding:16px; margin:20px 0;'>
+                    <p style='margin:0;'><strong>Order Number:</strong> {$safeOrderNumber}</p>
+                    <p style='margin:8px 0 0;'><strong>Order Status:</strong> Pending</p>
+                    <p style='margin:8px 0 0;'><strong>Driver Status:</strong> Waiting for rider assignment</p>
+                    <p style='margin:8px 0 0;'><strong>Restaurant:</strong> {$safeRestaurantName}</p>
+                    <p style='margin:8px 0 0;'><strong>Payment Method:</strong> {$safePaymentMethod}</p>
+                </div>
+
+                <h3 style='margin-bottom:10px;'>Order Items</h3>
+
+                <table style='width:100%; border-collapse:collapse;'>
+                    <thead>
+                        <tr>
+                            <th style='text-align:left; padding:10px 0; border-bottom:2px solid #eee;'>Item</th>
+                            <th style='text-align:center; padding:10px 0; border-bottom:2px solid #eee;'>Qty</th>
+                            <th style='text-align:right; padding:10px 0; border-bottom:2px solid #eee;'>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {$itemsHtml}
+                    </tbody>
+                </table>
+
+                <div style='margin-top:20px; background:#f9fafb; border-radius:12px; padding:16px;'>
+                    <p style='margin:0 0 8px;'><strong>Subtotal:</strong> Rs. " . formatMoney($subtotal) . "</p>
+                    <p style='margin:0 0 8px;'><strong>Tax:</strong> Rs. " . formatMoney($tax) . "</p>
+                    <p style='margin:0 0 8px;'><strong>Delivery Fee:</strong> Rs. " . formatMoney($deliveryFee) . "</p>
+                    <p style='margin:0; font-size:18px;'><strong>Total:</strong> Rs. " . formatMoney($total) . "</p>
+                </div>
+
+                <h3 style='margin-top:22px; margin-bottom:8px;'>Delivery Details</h3>
+                <p style='line-height:1.6; margin:0;'>
+                    <strong>Address:</strong> {$safeDeliveryAddress}
+                </p>
+                " . ($safeDeliveryNote !== "" ? "<p style='line-height:1.6; margin:8px 0 0;'><strong>Delivery Note:</strong> {$safeDeliveryNote}</p>" : "") . "
+
+                <p style='line-height:1.6; margin-top:22px;'>
+                    You can track your order from your FoodExpress account.
+                </p>
+
+                <p style='margin-top:24px;'>
+                    Kind regards,<br>
+                    <strong>FoodExpress Team</strong><br>
+                    foodexpressnp.support@gmail.com
+                </p>
+            </div>
+        </div>
+    ";
+
+    return queueEmail(
+        $conn,
+        null,
+        $customerEmail,
+        $customerName,
+        $subject,
+        $body,
+        "order_confirmation"
+    );
+}
+
 $basePath = __DIR__ . '/../';
 
 $dbConfigPath = $basePath . 'config/db.php';
@@ -61,6 +250,7 @@ switch ($action) {
         if (
             !isset(
                 $input['customer_name'],
+                $input['customer_email'],
                 $input['phone_number'],
                 $input['address'],
                 $input['city'],
@@ -72,6 +262,14 @@ switch ($action) {
             echo json_encode([
                 "success" => false,
                 "message" => "Missing required fields"
+            ]);
+            break;
+        }
+
+        if (!filter_var($input['customer_email'], FILTER_VALIDATE_EMAIL)) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Please provide a valid customer email address."
             ]);
             break;
         }
@@ -124,12 +322,15 @@ switch ($action) {
 
             $tax = isset($input['tax_rate']) ? $subtotal * floatval($input['tax_rate']) : $subtotal * 0.10;
             $delivery_fee = isset($input['delivery_fee']) ? floatval($input['delivery_fee']) : 5.00;
-            $total = $subtotal + $tax + $delivery_fee;
+
+            $discountAmount = isset($input['discount_amount']) ? floatval($input['discount_amount']) : 0;
+            $total = max(0, $subtotal + $tax + $delivery_fee - $discountAmount);
 
             $orderData = [
                 "user_id" => $input['user_id'] ?? null,
                 "restaurant_id" => $restaurantId,
                 "customer_name" => $input['customer_name'],
+                "customer_email" => $input['customer_email'],
                 "phone_number" => $input['phone_number'],
                 "address" => $input['address'],
                 "city" => $input['city'],
@@ -139,7 +340,7 @@ switch ($action) {
                 "tax" => $tax,
                 "delivery_fee" => $delivery_fee,
                 "total" => $total,
-                "notes" => $input['notes'] ?? null,
+                "notes" => $input['delivery_note'] ?? $input['notes'] ?? null,
                 "status" => $input['status'] ?? 'pending'
             ];
 
@@ -150,6 +351,25 @@ switch ($action) {
                 $itemsAdded = $order->addItems($order_id, $restaurantItems);
 
                 if ($itemsAdded) {
+                    $emailQueued = false;
+
+                    try {
+                        $emailQueued = queueOrderConfirmationEmail(
+                            $conn,
+                            $order_id,
+                            $result['order_number'],
+                            $input,
+                            $restaurantId,
+                            $restaurantItems,
+                            $subtotal,
+                            $tax,
+                            $delivery_fee,
+                            $total
+                        );
+                    } catch (Exception $emailException) {
+                        $emailQueued = false;
+                    }
+
                     $createdOrders[] = [
                         "order_id" => $order_id,
                         "order_number" => $result['order_number'],
@@ -158,7 +378,8 @@ switch ($action) {
                         "subtotal" => $subtotal,
                         "tax" => $tax,
                         "delivery_fee" => $delivery_fee,
-                        "total" => $total
+                        "total" => $total,
+                        "email_queued" => $emailQueued
                     ];
                 } else {
                     $failedOrders[] = [
@@ -174,11 +395,16 @@ switch ($action) {
             }
         }
 
+        $firstOrder = $createdOrders[0] ?? null;
+
         echo json_encode([
             "success" => count($createdOrders) > 0,
             "message" => count($createdOrders) > 0
                 ? "Order(s) created successfully"
                 : "Failed to create order(s)",
+            "order_id" => $firstOrder["order_id"] ?? null,
+            "order_number" => $firstOrder["order_number"] ?? null,
+            "email_queued" => $firstOrder["email_queued"] ?? false,
             "orders" => $createdOrders,
             "failed_orders" => $failedOrders
         ]);

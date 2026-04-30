@@ -690,6 +690,15 @@
                   />
                 </div>
 
+                <div class="form-group full">
+                  <label for="customerEmail">Email address *</label>
+                  <input
+                    type="email"
+                    id="customerEmail"
+                    placeholder="Enter your email address"
+                  />
+                </div>
+
                 <div class="form-group">
                   <label for="phoneNumber">Phone number *</label>
                   <input
@@ -1217,6 +1226,15 @@
           "";
 
         document.getElementById("fullName").value = derivedName;
+        const customerEmailInput = document.getElementById("customerEmail");
+        if (customerEmailInput) {
+          customerEmailInput.value =
+            profile.email ||
+            profile.user_email ||
+            profile.email_address ||
+            fallbackEmail ||
+            "";
+        }
         document.getElementById("phoneNumber").value =
           profile.phone || profile.phone_number || "";
         document.getElementById("address").value = profile.address || "";
@@ -1289,6 +1307,9 @@
 
       async function placeOrder() {
         const fullName = document.getElementById("fullName").value.trim();
+        const customerEmail = document
+          .getElementById("customerEmail")
+          .value.trim();
         const phoneNumber = document.getElementById("phoneNumber").value.trim();
         const address = document.getElementById("address").value.trim();
         const city = document.getElementById("city").value.trim();
@@ -1301,8 +1322,20 @@
         );
         const paymentMethod = selectedPayment ? selectedPayment.value : "cash";
 
-        if (!fullName || !phoneNumber || !address || !city || !postalCode) {
+        if (
+          !fullName ||
+          !customerEmail ||
+          !phoneNumber ||
+          !address ||
+          !city ||
+          !postalCode
+        ) {
           alert("Please fill in all required delivery details.");
+          return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+          alert("Please enter a valid email address.");
           return;
         }
 
@@ -1329,6 +1362,7 @@
 
         const orderData = {
           customer_name: fullName,
+          customer_email: customerEmail,
           phone_number: phoneNumber,
           address,
           city,
