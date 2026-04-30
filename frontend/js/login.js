@@ -1,4 +1,4 @@
-console.log("LOGIN JS LOADED");
+console.log("LOGIN JS LOADED - CLEAN SESSION VERSION");
 
 // ===== SWITCH BETWEEN LOGIN & REGISTER =====
 function switchTab(tab) {
@@ -55,6 +55,96 @@ function showSuccess(message) {
   if (successBox) successBox.innerText = message;
 }
 
+function setButtonLoading(button, isLoading, loadingText = "Please wait...") {
+  if (!button) return;
+
+  if (isLoading) {
+    button.dataset.originalText = button.innerText;
+    button.disabled = true;
+    button.innerText = loadingText;
+  } else {
+    button.disabled = false;
+    button.innerText = button.dataset.originalText || button.innerText;
+  }
+}
+
+// Use lowercase path because your working backend URL is /fooddeliveryapp/
+function getAuthUrl() {
+  return "http://localhost/fooddeliveryapp/backend/controllers/AuthController.php";
+}
+
+// ===== CLEAN OLD SESSION BEFORE NEW LOGIN =====
+function clearOldAuthSession() {
+  const keysToRemove = [
+    // Main auth keys
+    "isLoggedIn",
+    "userEmail",
+    "userRole",
+    "foodExpressCurrentUser",
+    "foodExpressEmailVerified",
+
+    // OTP/temp keys
+    "pendingVerificationEmail",
+    "pendingVerificationName",
+
+    // Profile/avatar keys that often cause wrong name/avatar
+    "foodExpressProfile",
+    "foodExpressUserProfile",
+    "foodExpressCurrentProfile",
+    "userProfile",
+    "currentUser",
+    "profileData",
+    "profilePhoto",
+    "userAvatar",
+
+    // Owner/rider sessions
+    "isOwnerLoggedIn",
+    "foodExpressCurrentOwner",
+    "ownerRestaurantId",
+    "ownerRestaurantName",
+    "isRiderLoggedIn",
+    "foodExpressCurrentRider",
+
+    // Customer dashboard cached demo/local data
+    "lastOrder",
+    "foodExpressOrders",
+    "checkoutItems",
+    "checkoutRestaurantId",
+    "checkoutRestaurantName",
+    "checkoutTotal",
+    "checkoutSubtotal",
+    "checkoutTax"
+  ];
+
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
+}
+
+function saveLoggedInUser(user, email, emailVerified) {
+  const cleanUser = {
+    id: user.id || "",
+    name: user.name || "",
+    email: user.email || email,
+    phone: user.phone || "",
+    address: user.address || "",
+    role: user.role || "customer",
+    status: user.status || "active",
+    created_at: user.created_at || "",
+    email_verified_at: user.email_verified_at || null,
+  };
+
+  localStorage.setItem("isLoggedIn", "true");
+  localStorage.setItem("userEmail", cleanUser.email);
+  localStorage.setItem("userRole", cleanUser.role);
+  localStorage.setItem("foodExpressCurrentUser", JSON.stringify(cleanUser));
+  localStorage.setItem("foodExpressEmailVerified", emailVerified ? "true" : "false");
+
+  // Compatibility keys for pages that may still read old profile storage
+  localStorage.setItem("currentUser", JSON.stringify(cleanUser));
+  localStorage.setItem("userProfile", JSON.stringify(cleanUser));
+  localStorage.setItem("foodExpressProfile", JSON.stringify(cleanUser));
+  localStorage.setItem("foodExpressUserProfile", JSON.stringify(cleanUser));
+}
+
 // ===== ROLE REDIRECT FOR REGISTER DROPDOWN =====
 function handleRoleRedirect() {
   const roleSelect = document.getElementById("regRole");
@@ -65,8 +155,6 @@ function handleRoleRedirect() {
   }
 
   const role = String(roleSelect.value || "").toLowerCase().trim();
-
-  console.log("Selected role:", role);
 
   if (role === "restaurant_owner" || role.includes("restaurant")) {
     showSuccess("Redirecting to restaurant registration...");
@@ -84,13 +172,9 @@ function handleRoleRedirect() {
     role.includes("rider") ||
     role.includes("delivery")
   ) {
-    showSuccess("Redirecting to rider panel...");
+    showSuccess("Redirecting to rider registration...");
 
     setTimeout(() => {
-      /*
-        If you create rider-signup.html later,
-        change this to: rider-signup.html
-      */
       window.location.href = "rider-signup.html";
     }, 350);
 
@@ -101,14 +185,15 @@ function handleRoleRedirect() {
 }
 
 // ===== LOGIN FUNCTION =====
-function handleLogin() {
+async function handleLogin() {
   const email = document.getElementById("loginEmail")?.value.trim();
   const password = document.getElementById("loginPassword")?.value.trim();
+  const submitBtn = document.querySelector("#loginForm .submit-btn");
 
   clearMessages();
 
   if (!email || !password) {
-    showError("Please enter email and password!");
+    showError("Please enter email and password.");
     return;
   }
 
@@ -117,70 +202,77 @@ function handleLogin() {
   formData.append("email", email);
   formData.append("password", password);
 
-  const loginUrl = new URL(
-    "../../backend/controllers/AuthController.php",
-    window.location.href
-  ).href;
+  try {
+    setButtonLoading(submitBtn, true, "Signing in...");
 
-  console.log("Login URL:", loginUrl);
-
-  fetch(loginUrl, {
-    method: "POST",
-    body: formData,
-    credentials: "same-origin",
-  })
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status} ${res.statusText}`);
-      }
-
-      return res.text();
-    })
-    .then((data) => {
-      console.log("Login Response:", data);
-
-      if (data.includes("Login successful")) {
-        showSuccess(data);
-
-        localStorage.setItem("userEmail", email);
-        localStorage.setItem("isLoggedIn", "true");
-
-        setTimeout(() => {
-          window.location.href = "dashboard.html";
-        }, 1000);
-      } else {
-        showError(data);
-      }
-    })
-    .catch((error) => {
-      console.error("Login Error:", error);
-      showError("Something went wrong: " + error.message);
+    const response = await fetch(getAuthUrl(), {
+      method: "POST",
+      body: formData,
+      credentials: "same-origin",
     });
+
+    const result = await response.json();
+    console.log("Login Response:", result);
+
+    if (!result.success) {
+      showError(result.message || "Login failed.");
+      return;
+    }
+
+    const user = result.data || {};
+
+    // Important fix: remove stale old account data first
+    clearOldAuthSession();
+
+    saveLoggedInUser(user, email, result.email_verified);
+
+    if (!result.email_verified) {
+      localStorage.setItem("pendingVerificationEmail", user.email || email);
+
+      showSuccess("Login successful. Please verify your email for full access.");
+
+      setTimeout(() => {
+        window.location.href = "verify-email-otp.html";
+      }, 900);
+
+      return;
+    }
+
+    showSuccess("Login successful. Redirecting...");
+
+    setTimeout(() => {
+      if (user.role === "restaurant-owner") {
+        window.location.href = "ownerdashboard.html";
+      } else if (user.role === "delivery-rider") {
+        window.location.href = "rider-dashboard.html";
+      } else {
+        window.location.href = "dashboard.html";
+      }
+    }, 800);
+  } catch (error) {
+    console.error("Login Error:", error);
+    showError("Something went wrong: " + error.message);
+  } finally {
+    setButtonLoading(submitBtn, false);
+  }
 }
 
 // ===== REGISTER FUNCTION =====
-function handleRegister() {
+async function handleRegister() {
   const name = document.getElementById("regName")?.value.trim();
   const email = document.getElementById("regEmail")?.value.trim();
   const password = document.getElementById("regPassword")?.value.trim();
   const phone = document.getElementById("regPhone")?.value.trim();
   const address = document.getElementById("regAddress")?.value.trim();
   const role = document.getElementById("regRole")?.value.trim();
+  const submitBtn = document.querySelector("#registerForm .submit-btn");
 
   clearMessages();
 
-  /*
-    Role-based routing:
-    - Customer uses normal AuthController registration.
-    - Restaurant Owner goes to restaurant-signup.html.
-    - Rider goes to rider-dashboard.html for now.
-  */
-  if (handleRoleRedirect()) {
-    return;
-  }
+  if (handleRoleRedirect()) return;
 
   if (!name || !email || !password) {
-    showError("Please fill all required fields!");
+    showError("Please fill all required fields.");
     return;
   }
 
@@ -198,29 +290,40 @@ function handleRegister() {
   formData.append("address", address || "");
   formData.append("role", role || "customer");
 
-  fetch("../../backend/controllers/AuthController.php", {
-    method: "POST",
-    body: formData,
-    credentials: "same-origin",
-  })
-    .then((res) => res.text())
-    .then((data) => {
-      console.log("Register Response:", data);
+  try {
+    setButtonLoading(submitBtn, true, "Creating account...");
 
-      if (data.includes("Registered successfully")) {
-        showSuccess(data);
-
-        setTimeout(() => {
-          switchTab("login");
-        }, 1000);
-      } else {
-        showError(data);
-      }
-    })
-    .catch((error) => {
-      console.error("Register Error:", error);
-      showError("Registration failed!");
+    const response = await fetch(getAuthUrl(), {
+      method: "POST",
+      body: formData,
+      credentials: "same-origin",
     });
+
+    const result = await response.json();
+    console.log("Register Response:", result);
+
+    if (!result.success) {
+      showError(result.message || "Registration failed.");
+      return;
+    }
+
+    // Clean previous logged user before new signup verification
+    clearOldAuthSession();
+
+    localStorage.setItem("pendingVerificationEmail", email);
+    localStorage.setItem("pendingVerificationName", name);
+
+    showSuccess(result.message || "Account created. Please verify your email.");
+
+    setTimeout(() => {
+      window.location.href = "verify-email-otp.html";
+    }, 900);
+  } catch (error) {
+    console.error("Register Error:", error);
+    showError("Registration failed: " + error.message);
+  } finally {
+    setButtonLoading(submitBtn, false);
+  }
 }
 
 // ===== TOGGLE PASSWORD VISIBILITY =====
@@ -238,13 +341,30 @@ function togglePassword(id, btn) {
   }
 }
 
-// ===== INIT ROLE CHANGE LISTENER =====
+// ===== INIT =====
 document.addEventListener("DOMContentLoaded", () => {
   const roleSelect = document.getElementById("regRole");
 
   if (roleSelect) {
     roleSelect.addEventListener("change", handleRoleRedirect);
   }
+
+  ["loginEmail", "loginPassword", "regName", "regEmail", "regPassword"].forEach(
+    (id) => {
+      const input = document.getElementById(id);
+      if (!input) return;
+
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+
+        if (id.startsWith("login")) {
+          handleLogin();
+        } else {
+          handleRegister();
+        }
+      });
+    }
+  );
 });
 
 // ===== MAKE FUNCTIONS GLOBAL =====

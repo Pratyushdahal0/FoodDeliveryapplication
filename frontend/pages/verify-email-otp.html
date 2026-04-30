@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Email - FoodExpress</title>
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/login.css" />
+  </head>
+
+  <body class="auth-page">
+    <nav class="navbar" id="navbar"></nav>
+
+    <main class="auth-body otp-auth-body">
+      <section class="auth-card otp-card">
+        <div class="auth-brand-mini">FoodExpress</div>
+
+        <h2>Verify your email</h2>
+
+        <p class="otp-subtitle">
+          We sent a 6-digit verification code to
+          <strong id="otpEmailText">your email</strong>.
+        </p>
+
+        <div class="alert alert-error" id="otpError"></div>
+        <div class="alert alert-success" id="otpSuccess"></div>
+
+        <div class="form-group">
+          <label for="otpInput">Verification code</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔐</span>
+            <input
+              type="text"
+              id="otpInput"
+              placeholder="Enter 6-digit code"
+              maxlength="6"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+            />
+          </div>
+        </div>
+
+        <button class="submit-btn" type="button" id="verifyOtpBtn">
+          Verify Email →
+        </button>
+
+        <button class="secondary-auth-btn" type="button" id="resendOtpBtn">
+          Resend code
+        </button>
+
+        <p class="auth-switch">
+          Wrong account?
+          <a href="login.html">Back to login</a>
+        </p>
+      </section>
+
+      <section class="auth-right otp-side-panel">
+        <div class="why-join">
+          <h3>Almost there, <span>verify your account</span></h3>
+
+          <div class="why-list">
+            <div class="why-item">
+              <div class="why-icon">✅</div>
+              <span>Protects your FoodExpress account</span>
+            </div>
+
+            <div class="why-item">
+              <div class="why-icon">📦</div>
+              <span>Helps us send order updates safely</span>
+            </div>
+
+            <div class="why-item">
+              <div class="why-icon">🔔</div>
+              <span>Enables important account notifications</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="../js/components/navbar.js"></script>
+    <script src="../js/verify-email-otp.js?v=5"></script>
+  </body>
+</html>

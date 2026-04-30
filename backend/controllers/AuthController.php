@@ -23,12 +23,119 @@ function send_json($data, $status = 200) {
 
 function get_json_input() {
     $raw = file_get_contents("php://input");
-    if (!$raw) {
-        return [];
-    }
+    if (!$raw) return [];
 
     $decoded = json_decode($raw, true);
     return is_array($decoded) ? $decoded : [];
+}
+
+function get_base_url() {
+    $protocol = (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off") ? "https" : "http";
+    $host = $_SERVER["HTTP_HOST"] ?? "localhost";
+
+    return $protocol . "://" . $host . "/FoodDeliveryapp";
+}
+
+function generate_otp() {
+    return (string) random_int(100000, 999999);
+}
+
+function queue_email($conn, $toEmail, $toName, $subject, $body, $emailType = "email_verification") {
+    $sql = "
+        INSERT INTO email_queue
+        (ticket_id, to_email, to_name, subject, body, email_type, status, attempts, created_at)
+        VALUES
+        (NULL, ?, ?, ?, ?, ?, 'pending', 0, NOW())
+    ";
+
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        throw new Exception("Email queue prepare failed: " . $conn->error);
+    }
+
+    $stmt->bind_param(
+        "sssss",
+        $toEmail,
+        $toName,
+        $subject,
+        $body,
+        $emailType
+    );
+
+    if (!$stmt->execute()) {
+        throw new Exception("Email queue insert failed: " . $stmt->error);
+    }
+
+    $stmt->close();
+}
+
+function create_email_otp($conn, $userId, $email, $name) {
+    $otp = generate_otp();
+    $otpHash = password_hash($otp, PASSWORD_DEFAULT);
+    $expiresAt = date("Y-m-d H:i:s", strtotime("+10 minutes"));
+
+    $deleteOld = $conn->prepare("
+        UPDATE email_verification_otps
+        SET used_at = NOW()
+        WHERE user_id = ? AND used_at IS NULL
+    ");
+    $deleteOld->bind_param("i", $userId);
+    $deleteOld->execute();
+    $deleteOld->close();
+
+    $stmt = $conn->prepare("
+        INSERT INTO email_verification_otps
+        (user_id, email, otp_hash, expires_at, attempts, used_at, created_at)
+        VALUES
+        (?, ?, ?, ?, 0, NULL, NOW())
+    ");
+
+    if (!$stmt) {
+        throw new Exception("OTP prepare failed: " . $conn->error);
+    }
+
+    $stmt->bind_param("isss", $userId, $email, $otpHash, $expiresAt);
+
+    if (!$stmt->execute()) {
+        throw new Exception("OTP insert failed: " . $stmt->error);
+    }
+
+    $stmt->close();
+
+    $safeName = htmlspecialchars($name ?: "there", ENT_QUOTES, "UTF-8");
+    $safeOtp = htmlspecialchars($otp, ENT_QUOTES, "UTF-8");
+
+    $subject = "Verify your FoodExpress account";
+
+    $body = "
+      <div style='font-family: Arial, sans-serif; background:#f8fafc; padding:24px;'>
+        <div style='max-width:600px; margin:0 auto; background:#ffffff; border-radius:18px; padding:28px; border:1px solid #e5e7eb;'>
+          <h1 style='color:#ef3535; margin:0 0 14px;'>Verify your email</h1>
+
+          <p style='font-size:16px; color:#111827;'>Hello {$safeName},</p>
+
+          <p style='font-size:15px; color:#4b5563; line-height:1.6;'>
+            Welcome to FoodExpress. Please use the verification code below to verify your email address.
+          </p>
+
+          <div style='margin:24px 0; padding:18px; background:#fff1f1; border:1px solid #fecaca; border-radius:14px; text-align:center;'>
+            <div style='font-size:34px; letter-spacing:8px; font-weight:800; color:#111827;'>{$safeOtp}</div>
+          </div>
+
+          <p style='font-size:14px; color:#6b7280;'>
+            This code will expire in 10 minutes. If you did not create a FoodExpress account, you can ignore this email.
+          </p>
+
+          <p style='font-size:15px; color:#111827; margin-top:24px;'>
+            Thanks,<br />
+            <strong>FoodExpress Team</strong>
+          </p>
+        </div>
+      </div>
+    ";
+
+    queue_email($conn, $email, $name, $subject, $body, "email_verification");
 }
 
 $user = new User($conn);
@@ -68,9 +175,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             ], 500);
         }
 
+        $isVerified = !empty($userData["email_verified_at"]);
+
         send_json([
             "success" => true,
             "message" => "Login successful",
+            "email_verified" => $isVerified,
             "data" => $userData
         ]);
     }
@@ -87,6 +197,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             send_json([
                 "success" => false,
                 "message" => "Name, email and password are required"
+            ], 400);
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            send_json([
+                "success" => false,
+                "message" => "Please enter a valid email address"
+            ], 400);
+        }
+
+        if (strlen($password) < 6) {
+            send_json([
+                "success" => false,
+                "message" => "Password must be at least 6 characters"
             ], 400);
         }
 
@@ -110,11 +234,202 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         $userData = $user->getByEmail($email);
 
+        if (!$userData || empty($userData["id"])) {
+            send_json([
+                "success" => false,
+                "message" => "Account created but user lookup failed"
+            ], 500);
+        }
+
+        try {
+            create_email_otp($conn, intval($userData["id"]), $email, $name);
+        } catch (Throwable $e) {
+            send_json([
+                "success" => true,
+                "message" => "Account created, but verification email could not be queued. Please resend OTP.",
+                "requires_verification" => true,
+                "data" => $userData,
+                "email_error" => $e->getMessage()
+            ]);
+        }
+
         send_json([
             "success" => true,
-            "message" => $result,
+            "message" => "Account created successfully. Please verify your email using the OTP we sent.",
+            "requires_verification" => true,
             "data" => $userData
         ]);
+    }
+
+    if ($action === "verify_email_otp") {
+        $email = trim($body["email"] ?? "");
+        $otp = trim($body["otp"] ?? "");
+
+        if ($email === "" || $otp === "") {
+            send_json([
+                "success" => false,
+                "message" => "Email and OTP are required"
+            ], 400);
+        }
+
+        if (!preg_match("/^[0-9]{6}$/", $otp)) {
+            send_json([
+                "success" => false,
+                "message" => "Please enter a valid 6-digit OTP"
+            ], 400);
+        }
+
+        $userData = $user->getByEmail($email);
+
+        if (!$userData || empty($userData["id"])) {
+            send_json([
+                "success" => false,
+                "message" => "User not found"
+            ], 404);
+        }
+
+        if (!empty($userData["email_verified_at"])) {
+            send_json([
+                "success" => true,
+                "message" => "Email is already verified"
+            ]);
+        }
+
+        $userId = intval($userData["id"]);
+
+        $stmt = $conn->prepare("
+            SELECT id, otp_hash, expires_at, attempts
+            FROM email_verification_otps
+            WHERE user_id = ?
+              AND email = ?
+              AND used_at IS NULL
+            ORDER BY id DESC
+            LIMIT 1
+        ");
+
+        $stmt->bind_param("is", $userId, $email);
+        $stmt->execute();
+        $otpResult = $stmt->get_result();
+        $otpRow = $otpResult->fetch_assoc();
+        $stmt->close();
+
+        if (!$otpRow) {
+            send_json([
+                "success" => false,
+                "message" => "OTP not found. Please request a new code."
+            ], 400);
+        }
+
+        if (intval($otpRow["attempts"]) >= 5) {
+            send_json([
+                "success" => false,
+                "message" => "Too many incorrect attempts. Please request a new OTP."
+            ], 429);
+        }
+
+        if (strtotime($otpRow["expires_at"]) < time()) {
+            send_json([
+                "success" => false,
+                "message" => "OTP has expired. Please request a new code."
+            ], 400);
+        }
+
+        if (!password_verify($otp, $otpRow["otp_hash"])) {
+            $updateAttempts = $conn->prepare("
+                UPDATE email_verification_otps
+                SET attempts = attempts + 1
+                WHERE id = ?
+            ");
+            $otpId = intval($otpRow["id"]);
+            $updateAttempts->bind_param("i", $otpId);
+            $updateAttempts->execute();
+            $updateAttempts->close();
+
+            send_json([
+                "success" => false,
+                "message" => "Incorrect OTP. Please try again."
+            ], 400);
+        }
+
+        $conn->begin_transaction();
+
+        try {
+            $updateUser = $conn->prepare("
+                UPDATE users
+                SET email_verified_at = NOW(),
+                    verification_token = NULL,
+                    verification_token_expires_at = NULL
+                WHERE id = ?
+            ");
+            $updateUser->bind_param("i", $userId);
+            $updateUser->execute();
+            $updateUser->close();
+
+            $markUsed = $conn->prepare("
+                UPDATE email_verification_otps
+                SET used_at = NOW()
+                WHERE id = ?
+            ");
+            $otpId = intval($otpRow["id"]);
+            $markUsed->bind_param("i", $otpId);
+            $markUsed->execute();
+            $markUsed->close();
+
+            $conn->commit();
+
+            send_json([
+                "success" => true,
+                "message" => "Email verified successfully. You can now sign in."
+            ]);
+        } catch (Throwable $e) {
+            $conn->rollback();
+
+            send_json([
+                "success" => false,
+                "message" => "Verification failed: " . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    if ($action === "resend_email_otp") {
+        $email = trim($body["email"] ?? "");
+
+        if ($email === "") {
+            send_json([
+                "success" => false,
+                "message" => "Email is required"
+            ], 400);
+        }
+
+        $userData = $user->getByEmail($email);
+
+        if (!$userData || empty($userData["id"])) {
+            send_json([
+                "success" => false,
+                "message" => "User not found"
+            ], 404);
+        }
+
+        if (!empty($userData["email_verified_at"])) {
+            send_json([
+                "success" => true,
+                "message" => "Email is already verified"
+            ]);
+        }
+
+        try {
+            create_email_otp($conn, intval($userData["id"]), $email, $userData["name"] ?? "Customer");
+
+            send_json([
+                "success" => true,
+                "message" => "A new OTP has been sent to your email."
+            ]);
+        } catch (Throwable $e) {
+            send_json([
+                "success" => false,
+                "message" => "Could not resend OTP: " . $e->getMessage()
+            ], 500);
+        }
     }
 
     if ($action === "logout") {

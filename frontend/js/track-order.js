@@ -183,7 +183,17 @@ function renderSummaryValues() {
 
 function updateStepUI(status) {
   const currentStatus = String(status || "pending").toLowerCase();
-  const currentIndex = STATUS_FLOW.indexOf(currentStatus);
+
+  /*
+    Visual rule:
+    - picked_up means rider already collected the order,
+      so "Picked up by rider" should be green/done.
+    - The next active customer-facing stage should be "On the way".
+  */
+  const visualStatus =
+    currentStatus === "picked_up" ? "on_the_way" : currentStatus;
+
+  const currentIndex = STATUS_FLOW.indexOf(visualStatus);
   const safeIndex = currentIndex === -1 ? 0 : currentIndex;
   const isDelivered = currentStatus === "delivered";
 

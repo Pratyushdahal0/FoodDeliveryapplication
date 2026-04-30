@@ -363,3 +363,49 @@
     height: 240px;
   }
 }
+/* ================= EMAIL OTP VERIFY PAGE ================= */
+
+.otp-auth-body {
+  align-items: stretch;
+}
+
+.otp-card {
+  max-width: 560px;
+}
+
+.auth-brand-mini {
+  color: #ef3535;
+  font-weight: 900;
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+}
+
+.otp-subtitle {
+  color: #6b7280;
+  line-height: 1.6;
+  margin: -8px 0 22px;
+}
+
+.secondary-auth-btn {
+  width: 100%;
+  margin-top: 14px;
+  min-height: 54px;
+  border-radius: 18px;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.secondary-auth-btn:hover {
+  border-color: #ef3535;
+  color: #ef3535;
+  background: #fff7f7;
+}
+
+.otp-side-panel {
+  display: flex;
+  align-items: center;
+}

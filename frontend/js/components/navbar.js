@@ -12,10 +12,23 @@ console.log("[navbar.js] Script loaded successfully");
           </div>
 
           <div class="navbar-nav">
-            <a href="dashboard.html" class="nav-link ${page === "dashboard" ? "active" : ""}">Home</a>
-            <a href="shop.html" class="nav-link ${["shop", "cart", "payment", "track"].includes(page) ? "active" : ""}">Shop</a>
-            <a href="food.html" class="nav-link ${page === "food" ? "active" : ""}">Food</a>
-            <a href="loggedContact.html" class="nav-link ${page === "contact" ? "active" : ""}">Contact</a>
+            <a href="dashboard.html" class="nav-link ${
+              page === "dashboard" ? "active" : ""
+            }">Home</a>
+
+            <a href="shop.html" class="nav-link ${
+              ["shop", "cart", "payment", "track"].includes(page)
+                ? "active"
+                : ""
+            }">Shop</a>
+
+            <a href="food.html" class="nav-link ${
+              page === "food" ? "active" : ""
+            }">Food</a>
+
+            <a href="loggedContact.html" class="nav-link ${
+              page === "contact" ? "active" : ""
+            }">Contact</a>
           </div>
 
           <div class="navbar-right">
@@ -28,12 +41,13 @@ console.log("[navbar.js] Script loaded successfully");
               <span class="cart-count" id="cartCount">0</span>
             </a>
 
-            <div
+            <button
               class="navbar-avatar"
               id="navbarAvatar"
+              type="button"
               title="Your profile"
               aria-label="Your profile"
-            ></div>
+            ></button>
 
             <button class="login-btn" type="button" id="logoutBtn">
               Log out
@@ -46,6 +60,7 @@ console.log("[navbar.js] Script loaded successfully");
 
   function renderNavbar(activePage = "") {
     const container = document.getElementById("navbarContainer");
+
     if (!container) {
       console.error("[navbar.js] navbarContainer not found");
       return;
@@ -59,8 +74,16 @@ console.log("[navbar.js] Script loaded successfully");
         if (typeof window.logout === "function") {
           window.logout();
         } else {
+          localStorage.removeItem("isLoggedIn");
           window.location.href = "landingpage.html";
         }
+      });
+    }
+
+    const navbarAvatar = document.getElementById("navbarAvatar");
+    if (navbarAvatar) {
+      navbarAvatar.addEventListener("click", () => {
+        window.location.href = "edit-profile.html";
       });
     }
 

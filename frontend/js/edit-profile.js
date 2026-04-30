@@ -1,26 +1,124 @@
-function getSavedUserProfile() {
+console.log("[profile.js] Unified profile system loaded");
+
+const CURRENT_USER_KEY = "foodExpressCurrentUser";
+
+function readJsonSafe(key, fallback = null) {
   try {
-    return JSON.parse(localStorage.getItem("userProfile") || "null");
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
   } catch (error) {
-    console.error("Failed to parse userProfile:", error);
-    return null;
+    console.error(`Failed to parse ${key}:`, error);
+    return fallback;
   }
+}
+
+function saveJsonSafe(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
 }
 
 function getFallbackProfile() {
   return {
+    id: "",
     name: localStorage.getItem("userName") || "User",
     email: localStorage.getItem("userEmail") || "",
     phone: localStorage.getItem("userPhone") || "",
     address: localStorage.getItem("userAddress") || "",
-    profileImage: localStorage.getItem("userProfileImage") || ""
+    role: localStorage.getItem("userRole") || "customer",
+    status: "active",
+    points: Number(localStorage.getItem("userPoints") || 0),
+    profileImage: localStorage.getItem("userProfileImage") || "",
+    email_verified_at: null,
   };
 }
 
-function getProfileData() {
-  const saved = getSavedUserProfile();
-  if (saved) return saved;
-  return getFallbackProfile();
+function normalizeProfile(profile = {}) {
+  const fallback = getFallbackProfile();
+
+  return {
+    id: profile.id || fallback.id,
+    name: profile.name || fallback.name || "User",
+    email: profile.email || fallback.email || "",
+    phone: profile.phone || fallback.phone || "",
+    address: profile.address || fallback.address || "",
+    role: profile.role || fallback.role || "customer",
+    status: profile.status || fallback.status || "active",
+    created_at: profile.created_at || "",
+    email_verified_at: profile.email_verified_at || null,
+    points: Number(profile.points ?? fallback.points ?? 0),
+    profileImage:
+      profile.profileImage ||
+      profile.profile_image ||
+      profile.avatar ||
+      fallback.profileImage ||
+      "",
+  };
+}
+
+function getSafeProfile() {
+  const currentUser = readJsonSafe(CURRENT_USER_KEY, null);
+
+  if (currentUser && currentUser.email) {
+    return normalizeProfile(currentUser);
+  }
+
+  const oldProfile =
+    readJsonSafe("userProfile", null) ||
+    readJsonSafe("foodExpressProfile", null) ||
+    readJsonSafe("foodExpressUserProfile", null) ||
+    readJsonSafe("currentUser", null);
+
+  if (oldProfile && oldProfile.email) {
+    const normalized = normalizeProfile(oldProfile);
+    saveStoredProfile(normalized);
+    return normalized;
+  }
+
+  return normalizeProfile(getFallbackProfile());
+}
+
+function getUserProfile() {
+  return getSafeProfile();
+}
+
+function saveStoredProfile(profile) {
+  const normalized = normalizeProfile(profile);
+
+  saveJsonSafe(CURRENT_USER_KEY, normalized);
+
+  // Compatibility for old pages still reading these keys
+  saveJsonSafe("userProfile", normalized);
+  saveJsonSafe("foodExpressProfile", normalized);
+  saveJsonSafe("foodExpressUserProfile", normalized);
+  saveJsonSafe("currentUser", normalized);
+
+  localStorage.setItem("userName", normalized.name);
+  localStorage.setItem("userEmail", normalized.email);
+  localStorage.setItem("userPhone", normalized.phone);
+  localStorage.setItem("userAddress", normalized.address);
+  localStorage.setItem("userRole", normalized.role);
+  localStorage.setItem("userProfileImage", normalized.profileImage || "");
+
+  window.dispatchEvent(new CustomEvent("foodexpress:profile-updated"));
+
+  return normalized;
+}
+
+function clearStoredProfile() {
+  [
+    CURRENT_USER_KEY,
+    "userProfile",
+    "foodExpressProfile",
+    "foodExpressUserProfile",
+    "currentUser",
+    "foodExpressCurrentProfile",
+    "profileData",
+    "userName",
+    "userPhone",
+    "userAddress",
+    "userProfileImage",
+    "profilePhoto",
+    "userAvatar",
+  ].forEach((key) => localStorage.removeItem(key));
 }
 
 function getInitials(name) {
@@ -31,7 +129,38 @@ function getInitials(name) {
   return parts.map((part) => part.charAt(0).toUpperCase()).join("");
 }
 
-function renderAvatar(profile) {
+/*
+  Flexible avatar function:
+  - renderAvatar(profile) for edit-profile page
+  - renderAvatar(element, profile) for dashboard/navbar
+*/
+function renderAvatar(targetOrProfile, maybeProfile) {
+  const isElement =
+    targetOrProfile instanceof HTMLElement ||
+    targetOrProfile instanceof Element;
+
+  const target = isElement ? targetOrProfile : null;
+  const profile = isElement
+    ? normalizeProfile(maybeProfile || getSafeProfile())
+    : normalizeProfile(targetOrProfile || getSafeProfile());
+
+  const initials = getInitials(profile.name);
+
+  if (target) {
+    target.innerHTML = "";
+
+    if (profile.profileImage) {
+      const img = document.createElement("img");
+      img.src = profile.profileImage;
+      img.alt = profile.name || "User";
+      target.appendChild(img);
+    } else {
+      target.textContent = initials;
+    }
+
+    return;
+  }
+
   const avatarImage = document.getElementById("profileAvatarImage");
   const avatarInitial = document.getElementById("profileAvatarInitial");
 
@@ -44,17 +173,43 @@ function renderAvatar(profile) {
   } else {
     avatarImage.style.display = "none";
     avatarInitial.style.display = "block";
-    avatarInitial.textContent = getInitials(profile.name);
+    avatarInitial.textContent = initials;
   }
 }
 
-function fillProfileForm() {
-  const profile = getProfileData();
+function bindProfileEverywhere() {
+  const profile = getSafeProfile();
 
-  document.getElementById("fullName").value = profile.name || "";
-  document.getElementById("emailAddress").value = profile.email || "";
-  document.getElementById("phoneNumber").value = profile.phone || "";
-  document.getElementById("address").value = profile.address || "";
+  const navbarAvatar = document.getElementById("navbarAvatar");
+  if (navbarAvatar) {
+    renderAvatar(navbarAvatar, profile);
+    navbarAvatar.onclick = () => {
+      window.location.href = "edit-profile.html";
+    };
+  }
+
+  const welcomeName = document.getElementById("welcomeName");
+  if (welcomeName) welcomeName.textContent = profile.name || "User";
+
+  const welcomeEmail = document.getElementById("welcomeEmail");
+  if (welcomeEmail) welcomeEmail.textContent = profile.email || "";
+
+  const profileHeaderName = document.getElementById("profileHeaderName");
+  if (profileHeaderName) profileHeaderName.textContent = profile.name || "User";
+}
+
+function fillProfileForm() {
+  const profile = getSafeProfile();
+
+  const fullName = document.getElementById("fullName");
+  const emailAddress = document.getElementById("emailAddress");
+  const phoneNumber = document.getElementById("phoneNumber");
+  const address = document.getElementById("address");
+
+  if (fullName) fullName.value = profile.name || "";
+  if (emailAddress) emailAddress.value = profile.email || "";
+  if (phoneNumber) phoneNumber.value = profile.phone || "";
+  if (address) address.value = profile.address || "";
 
   const profileHeaderName = document.getElementById("profileHeaderName");
   if (profileHeaderName) {
@@ -65,24 +220,23 @@ function fillProfileForm() {
 }
 
 function saveProfile(event) {
-  event.preventDefault();
+  if (event) event.preventDefault();
 
-  const oldProfile = getProfileData();
+  const oldProfile = getSafeProfile();
 
   const updatedProfile = {
-    name: document.getElementById("fullName").value.trim(),
-    email: document.getElementById("emailAddress").value.trim(),
-    phone: document.getElementById("phoneNumber").value.trim(),
-    address: document.getElementById("address").value.trim(),
-    profileImage: oldProfile.profileImage || ""
+    ...oldProfile,
+    name: document.getElementById("fullName")?.value.trim() || oldProfile.name,
+    email:
+      document.getElementById("emailAddress")?.value.trim() || oldProfile.email,
+    phone:
+      document.getElementById("phoneNumber")?.value.trim() || oldProfile.phone,
+    address:
+      document.getElementById("address")?.value.trim() || oldProfile.address,
+    profileImage: oldProfile.profileImage || "",
   };
 
-  localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
-  localStorage.setItem("userName", updatedProfile.name);
-  localStorage.setItem("userEmail", updatedProfile.email);
-  localStorage.setItem("userPhone", updatedProfile.phone);
-  localStorage.setItem("userAddress", updatedProfile.address);
-  localStorage.setItem("userProfileImage", updatedProfile.profileImage);
+  saveStoredProfile(updatedProfile);
 
   alert("Profile updated successfully!");
   fillProfileForm();
@@ -99,23 +253,28 @@ function handleProfilePhotoUpload(event) {
   const reader = new FileReader();
 
   reader.onload = function (e) {
-    const profile = getProfileData();
-    profile.profileImage = e.target.result;
+    const profile = getSafeProfile();
 
-    localStorage.setItem("userProfile", JSON.stringify(profile));
-    localStorage.setItem("userProfileImage", profile.profileImage);
+    const updatedProfile = {
+      ...profile,
+      profileImage: e.target.result,
+    };
 
-    renderAvatar(profile);
+    saveStoredProfile(updatedProfile);
+    renderAvatar(updatedProfile);
+    bindProfileEverywhere();
   };
 
   reader.readAsDataURL(file);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  fillProfileForm();
+  bindProfileEverywhere();
 
-  const form = document.getElementById("editProfileForm");
-  if (form) {
+  if (document.getElementById("editProfileForm")) {
+    fillProfileForm();
+
+    const form = document.getElementById("editProfileForm");
     form.addEventListener("submit", saveProfile);
   }
 
@@ -125,4 +284,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+window.getSafeProfile = getSafeProfile;
+window.getUserProfile = getUserProfile;
+window.saveStoredProfile = saveStoredProfile;
+window.clearStoredProfile = clearStoredProfile;
+window.getInitials = getInitials;
+window.renderAvatar = renderAvatar;
+window.bindProfileEverywhere = bindProfileEverywhere;
 window.resetProfileForm = resetProfileForm;
