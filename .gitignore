@@ -1,1 +1,4 @@
 .DS_Store
+backend/config/mail.php
+.env
+*.env
