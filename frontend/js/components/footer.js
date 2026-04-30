@@ -91,7 +91,7 @@ window.renderFooter = function (type = "public") {
         <h4>Contact</h4>
         <div class="contact-item">📍 <span>Kathmandu, Nepal</span></div>
         <div class="contact-item">📞 <span>+977 - 9841223344</span></div>
-        <div class="contact-item">✉️ <span>hello@foodexpress.com</span></div>
+        <div class="contact-item">✉️ <span>foodexpressnp.support@gmail.com</span></div>
       </div>
     </div>
 
