@@ -4,10 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FoodExpress – Login</title>
+
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/login.css" />
   </head>
+
   <body class="auth-page">
     <!-- ===== NAVBAR ===== -->
     <nav class="navbar" id="navbar"></nav>
@@ -32,6 +34,7 @@
           >
             Sign In
           </div>
+
           <div
             class="auth-tab"
             id="registerTab"
@@ -48,6 +51,7 @@
         <!-- ===== LOGIN FORM ===== -->
         <div id="loginForm">
           <h2>Sign In</h2>
+
           <div class="form-group">
             <label for="loginEmail">Email Address</label>
             <div class="input-wrapper">
@@ -60,6 +64,7 @@
               />
             </div>
           </div>
+
           <div class="form-group">
             <label for="loginPassword">Password</label>
             <div class="input-wrapper">
@@ -79,13 +84,18 @@
               </button>
             </div>
           </div>
+
           <div class="form-row">
             <label class="remember-me">
               <input type="checkbox" id="rememberMe" />
               Remember me
             </label>
           </div>
-          <button class="submit-btn" onclick="handleLogin()">Sign In →</button>
+
+          <button class="submit-btn" type="button" onclick="handleLogin()">
+            Sign In →
+          </button>
+
           <p class="auth-switch">
             Don't have an account?
             <a href="#" onclick="switchTab('register')">Sign Up</a>
@@ -95,6 +105,7 @@
         <!-- ===== REGISTER FORM ===== -->
         <div id="registerForm" style="display: none">
           <h2>Create Account</h2>
+
           <div class="form-group">
             <label for="regName">Full Name</label>
             <div class="input-wrapper">
@@ -107,6 +118,7 @@
               />
             </div>
           </div>
+
           <div class="form-group">
             <label for="regEmail">Email Address</label>
             <div class="input-wrapper">
@@ -119,6 +131,7 @@
               />
             </div>
           </div>
+
           <div class="form-group">
             <label for="regPassword">Password</label>
             <div class="input-wrapper">
@@ -138,6 +151,7 @@
               </button>
             </div>
           </div>
+
           <div class="form-group">
             <label for="regPhone">Phone Number</label>
             <div class="input-wrapper">
@@ -151,6 +165,7 @@
               />
             </div>
           </div>
+
           <div class="form-group">
             <label for="regAddress">Address</label>
             <div class="input-wrapper">
@@ -163,28 +178,26 @@
               />
             </div>
           </div>
+
           <div class="form-group">
             <label for="regRole">Register As</label>
-            <select
-              class="role-select"
-              id="regRole"
-              onchange="handleRoleRedirect()"
-            >
+            <select class="role-select" id="regRole">
               <option value="customer">Customer</option>
               <option value="restaurant_owner">Restaurant Owner</option>
               <option value="rider">Delivery Rider</option>
             </select>
           </div>
-          <button class="submit-btn" onclick="handleRegister()">
+
+          <button class="submit-btn" type="button" onclick="handleRegister()">
             Create Account →
           </button>
+
           <p class="auth-switch">
             Already have an account?
             <a href="#" onclick="switchTab('login')">Sign In</a>
           </p>
         </div>
       </div>
-      <!-- end auth-card -->
 
       <!-- ===== RIGHT PANEL ===== -->
       <div class="auth-right">
@@ -195,21 +208,26 @@
             loading="lazy"
           />
         </div>
+
         <div class="why-join">
           <h3>Why Join <span>FoodExpress?</span></h3>
+
           <div class="why-list">
             <div class="why-item">
               <div class="why-icon">⚡</div>
               <span>Lightning-fast delivery in under 30 minutes</span>
             </div>
+
             <div class="why-item">
               <div class="why-icon">🍕</div>
               <span>500+ restaurants and thousands of menu items</span>
             </div>
+
             <div class="why-item">
               <div class="why-icon">💳</div>
               <span>Secure online payments or cash on delivery</span>
             </div>
+
             <div class="why-item">
               <div class="why-icon">📦</div>
               <span>Real-time order tracking and notifications</span>
@@ -218,7 +236,6 @@
         </div>
       </div>
     </div>
-    <!-- end auth-body -->
 
     <!-- ===== FOOTER ===== -->
     <footer class="footer" id="footer"></footer>

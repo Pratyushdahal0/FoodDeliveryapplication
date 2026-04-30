@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Become a FoodExpress Rider</title>
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/rider-auth.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <main class="rider-signup-page">
+      <section class="signup-hero">
+        <div class="brand-row signup-brand">
+          <a href="landingpage.html" class="brand-link">FoodExpress</a>
+
+         <div class="top-links">
+  <a href="landingpage.html">Home</a>
+  <a href="rider-login.html">Already a rider? Sign in</a>
+</div>
+
+        <div class="eyebrow">
+          <i class="fa-solid fa-motorcycle"></i>
+          Rider Application
+        </div>
+
+        <h1>Become a FoodExpress <span>Delivery Rider</span></h1>
+        <p>
+          Apply with your personal, vehicle, document, and payout details. Your
+          application will be reviewed before full rider access is approved.
+        </p>
+      </section>
+
+      <section class="steps-card">
+        <div class="steps-wrapper">
+          <div class="step-item active" data-step="1">
+            <div class="step-circle">1</div>
+            <p>Account</p>
+          </div>
+
+          <div class="step-line" data-line="1"></div>
+
+          <div class="step-item" data-step="2">
+            <div class="step-circle">2</div>
+            <p>Rider Details</p>
+          </div>
+
+          <div class="step-line" data-line="2"></div>
+
+          <div class="step-item" data-step="3">
+            <div class="step-circle">3</div>
+            <p>Vehicle</p>
+          </div>
+
+          <div class="step-line" data-line="3"></div>
+
+          <div class="step-item" data-step="4">
+            <div class="step-circle">4</div>
+            <p>Documents</p>
+          </div>
+
+          <div class="step-line" data-line="4"></div>
+
+          <div class="step-item" data-step="5">
+            <div class="step-circle">5</div>
+            <p>Payout</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <form id="riderSignupForm">
+          <!-- STEP 1 -->
+          <div class="step-panel active" data-panel="1">
+            <h2>Account Information</h2>
+            <p class="section-note">Create your rider account login details.</p>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="fullName">Full Name *</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-user"></i>
+                  <input
+                    id="fullName"
+                    type="text"
+                    placeholder="Ramesh Tamang"
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="email">Email Address *</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-envelope"></i>
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="rider@example.com"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="phone">Phone Number *</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-phone"></i>
+                  <input id="phone" type="tel" placeholder="9849220167" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="password">Password *</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-lock"></i>
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder="Minimum 6 characters"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="confirmPassword">Confirm Password *</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-lock"></i>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Re-enter password"
+                />
+              </div>
+            </div>
+
+            <div class="form-footer">
+              <button type="button" class="next-btn" data-next="2">
+                Next Step
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 2 -->
+          <div class="step-panel" data-panel="2">
+            <h2>Rider Details</h2>
+            <p class="section-note">
+              These details help the platform assign safer and nearby
+              deliveries.
+            </p>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="dob">Date of Birth *</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-calendar"></i>
+                  <input id="dob" type="date" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="zone">Preferred Delivery Zone *</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-location-dot"></i>
+                  <select id="zone">
+                    <option value="">Select delivery zone</option>
+                    <option value="Kathmandu">Kathmandu</option>
+                    <option value="Lalitpur">Lalitpur</option>
+                    <option value="Bhaktapur">Bhaktapur</option>
+                    <option value="Pokhara">Pokhara</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="address">Current Address *</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <input
+                  id="address"
+                  type="text"
+                  placeholder="Koteshwor, Kathmandu"
+                />
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="emergencyContact">Emergency Contact Number *</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-phone-volume"></i>
+                <input
+                  id="emergencyContact"
+                  type="tel"
+                  placeholder="Emergency contact number"
+                />
+              </div>
+            </div>
+
+            <div class="form-footer split-footer">
+              <button type="button" class="prev-btn" data-prev="1">
+                <i class="fa-solid fa-arrow-left"></i>
+                Previous
+              </button>
+
+              <button type="button" class="next-btn" data-next="3">
+                Next Step
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 3 -->
+          <div class="step-panel" data-panel="3">
+            <h2>Vehicle Information</h2>
+            <p class="section-note">
+              Add the vehicle you will use for delivery.
+            </p>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="vehicleType">Vehicle Type *</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-motorcycle"></i>
+                  <select id="vehicleType">
+                    <option value="">Select vehicle type</option>
+                    <option value="Bike">Bike</option>
+                    <option value="Scooter">Scooter</option>
+                    <option value="Cycle">Cycle</option>
+                    <option value="Car">Car</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="vehicleModel">Vehicle Model *</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-screwdriver-wrench"></i>
+                  <input
+                    id="vehicleModel"
+                    type="text"
+                    placeholder="Honda Dio / Pulsar 150"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="vehicleNumber">Vehicle Number *</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-id-card"></i>
+                  <input
+                    id="vehicleNumber"
+                    type="text"
+                    placeholder="BA 95 PA 1234"
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="licenseNumber">License Number *</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-address-card"></i>
+                  <input
+                    id="licenseNumber"
+                    type="text"
+                    placeholder="License number"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-footer split-footer">
+              <button type="button" class="prev-btn" data-prev="2">
+                <i class="fa-solid fa-arrow-left"></i>
+                Previous
+              </button>
+
+              <button type="button" class="next-btn" data-next="4">
+                Next Step
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 4 -->
+          <div class="step-panel" data-panel="4">
+            <h2>Document Verification</h2>
+            <p class="section-note">
+              Upload required documents for admin approval.
+            </p>
+
+            <div class="document-grid">
+              <div class="upload-card">
+                <label for="profilePhoto">
+                  <i class="fa-solid fa-camera"></i>
+                  <strong>Profile Photo *</strong>
+                  <span>JPG or PNG</span>
+                </label>
+                <input type="file" id="profilePhoto" accept="image/*" />
+              </div>
+
+              <div class="upload-card">
+                <label for="licenseDoc">
+                  <i class="fa-solid fa-id-card"></i>
+                  <strong>Driving License *</strong>
+                  <span>Image or PDF</span>
+                </label>
+                <input type="file" id="licenseDoc" accept="image/*,.pdf" />
+              </div>
+
+              <div class="upload-card">
+                <label for="citizenshipDoc">
+                  <i class="fa-solid fa-address-card"></i>
+                  <strong>Citizenship / ID *</strong>
+                  <span>Image or PDF</span>
+                </label>
+                <input type="file" id="citizenshipDoc" accept="image/*,.pdf" />
+              </div>
+
+              <div class="upload-card">
+                <label for="vehicleDoc">
+                  <i class="fa-solid fa-file-shield"></i>
+                  <strong>Vehicle Document</strong>
+                  <span>Optional for cycle riders</span>
+                </label>
+                <input type="file" id="vehicleDoc" accept="image/*,.pdf" />
+              </div>
+            </div>
+
+            <div class="note-box">
+              <i class="fa-solid fa-circle-info"></i>
+              Uploaded documents are used for verification only. Admin review is
+              required before full rider access.
+            </div>
+
+            <div class="form-footer split-footer">
+              <button type="button" class="prev-btn" data-prev="3">
+                <i class="fa-solid fa-arrow-left"></i>
+                Previous
+              </button>
+
+              <button type="button" class="next-btn" data-next="5">
+                Next Step
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 5 -->
+          <div class="step-panel" data-panel="5">
+            <h2>Payout Information</h2>
+            <p class="section-note">
+              Choose how you want to receive rider earnings.
+            </p>
+
+            <div class="form-group full-width">
+              <label for="payoutMethod">Preferred Payout Method *</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-wallet"></i>
+                <select id="payoutMethod">
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="eSewa">eSewa</option>
+                  <option value="Khalti">Khalti</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="bankFields">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="bankName">Bank Name *</label>
+                  <div class="input-wrap">
+                    <i class="fa-solid fa-building-columns"></i>
+                    <input id="bankName" type="text" placeholder="Nabil Bank" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="accountName">Account Holder Name *</label>
+                  <div class="input-wrap">
+                    <i class="fa-solid fa-user-check"></i>
+                    <input
+                      id="accountName"
+                      type="text"
+                      placeholder="Ramesh Tamang"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label for="accountNumber">Account Number *</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-credit-card"></i>
+                  <input
+                    id="accountNumber"
+                    type="text"
+                    placeholder="Account number"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group full-width" id="walletField">
+              <label for="walletNumber">Wallet Number *</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+                <input id="walletNumber" type="tel" placeholder="9849220167" />
+              </div>
+            </div>
+
+            <div class="agreement-card">
+              <label>
+                <input type="checkbox" id="agreement" />
+                <span>
+                  I confirm that the details provided are correct and agree to
+                  FoodExpress rider verification and platform policies.
+                </span>
+              </label>
+            </div>
+
+            <div class="form-footer split-footer">
+              <button type="button" class="prev-btn" data-prev="4">
+                <i class="fa-solid fa-arrow-left"></i>
+                Previous
+              </button>
+
+              <button type="submit" class="submit-application-btn">
+                Submit Rider Application
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <div class="toast" id="riderToast">
+      <i class="fa-solid fa-circle-check"></i>
+      <span id="riderToastMessage">Saved</span>
+    </div>
+
+    <script src="../js/rider-signup.js"></script>
+  </body>
+</html>

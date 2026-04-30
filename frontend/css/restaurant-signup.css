@@ -462,3 +462,182 @@ body {
     justify-content: stretch;
   }
 }
+/* ================= AUTH TOPBAR POLISH ================= */
+
+.auth-topbar {
+  width: min(1400px, 90%);
+  margin: 0 auto 34px;
+  padding: 22px 28px;
+  border: 1px solid rgba(255, 77, 28, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.74);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 50px rgba(18, 18, 35, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.auth-brand {
+  text-decoration: none;
+  font-size: 1.55rem;
+  font-weight: 900;
+  color: #ff3b30;
+  letter-spacing: -0.04em;
+}
+
+.auth-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-links a {
+  text-decoration: none;
+  color: #17172a;
+  font-weight: 800;
+  padding: 11px 16px;
+  border-radius: 999px;
+  transition: 0.2s ease;
+}
+
+.auth-links a:hover {
+  color: #ff3b30;
+  background: #fff0ea;
+}
+
+@media (max-width: 700px) {
+  .auth-topbar {
+    width: calc(100% - 28px);
+    padding: 18px;
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+/* ================= FINAL RESTAURANT AUTH POLISH ================= */
+
+.restaurant-signup-page {
+  max-width: 1280px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(255, 49, 49, 0.1);
+  border: 1px solid rgba(255, 49, 49, 0.16);
+  color: #ff3131;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hero-section {
+  margin-top: 10px;
+}
+
+.hero-section h1 {
+  letter-spacing: -0.06em;
+}
+
+.hero-section p {
+  max-width: 720px;
+  margin: 0 auto;
+  line-height: 1.7;
+  font-weight: 600;
+}
+
+.section-note {
+  margin: -16px 0 26px;
+  color: #6b7280;
+  line-height: 1.65;
+  font-weight: 600;
+}
+
+.map-box {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.map-box i {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: #fff0ea;
+  color: #ff3131;
+  font-size: 20px;
+}
+
+.upload-box i.upload-icon,
+.upload-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: #fff0ea;
+  color: #ff3131;
+  font-size: 22px;
+}
+
+.info-box,
+.note-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.info-box i {
+  color: #2853c2;
+  margin-top: 3px;
+}
+
+.note-box i {
+  color: #9a5d10;
+  margin-top: 3px;
+}
+
+.next-btn,
+.prev-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 54px;
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-brand i {
+  font-size: 1.2rem;
+}
+
+@media (max-width: 900px) {
+  .hero-section {
+    margin-top: 22px;
+  }
+
+  .hero-section h1 {
+    font-size: 44px;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero-section h1 {
+    font-size: 34px;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+  }
+}

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rider Login - FoodExpress</title>
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/rider-auth.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <main class="rider-auth-shell">
+      <section class="rider-auth-left">
+        <div class="brand-row">
+          <a href="landingpage.html" class="brand-link">
+            <i class="fa-solid fa-bowl-food"></i>
+            FoodExpress
+          </a>
+
+          <div class="top-links">
+            <a href="landingpage.html">Home</a>
+            <a href="rider-signup.html">Apply as Rider</a>
+          </div>
+        </div>
+
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <i class="fa-solid fa-motorcycle"></i>
+            Rider Partner Portal
+          </div>
+
+          <h1>Deliver orders, track earnings, and manage your day.</h1>
+
+          <p>
+            Sign in to access your rider dashboard, accept delivery requests,
+            update trip progress, view earnings, and manage your availability.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <i class="fa-solid fa-route"></i>
+            <h3>Live deliveries</h3>
+            <p>Accept orders and update trip status from pickup to delivery.</p>
+          </div>
+
+          <div class="feature-card">
+            <i class="fa-solid fa-wallet"></i>
+            <h3>Earnings control</h3>
+            <p>Track daily income, balance, payouts, and completed trips.</p>
+          </div>
+
+          <div class="feature-card">
+            <i class="fa-solid fa-shield-halved"></i>
+            <h3>Verified access</h3>
+            <p>
+              Rider accounts are designed around safe onboarding and review.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="rider-auth-right">
+        <div class="auth-card">
+          <div class="card-icon">
+            <i class="fa-solid fa-motorcycle"></i>
+          </div>
+
+          <h2>Rider Login</h2>
+          <p class="subtitle">
+            Use your approved rider account to access the FoodExpress rider
+            panel.
+          </p>
+
+          <div class="demo-note">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>
+              Demo login: <strong>rider@foodexpress.com</strong> /
+              <strong>rider123</strong>
+            </span>
+          </div>
+
+          <form id="riderLoginForm">
+            <div class="form-group">
+              <label for="riderEmail">Email Address</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-envelope"></i>
+                <input
+                  type="email"
+                  id="riderEmail"
+                  placeholder="rider@example.com"
+                  autocomplete="email"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="riderPassword">Password</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-lock"></i>
+                <input
+                  type="password"
+                  id="riderPassword"
+                  placeholder="Enter your password"
+                  autocomplete="current-password"
+                />
+                <button
+                  type="button"
+                  class="password-toggle"
+                  id="togglePassword"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="row-between">
+              <label class="remember-me">
+                <input type="checkbox" id="rememberRider" />
+                <span>Keep me signed in</span>
+              </label>
+
+              <a href="rider-signup.html">Apply now</a>
+            </div>
+
+            <button type="submit" class="primary-btn" id="riderLoginBtn">
+              Sign In to Rider Panel
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+
+            <div class="message-box" id="loginMessage"></div>
+          </form>
+
+          <p class="bottom-link">
+            New to FoodExpress delivery?
+            <a href="rider-signup.html">Become a rider</a>
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <script src="../js/rider-login.js"></script>
+  </body>
+</html>
