@@ -213,7 +213,97 @@ function queueOrderConfirmationEmail($conn, $orderId, $orderNumber, $input, $res
         "order_confirmation"
     );
 }
+function queueOrderDeliveredEmail($conn, $orderData, $orderItems) {
+    $customerEmail = trim($orderData['customer_email'] ?? "");
 
+    if ($customerEmail === "" || !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+
+    $customerName = trim($orderData['customer_name'] ?? "FoodExpress Customer");
+    if ($customerName === "") {
+        $customerName = "FoodExpress Customer";
+    }
+
+    $orderNumber = $orderData['order_number'] ?? "";
+    $restaurantName = "Restaurant #" . ($orderData['restaurant_id'] ?? "");
+    $paymentMethod = formatPaymentMethod($orderData['payment_method'] ?? "cash");
+    $total = floatval($orderData['total'] ?? 0);
+    $deliveredAt = date("M d, Y h:i A");
+
+    $safeCustomerName = cleanText($customerName);
+    $safeOrderNumber = cleanText($orderNumber);
+    $safeRestaurantName = cleanText($restaurantName);
+    $safePaymentMethod = cleanText($paymentMethod);
+    $safeDeliveredAt = cleanText($deliveredAt);
+
+    $itemsHtml = buildOrderItemsHtml($orderItems);
+
+    $subject = "Your FoodExpress order has been delivered - {$orderNumber}";
+
+    $body = "
+        <div style='font-family: Arial, sans-serif; background:#f7f7f7; padding:24px;'>
+            <div style='max-width:680px; margin:auto; background:#ffffff; border-radius:16px; padding:24px;'>
+                <h2 style='color:#e53935; margin-top:0;'>Your FoodExpress order has been delivered</h2>
+
+                <p>Hello {$safeCustomerName},</p>
+
+                <p style='line-height:1.6;'>
+                    Your FoodExpress order has been delivered successfully. Thank you for choosing FoodExpress.
+                </p>
+
+                <div style='background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:16px; margin:20px 0;'>
+                    <p style='margin:0;'><strong>Order Number:</strong> {$safeOrderNumber}</p>
+                    <p style='margin:8px 0 0;'><strong>Order Status:</strong> Delivered</p>
+                    <p style='margin:8px 0 0;'><strong>Restaurant:</strong> {$safeRestaurantName}</p>
+                    <p style='margin:8px 0 0;'><strong>Payment Method:</strong> {$safePaymentMethod}</p>
+                    <p style='margin:8px 0 0;'><strong>Delivered At:</strong> {$safeDeliveredAt}</p>
+                </div>
+
+                <h3 style='margin-bottom:10px;'>Order Receipt</h3>
+
+                <table style='width:100%; border-collapse:collapse;'>
+                    <thead>
+                        <tr>
+                            <th style='text-align:left; padding:10px 0; border-bottom:2px solid #eee;'>Item</th>
+                            <th style='text-align:center; padding:10px 0; border-bottom:2px solid #eee;'>Qty</th>
+                            <th style='text-align:right; padding:10px 0; border-bottom:2px solid #eee;'>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {$itemsHtml}
+                    </tbody>
+                </table>
+
+                <div style='margin-top:20px; background:#f9fafb; border-radius:12px; padding:16px;'>
+                    <p style='margin:0; font-size:18px;'>
+                        <strong>Total:</strong> Rs. " . formatMoney($total) . "
+                    </p>
+                </div>
+
+                <p style='line-height:1.6; margin-top:22px;'>
+                    We hope you enjoyed your meal. You can view this order from your FoodExpress order history.
+                </p>
+
+                <p style='margin-top:24px;'>
+                    Kind regards,<br>
+                    <strong>FoodExpress Team</strong><br>
+                    foodexpressnp.support@gmail.com
+                </p>
+            </div>
+        </div>
+    ";
+
+    return queueEmail(
+        $conn,
+        null,
+        $customerEmail,
+        $customerName,
+        $subject,
+        $body,
+        "order_delivered"
+    );
+}
 $basePath = __DIR__ . '/../';
 
 $dbConfigPath = $basePath . 'config/db.php';
@@ -505,23 +595,71 @@ switch ($action) {
 
     // UPDATE order status
     case 'update_status':
-        $input = json_decode(file_get_contents("php://input"), true);
+    $input = json_decode(file_get_contents("php://input"), true);
 
-        if (!isset($input['order_id'], $input['status'])) {
-            echo json_encode([
-                "success" => false,
-                "message" => "Order ID and status required"
-            ]);
-            break;
-        }
-
-        $result = $order->updateStatus($input['order_id'], $input['status']);
-
+    if (!isset($input['order_id'], $input['status'])) {
         echo json_encode([
-            "success" => $result,
-            "message" => $result ? "Status updated" : "Failed to update status"
+            "success" => false,
+            "message" => "Order ID and status required"
         ]);
         break;
+    }
+
+    $orderId = intval($input['order_id']);
+    $newStatus = trim($input['status']);
+
+    $existingOrder = $order->getById($orderId);
+
+    if (!$existingOrder) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Order not found"
+        ]);
+        break;
+    }
+
+    $result = $order->updateStatus($orderId, $newStatus);
+
+    $deliveredEmailQueued = false;
+
+    if ($result && $newStatus === "delivered") {
+        $alreadyQueued = intval($existingOrder['delivered_email_queued'] ?? 0) === 1;
+
+        if (!$alreadyQueued) {
+            $updatedOrder = $order->getById($orderId);
+            $orderItems = $order->getItems($orderId);
+
+            try {
+                $deliveredEmailQueued = queueOrderDeliveredEmail(
+                    $conn,
+                    $updatedOrder,
+                    $orderItems
+                );
+
+                if ($deliveredEmailQueued) {
+                    $markEmailStmt = $conn->prepare("
+                        UPDATE orders
+                        SET delivered_email_queued = 1
+                        WHERE id = ?
+                    ");
+
+                    if ($markEmailStmt) {
+                        $markEmailStmt->bind_param("i", $orderId);
+                        $markEmailStmt->execute();
+                    }
+                }
+            } catch (Exception $emailException) {
+                $deliveredEmailQueued = false;
+            }
+        }
+    }
+
+    echo json_encode([
+        "success" => $result,
+        "message" => $result ? "Status updated" : "Failed to update status",
+        "delivered_email_queued" => $deliveredEmailQueued
+    ]);
+    break;
 
     // GET total sales
     case 'total_sales':

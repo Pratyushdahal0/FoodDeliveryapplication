@@ -27,22 +27,28 @@ const statusBadgeMap = {
   pending: { label: "Pending", css: "badge-pending" },
   confirmed: { label: "Confirmed", css: "badge-accepted" },
   preparing: { label: "Preparing", css: "badge-accepted" },
+  ready_for_pickup: { label: "Ready for Pickup", css: "badge-accepted" },
+  picked_up: { label: "Picked Up", css: "badge-accepted" },
   on_the_way: { label: "On The Way", css: "badge-accepted" },
   delivered: { label: "Delivered", css: "badge-delivered" },
-  cancelled: { label: "Cancelled", css: "badge-cancelled" }
+  cancelled: { label: "Cancelled", css: "badge-cancelled" },
 };
 
 function renderOwnerOrders() {
   const sections = {
     pending: document.getElementById("section-pending"),
     accepted: document.getElementById("section-accepted"),
+    ready: document.getElementById("section-ready"),
+    delivery: document.getElementById("section-delivery"),
     delivered: document.getElementById("section-delivered"),
-    cancelled: document.getElementById("section-cancelled")
+    cancelled: document.getElementById("section-cancelled"),
   };
 
   if (
     !sections.pending ||
     !sections.accepted ||
+    !sections.ready ||
+    !sections.delivery ||
     !sections.delivered ||
     !sections.cancelled
   ) {
@@ -51,12 +57,17 @@ function renderOwnerOrders() {
 
   sections.pending.innerHTML = "";
   sections.accepted.innerHTML = "";
+  sections.ready.innerHTML = "";
+  sections.delivery.innerHTML = "";
   sections.delivered.innerHTML = "";
   sections.cancelled.innerHTML = "";
 
   const ownerRestaurant = getCurrentOwnerRestaurant();
   const allOrders = readJson(ORDER_STORAGE_KEY, []);
-  const filteredOrders = filterOrdersForCurrentRestaurant(allOrders, ownerRestaurant);
+  const filteredOrders = filterOrdersForCurrentRestaurant(
+    allOrders,
+    ownerRestaurant
+  );
   const searchedOrders = applySearchFilter(filteredOrders);
 
   if (!searchedOrders.length) {
@@ -64,10 +75,7 @@ function renderOwnerOrders() {
       ? `No orders found for ${ownerRestaurant.restaurantName}.`
       : "No orders found for this restaurant yet.";
 
-    sections.pending.innerHTML = getEmptyStateHTML(
-      "No orders yet",
-      emptyMessage
-    );
+    sections.pending.innerHTML = getEmptyStateHTML("No orders yet", emptyMessage);
     updateOrderTabCounts();
     return;
   }
@@ -86,10 +94,16 @@ function renderOwnerOrders() {
       sections.pending.insertAdjacentHTML("beforeend", cardHTML);
     } else if (
       normalizedStatus === "confirmed" ||
-      normalizedStatus === "preparing" ||
-      normalizedStatus === "on_the_way"
+      normalizedStatus === "preparing"
     ) {
       sections.accepted.insertAdjacentHTML("beforeend", cardHTML);
+    } else if (normalizedStatus === "ready_for_pickup") {
+      sections.ready.insertAdjacentHTML("beforeend", cardHTML);
+    } else if (
+      normalizedStatus === "picked_up" ||
+      normalizedStatus === "on_the_way"
+    ) {
+      sections.delivery.insertAdjacentHTML("beforeend", cardHTML);
     } else if (normalizedStatus === "delivered") {
       sections.delivered.insertAdjacentHTML("beforeend", cardHTML);
     } else if (normalizedStatus === "cancelled") {
@@ -106,15 +120,29 @@ function renderOwnerOrders() {
 
   if (!sections.accepted.children.length) {
     sections.accepted.innerHTML = getEmptyStateHTML(
-      "No active orders",
-      "Confirmed, preparing and on-the-way orders will show here."
+      "No orders in progress",
+      "Confirmed and preparing orders will show here."
+    );
+  }
+
+  if (!sections.ready.children.length) {
+    sections.ready.innerHTML = getEmptyStateHTML(
+      "No orders ready for pickup",
+      "Orders marked ready by the restaurant will wait here for riders."
+    );
+  }
+
+  if (!sections.delivery.children.length) {
+    sections.delivery.innerHTML = getEmptyStateHTML(
+      "No orders in delivery",
+      "Orders picked up by riders will show here until delivered."
     );
   }
 
   if (!sections.delivered.children.length) {
     sections.delivered.innerHTML = getEmptyStateHTML(
-      "No delivered orders",
-      "Completed orders will show here."
+      "No completed orders",
+      "Delivered orders will show here."
     );
   }
 
@@ -141,10 +169,7 @@ function createOrderCardHTML(order, status) {
     "Guest User";
 
   const customerPhone =
-    order.phoneNumber ||
-    order.phone ||
-    order.phone_number ||
-    "No phone";
+    order.phoneNumber || order.phone || order.phone_number || "No phone";
 
   const customerAddress = buildCustomerAddress(order);
   const total = Number(order.total || 0).toFixed(2);
@@ -157,7 +182,9 @@ function createOrderCardHTML(order, status) {
           .map((item) => {
             const quantity = Number(item.quantity || item.qty || 1);
             const itemName = item.name || item.title || "Food Item";
-            return `<div class="order-item">${quantity}x ${escapeHtml(itemName)}</div>`;
+            return `<div class="order-item">${quantity}x ${escapeHtml(
+              itemName
+            )}</div>`;
           })
           .join("")
       : `<div class="order-item">No items found</div>`;
@@ -165,7 +192,9 @@ function createOrderCardHTML(order, status) {
   const badgeInfo = statusBadgeMap[status] || statusBadgeMap.pending;
 
   return `
-    <div class="order-card" data-order-id="${escapeHtml(String(orderId))}" data-status="${escapeHtml(status)}">
+    <div class="order-card" data-order-id="${escapeHtml(
+      String(orderId)
+    )}" data-status="${escapeHtml(status)}">
       <img
         src="${escapeHtml(image)}"
         alt="Order Image"
@@ -213,10 +242,10 @@ function createOrderCardHTML(order, status) {
 function getActionButtonsHTML(status) {
   if (status === "pending") {
     return `
-      <button class="btn-reject">
+      <button class="btn-reject" type="button">
         <i class="fa fa-xmark"></i> Reject
       </button>
-      <button class="btn-confirm">
+      <button class="btn-confirm" type="button">
         <i class="fa fa-check"></i> Confirm
       </button>
     `;
@@ -224,7 +253,7 @@ function getActionButtonsHTML(status) {
 
   if (status === "confirmed") {
     return `
-      <button class="btn-prepare">
+      <button class="btn-prepare" type="button">
         <i class="fa fa-utensils"></i> Start Preparing
       </button>
     `;
@@ -232,22 +261,38 @@ function getActionButtonsHTML(status) {
 
   if (status === "preparing") {
     return `
-      <button class="btn-on-the-way">
-        <i class="fa fa-motorcycle"></i> Mark On The Way
+      <button class="btn-ready-pickup" type="button">
+        <i class="fa fa-box-open"></i> Mark Ready for Pickup
+      </button>
+    `;
+  }
+
+  if (status === "ready_for_pickup") {
+    return `
+      <button class="btn-waiting-rider" type="button" disabled>
+        <i class="fa fa-clock"></i> Waiting for Rider
+      </button>
+    `;
+  }
+
+  if (status === "picked_up") {
+    return `
+      <button class="btn-waiting-rider" type="button" disabled>
+        <i class="fa fa-motorcycle"></i> Picked Up by Rider
       </button>
     `;
   }
 
   if (status === "on_the_way") {
     return `
-      <button class="btn-deliver">
-        <i class="fa fa-circle-check"></i> Mark Delivered
+      <button class="btn-waiting-rider" type="button" disabled>
+        <i class="fa fa-location-arrow"></i> Rider On The Way
       </button>
     `;
   }
 
   return `
-    <button class="btn-view">
+    <button class="btn-view" type="button">
       <i class="fa fa-eye"></i> View Details
     </button>
   `;
@@ -260,8 +305,7 @@ function attachOrderActions() {
     const rejectBtn = card.querySelector(".btn-reject");
     const confirmBtn = card.querySelector(".btn-confirm");
     const prepareBtn = card.querySelector(".btn-prepare");
-    const onTheWayBtn = card.querySelector(".btn-on-the-way");
-    const deliverBtn = card.querySelector(".btn-deliver");
+    const readyPickupBtn = card.querySelector(".btn-ready-pickup");
     const viewBtn = card.querySelector(".btn-view");
 
     rejectBtn?.addEventListener("click", () => {
@@ -276,12 +320,8 @@ function attachOrderActions() {
       updateOrderStatus(orderId, "preparing");
     });
 
-    onTheWayBtn?.addEventListener("click", () => {
-      updateOrderStatus(orderId, "on_the_way");
-    });
-
-    deliverBtn?.addEventListener("click", () => {
-      updateOrderStatus(orderId, "delivered");
+    readyPickupBtn?.addEventListener("click", () => {
+      updateOrderStatus(orderId, "ready_for_pickup");
     });
 
     viewBtn?.addEventListener("click", () => {
@@ -290,13 +330,15 @@ function attachOrderActions() {
         card.querySelector(".order-id")?.textContent?.replace("#", "").trim();
 
       if (orderNumber) {
-        window.location.href = `track-order.html?order=${encodeURIComponent(orderNumber)}`;
+        window.location.href = `track-order.html?order=${encodeURIComponent(
+          orderNumber
+        )}`;
       }
     });
   });
 }
 
-function updateOrderStatus(orderId, nextStatus) {
+async function updateOrderStatus(orderId, nextStatus) {
   const orders = readJson(ORDER_STORAGE_KEY, []);
 
   const index = orders.findIndex((order) => {
@@ -307,63 +349,121 @@ function updateOrderStatus(orderId, nextStatus) {
     );
   });
 
-  if (index === -1) return;
+  if (index === -1) {
+    alert("Order not found.");
+    return;
+  }
 
   const currentOrder = orders[index];
   const previousStatus = normalizeStatus(currentOrder.status);
 
-  currentOrder.status = nextStatus;
-  currentOrder.updatedAt = new Date().toISOString();
+  const backendOrderId = currentOrder.id || currentOrder.orderId;
 
-  if (!Array.isArray(currentOrder.statusHistory)) {
-    currentOrder.statusHistory = [];
+  if (!backendOrderId) {
+    alert("This order does not have a valid backend order ID.");
+    return;
   }
 
-  currentOrder.statusHistory.push({
-    status: nextStatus,
-    time: new Date().toISOString()
-  });
+  try {
+    const response = await fetch(
+      "../../backend/controllers/OrderController.php?action=update_status",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          order_id: backendOrderId,
+          status: nextStatus,
+        }),
+      }
+    );
 
-  if (
-    nextStatus === "delivered" &&
-    previousStatus !== "delivered" &&
-    !currentOrder.pointsAwarded
-  ) {
-    if (typeof window.awardPointsFromOrder === "function") {
-      window.awardPointsFromOrder(currentOrder);
+    const raw = await response.text();
+
+    let result;
+    try {
+      result = JSON.parse(raw);
+    } catch (error) {
+      console.error("Raw update status response:", raw);
+      throw new Error("Server did not return valid JSON.");
     }
-    currentOrder.pointsAwarded = true;
+
+    if (!result.success) {
+      throw new Error(result.message || "Failed to update order status.");
+    }
+
+    currentOrder.status = nextStatus;
+    currentOrder.updatedAt = new Date().toISOString();
+
+    if (!Array.isArray(currentOrder.statusHistory)) {
+      currentOrder.statusHistory = [];
+    }
+
+    currentOrder.statusHistory.push({
+      status: nextStatus,
+      time: new Date().toISOString(),
+    });
+
+    if (
+      nextStatus === "delivered" &&
+      previousStatus !== "delivered" &&
+      !currentOrder.pointsAwarded
+    ) {
+      if (typeof window.awardPointsFromOrder === "function") {
+        window.awardPointsFromOrder(currentOrder);
+      }
+
+      currentOrder.pointsAwarded = true;
+    }
+
+    orders[index] = currentOrder;
+    localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orders));
+
+    const lastOrder = readJson(LAST_ORDER_KEY, null);
+    if (
+      lastOrder &&
+      (String(lastOrder.id) === String(currentOrder.id) ||
+        String(lastOrder.orderId) === String(currentOrder.orderId) ||
+        String(lastOrder.orderNumber) === String(currentOrder.orderNumber))
+    ) {
+      localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(currentOrder));
+    }
+
+    localStorage.setItem(ORDER_UPDATED_KEY, String(Date.now()));
+
+    if (nextStatus === "delivered" && result.delivered_email_queued) {
+      console.log("Delivered email queued successfully.");
+    }
+
+    renderOwnerOrders();
+  } catch (error) {
+    console.error("Order status update failed:", error);
+    alert(`Could not update order status: ${error.message}`);
   }
-
-  orders[index] = currentOrder;
-  localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orders));
-
-  const lastOrder = readJson(LAST_ORDER_KEY, null);
-  if (
-    lastOrder &&
-    (
-      String(lastOrder.id) === String(currentOrder.id) ||
-      String(lastOrder.orderId) === String(currentOrder.orderId) ||
-      String(lastOrder.orderNumber) === String(currentOrder.orderNumber)
-    )
-  ) {
-    localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(currentOrder));
-  }
-
-  localStorage.setItem(ORDER_UPDATED_KEY, String(Date.now()));
-
-  renderOwnerOrders();
 }
 
 function updateOrderTabCounts() {
   const counts = {
     pending: document.querySelectorAll('.order-card[data-status="pending"]').length,
+
     accepted:
       document.querySelectorAll('.order-card[data-status="confirmed"]').length +
-      document.querySelectorAll('.order-card[data-status="preparing"]').length +
+      document.querySelectorAll('.order-card[data-status="preparing"]').length,
+
+    ready: document.querySelectorAll(
+      '.order-card[data-status="ready_for_pickup"]'
+    ).length,
+
+    delivery:
+      document.querySelectorAll('.order-card[data-status="picked_up"]').length +
       document.querySelectorAll('.order-card[data-status="on_the_way"]').length,
-    delivered: document.querySelectorAll('.order-card[data-status="delivered"]').length,
-    cancelled: document.querySelectorAll('.order-card[data-status="cancelled"]').length
+
+    delivered: document.querySelectorAll('.order-card[data-status="delivered"]')
+      .length,
+
+    cancelled: document.querySelectorAll('.order-card[data-status="cancelled"]')
+      .length,
   };
 
   const tabs = document.querySelectorAll(".tab");
@@ -373,15 +473,23 @@ function updateOrderTabCounts() {
   }
 
   if (tabs[1]) {
-    tabs[1].innerHTML = `<i class="fa fa-box"></i> Active (${counts.accepted})`;
+    tabs[1].innerHTML = `<i class="fa fa-utensils"></i> In Progress (${counts.accepted})`;
   }
 
   if (tabs[2]) {
-    tabs[2].innerHTML = `<i class="fa fa-circle-check"></i> Delivered (${counts.delivered})`;
+    tabs[2].innerHTML = `<i class="fa fa-box-open"></i> Ready for Pickup (${counts.ready})`;
   }
 
   if (tabs[3]) {
-    tabs[3].innerHTML = `<i class="fa fa-circle-xmark"></i> Cancelled (${counts.cancelled})`;
+    tabs[3].innerHTML = `<i class="fa fa-motorcycle"></i> In Delivery (${counts.delivery})`;
+  }
+
+  if (tabs[4]) {
+    tabs[4].innerHTML = `<i class="fa fa-circle-check"></i> Completed (${counts.delivered})`;
+  }
+
+  if (tabs[5]) {
+    tabs[5].innerHTML = `<i class="fa fa-circle-xmark"></i> Cancelled (${counts.cancelled})`;
   }
 }
 
@@ -401,26 +509,24 @@ function applySearchFilter(orders) {
   if (!query) return orders;
 
   return orders.filter((order) => {
-    const orderNumber = String(order.orderNumber || order.orderId || order.id || "").toLowerCase();
+    const orderNumber = String(
+      order.orderNumber || order.orderId || order.id || ""
+    ).toLowerCase();
+
     const customerName = String(
       order.customerName ||
-      order.customer_name ||
-      order.fullName ||
-      order.name ||
-      ""
+        order.customer_name ||
+        order.fullName ||
+        order.name ||
+        ""
     ).toLowerCase();
 
     const customerPhone = String(
-      order.phoneNumber ||
-      order.phone_number ||
-      order.phone ||
-      ""
+      order.phoneNumber || order.phone_number || order.phone || ""
     ).toLowerCase();
 
     const restaurantName = String(
-      order.restaurantName ||
-      order.restaurant_name ||
-      ""
+      order.restaurantName || order.restaurant_name || ""
     ).toLowerCase();
 
     return (
@@ -439,19 +545,20 @@ function filterOrdersForCurrentRestaurant(orders, ownerRestaurant) {
 
   return orders.filter((order) => {
     const orderRestaurantId = String(
-      order.restaurantId ||
-      order.restaurant_id ||
-      ""
+      order.restaurantId || order.restaurant_id || ""
     ).trim();
 
     const orderRestaurantName = String(
-      order.restaurantName ||
-      order.restaurant_name ||
-      ""
-    ).trim().toLowerCase();
+      order.restaurantName || order.restaurant_name || ""
+    )
+      .trim()
+      .toLowerCase();
 
     const ownerRestaurantId = String(ownerRestaurant.restaurantId || "").trim();
-    const ownerRestaurantName = String(ownerRestaurant.restaurantName || "").trim().toLowerCase();
+
+    const ownerRestaurantName = String(ownerRestaurant.restaurantName || "")
+      .trim()
+      .toLowerCase();
 
     if (ownerRestaurantId && orderRestaurantId) {
       return orderRestaurantId === ownerRestaurantId;
@@ -471,7 +578,7 @@ function getCurrentOwnerRestaurant() {
     readJson("currentOwner", null),
     readJson("ownerProfile", null),
     readJson("restaurantOwnerProfile", null),
-    readJson("ownerData", null)
+    readJson("ownerData", null),
   ];
 
   for (const source of possibleSources) {
@@ -494,17 +601,18 @@ function getCurrentOwnerRestaurant() {
     if (restaurantId || restaurantName) {
       return {
         restaurantId: String(restaurantId || ""),
-        restaurantName: String(restaurantName || "")
+        restaurantName: String(restaurantName || ""),
       };
     }
   }
 
   const fallbackRestaurantId = localStorage.getItem("ownerRestaurantId") || "";
-  const fallbackRestaurantName = localStorage.getItem("ownerRestaurantName") || "";
+  const fallbackRestaurantName =
+    localStorage.getItem("ownerRestaurantName") || "";
 
   return {
     restaurantId: String(fallbackRestaurantId),
-    restaurantName: String(fallbackRestaurantName)
+    restaurantName: String(fallbackRestaurantName),
   };
 }
 
@@ -529,7 +637,7 @@ function buildCustomerAddress(order) {
     order.address,
     order.city,
     order.area,
-    order.postalCode || order.postal_code
+    order.postalCode || order.postal_code,
   ].filter(Boolean);
 
   return parts.length ? parts.join(", ") : "Address not available";
@@ -555,11 +663,13 @@ function formatTimeAgo(timestamp) {
   const diffMinutes = Math.floor((now - time) / (1000 * 60));
 
   if (diffMinutes < 1) return "Just now";
+
   if (diffMinutes < 60) {
     return `${diffMinutes} min${diffMinutes > 1 ? "s" : ""} ago`;
   }
 
   const diffHours = Math.floor(diffMinutes / 60);
+
   if (diffHours < 24) {
     return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
   }

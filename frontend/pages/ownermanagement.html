@@ -6,15 +6,23 @@
     <title>FoodExpress - Order Management</title>
 
     <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
+
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/ownerdashboard.css" />
     <link rel="stylesheet" href="../css/odermanagement.css" />
   </head>
+
   <body>
-    <!-- NAVBAR -->
+    <!-- TOP NAV -->
     <nav class="navbar">
       <div class="container">
         <div class="navbar-brand">FoodExpress</div>
@@ -33,6 +41,7 @@
               type="text"
               id="orderSearchInput"
               placeholder="Search orders..."
+              autocomplete="off"
             />
           </div>
 
@@ -43,104 +52,189 @@
       </div>
     </nav>
 
-    <!-- MAIN -->
-    <div class="container">
-      <!-- Page Header -->
-      <div class="page-header">
-        <h1>Order <span>Management</span></h1>
-        <p>Manage and track all your restaurant orders</p>
-      </div>
+    <!-- OWNER LAYOUT -->
+    <div class="layout">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar-profile">
+          <div class="avatar">R</div>
+          <div>
+            <div class="name">Restaurant Name</div>
+            <div class="sub">Owner Dashboard</div>
+          </div>
+        </div>
 
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab active-pending" onclick="switchTab('pending', this)">
-          <i class="fa fa-clock"></i> Pending (0)
-        </button>
+        <a href="ownerdashboard.html" class="nav-item">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
+          Dashboard
+        </a>
 
-        <button class="tab" onclick="switchTab('accepted', this)">
-          <i class="fa fa-box"></i> Active (0)
-        </button>
+        <a href="ownermanagement.html" class="nav-item active">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 0 1-8 0" />
+          </svg>
+          Orders
+        </a>
 
-        <button class="tab" onclick="switchTab('delivered', this)">
-          <i class="fa fa-circle-check"></i> Delivered (0)
-        </button>
+        <a href="ownerMenu.html" class="nav-item">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+          Menu
+        </a>
 
-        <button class="tab" onclick="switchTab('cancelled', this)">
-          <i class="fa fa-circle-xmark"></i> Cancelled (0)
-        </button>
-      </div>
+        <a href="ownerearning.html" class="nav-item">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+          Earnings
+        </a>
 
-      <!-- ORDER SECTIONS -->
-      <div class="order-section active" id="section-pending"></div>
+        <a href="ownerSettings.html" class="nav-item">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"
+            />
+          </svg>
+          Settings
+        </a>
+      </aside>
 
-      <div class="order-section" id="section-accepted"></div>
+      <!-- MAIN CONTENT -->
+      <main class="main">
+        <!-- PAGE HEADER -->
+        <section class="orders-main-header">
+          <div>
+            <p class="orders-eyebrow">Restaurant operations</p>
+            <h1>Order Management</h1>
+            <p>
+              Manage incoming orders, kitchen preparation, rider pickup, and
+              completed deliveries.
+            </p>
+          </div>
 
-      <div class="order-section" id="section-delivered"></div>
+          <button
+            class="orders-refresh-btn"
+            type="button"
+            onclick="window.location.reload()"
+          >
+            <i class="fa fa-rotate-right"></i>
+            Refresh
+          </button>
+        </section>
 
-      <div class="order-section" id="section-cancelled"></div>
+        <!-- STATUS TABS -->
+        <section class="tabs owner-order-tabs">
+          <button
+            class="tab active-pending"
+            type="button"
+            onclick="switchTab('pending', this)"
+          >
+            <i class="fa fa-clock"></i>
+            <span>Pending (0)</span>
+          </button>
+
+          <button
+            class="tab"
+            type="button"
+            onclick="switchTab('accepted', this)"
+          >
+            <i class="fa fa-utensils"></i>
+            <span>In Progress (0)</span>
+          </button>
+
+          <button class="tab" type="button" onclick="switchTab('ready', this)">
+            <i class="fa fa-box-open"></i>
+            <span>Ready for Pickup (0)</span>
+          </button>
+
+          <button
+            class="tab"
+            type="button"
+            onclick="switchTab('delivery', this)"
+          >
+            <i class="fa fa-motorcycle"></i>
+            <span>In Delivery (0)</span>
+          </button>
+
+          <button
+            class="tab"
+            type="button"
+            onclick="switchTab('delivered', this)"
+          >
+            <i class="fa fa-circle-check"></i>
+            <span>Completed (0)</span>
+          </button>
+
+          <button
+            class="tab"
+            type="button"
+            onclick="switchTab('cancelled', this)"
+          >
+            <i class="fa fa-circle-xmark"></i>
+            <span>Cancelled (0)</span>
+          </button>
+        </section>
+
+        <!-- ORDER SECTIONS -->
+        <section class="orders-content-card">
+          <div class="order-section active" id="section-pending"></div>
+          <div class="order-section" id="section-accepted"></div>
+          <div class="order-section" id="section-ready"></div>
+          <div class="order-section" id="section-delivery"></div>
+          <div class="order-section" id="section-delivered"></div>
+          <div class="order-section" id="section-cancelled"></div>
+        </section>
+      </main>
     </div>
 
-    <!-- FOOTER -->
-    <footer>
-      <div class="footer-grid">
-        <div>
-          <div class="footer-logo">FoodExpress</div>
-          <p class="footer-tagline">
-            Delivering happiness to your doorstep, one meal at a time.
-          </p>
-          <div class="footer-socials">
-            <a href="#"><i class="fab fa-facebook-f"></i></a>
-            <a href="#"><i class="fab fa-twitter"></i></a>
-            <a href="#"><i class="fab fa-instagram"></i></a>
-          </div>
-        </div>
-
-        <div class="footer-col">
-          <h4>Quick Links</h4>
-          <ul>
-            <li><a href="#">Home</a></li>
-            <li><a href="#">About Us</a></li>
-            <li><a href="#">Our Menu</a></li>
-            <li><a href="#">Recipes</a></li>
-          </ul>
-        </div>
-
-        <div class="footer-col">
-          <h4>Support</h4>
-          <ul>
-            <li><a href="#">Help Center</a></li>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">Terms of Service</a></li>
-            <li><a href="#">Contact Us</a></li>
-          </ul>
-        </div>
-
-        <div class="footer-col">
-          <h4>Contact</h4>
-          <div class="footer-contact-item">
-            <i class="fa fa-location-dot"></i> 123 Food Street, Culinary City,
-            FC 12345
-          </div>
-          <div class="footer-contact-item">
-            <i class="fa fa-phone"></i> (555) 123-4567
-          </div>
-          <div class="footer-contact-item">
-            <i class="fa fa-envelope"></i> hello@foodexpress.com
-          </div>
-        </div>
-      </div>
-
-      <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
-    </footer>
-
     <script src="../js/shared.js"></script>
-    <script src="../js/reward.js"></script>
+    <!-- reward.js should not run on owner management page -->
+    <!-- <script src="../js/reward.js"></script> -->
     <script src="../js/ownerOrders.js"></script>
 
     <script>
       const tabClasses = {
         pending: "active-pending",
         accepted: "active-accepted",
+        ready: "active-ready",
+        delivery: "active-delivery",
         delivered: "active-delivered",
         cancelled: "active-cancelled",
       };
@@ -150,6 +244,8 @@
           tab.classList.remove(
             "active-pending",
             "active-accepted",
+            "active-ready",
+            "active-delivery",
             "active-delivered",
             "active-cancelled",
           );
@@ -162,6 +258,7 @@
         });
 
         const targetSection = document.getElementById("section-" + type);
+
         if (targetSection) {
           targetSection.classList.add("active");
         }

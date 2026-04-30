@@ -1,4 +1,14 @@
-console.log("Rider deliveries JS loaded");
+console.log("Rider deliveries JS loaded - real FoodExpress flow");
+
+/* ================================
+   STORAGE KEYS
+================================ */
+const ORDER_STORAGE_KEY = "foodExpressOrders";
+const LAST_ORDER_KEY = "lastOrder";
+const ORDER_UPDATED_KEY = "foodExpressOrdersUpdatedAt";
+const ACTIVE_RIDER_DELIVERY_KEY = "foodExpressActiveRiderDelivery";
+const RIDER_HISTORY_KEY = "foodexpress_rider_history";
+const RIDER_EARNINGS_KEY = "foodexpress_rider_earnings";
 
 document.addEventListener("DOMContentLoaded", () => {
   const menuToggle = document.getElementById("menuToggle");
@@ -16,41 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  let availableData = [
-    {
-      id: "#ORD-1001",
-      restaurant: "Pizza Point",
-      icon: "fa-pizza-slice",
-      distance: "2.1 km",
-      earning: 95,
-      customer: "Pratyush Dahal",
-      pickup: "Lazimpat, Kathmandu",
-      dropoff: "Koteshwor, Kathmandu",
-      ready: "Ready in 5m",
-      eta: "18 mins",
-      type: "Nearby",
-      expires: 90,
-    },
-    {
-      id: "#ORD-1002",
-      restaurant: "Momo Hub",
-      icon: "fa-bowl-food",
-      distance: "3.4 km",
-      earning: 130,
-      customer: "Sita Sharma",
-      pickup: "Thamel, Kathmandu",
-      dropoff: "Baneshwor, Kathmandu",
-      ready: "Ready now",
-      eta: "24 mins",
-      type: "High Pay",
-      expires: 90,
-    },
-  ];
-
-  let activeOrder = null;
-  let currentStep = 0;
+  let activeOrder = readJson(ACTIVE_RIDER_DELIVERY_KEY, null);
   let activeFilter = "All";
-  let countdownInterval = null;
 
   const activeBox = document.getElementById("activeDelivery");
   const availableBox = document.getElementById("availableList");
@@ -60,30 +37,221 @@ document.addEventListener("DOMContentLoaded", () => {
   const toast = document.getElementById("toast");
   const refreshBtn = document.getElementById("refreshOrders");
 
-  const steps = ["Accepted", "Arrived", "Picked Up", "On the Way", "Delivered"];
+  const tripSteps = [
+    { key: "ready_for_pickup", label: "Accepted" },
+    { key: "picked_up", label: "Picked Up" },
+    { key: "on_the_way", label: "On the Way" },
+    { key: "delivered", label: "Delivered" },
+  ];
+
+  function readJson(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (error) {
+      console.warn(`Could not parse ${key}`, error);
+      return fallback;
+    }
+  }
+
+  function writeJson(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
 
   function formatMoney(amount) {
     return `Rs. ${Number(amount || 0).toLocaleString("en-IN")}`;
   }
 
-  function showToast(message) {
+  function showToast(message, type = "success") {
     if (!toast) return;
 
-    toast.querySelector("span").innerText = message;
-    toast.classList.add("show");
+    const span = toast.querySelector("span");
+    if (span) {
+      span.innerText = message;
+    } else {
+      toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+    }
 
-    setTimeout(() => {
-      toast.classList.remove("show");
-    }, 2200);
+    toast.classList.add("show");
+    toast.classList.toggle("warning", type === "warning");
+    toast.classList.toggle("error", type === "error");
+
+    clearTimeout(window.__riderToastTimer);
+    window.__riderToastTimer = setTimeout(() => {
+      toast.classList.remove("show", "warning", "error");
+    }, 2400);
+  }
+
+  function getAllOrders() {
+    const orders = readJson(ORDER_STORAGE_KEY, []);
+    return Array.isArray(orders) ? orders : [];
+  }
+
+  function saveAllOrders(orders) {
+    writeJson(ORDER_STORAGE_KEY, orders);
+    localStorage.setItem(ORDER_UPDATED_KEY, String(Date.now()));
+  }
+
+  function getOrderId(order) {
+    return String(order.id || order.orderId || order.order_id || order.orderNumber || "");
+  }
+
+  function getBackendOrderId(order) {
+    return order.id || order.orderId || order.order_id || "";
+  }
+
+  function getOrderNumber(order) {
+    return order.orderNumber || order.order_number || order.id || "ORDER";
+  }
+
+  function getRestaurantName(order) {
+    return (
+      order.restaurantName ||
+      order.restaurant_name ||
+      order.restaurant ||
+      "Restaurant"
+    );
+  }
+
+  function getCustomerName(order) {
+    return (
+      order.customerName ||
+      order.customer_name ||
+      order.fullName ||
+      order.name ||
+      "Customer"
+    );
+  }
+
+  function getCustomerPhone(order) {
+    return order.phoneNumber || order.phone_number || order.phone || "No phone";
+  }
+
+  function getPickupAddress(order) {
+    return (
+      order.restaurantAddress ||
+      order.restaurant_address ||
+      order.pickup ||
+      `${getRestaurantName(order)}, Kathmandu`
+    );
+  }
+
+  function getDropoffAddress(order) {
+    const parts = [
+      order.address,
+      order.city,
+      order.area,
+      order.postalCode || order.postal_code,
+    ].filter(Boolean);
+
+    return parts.length ? parts.join(", ") : order.dropoff || "Customer address";
+  }
+
+  function getOrderImage(order) {
+    if (Array.isArray(order.items) && order.items.length) {
+      return (
+        order.items[0].image_url ||
+        order.items[0].image ||
+        "https://via.placeholder.com/400x300?text=FoodExpress"
+      );
+    }
+
+    return "https://via.placeholder.com/400x300?text=FoodExpress";
+  }
+
+  function getItemsSummary(order) {
+    if (!Array.isArray(order.items) || !order.items.length) {
+      return "Food order";
+    }
+
+    return order.items
+      .map((item) => {
+        const qty = Number(item.quantity || item.qty || 1);
+        const name = item.name || item.title || item.product_name || "Food Item";
+        return `${qty}x ${name}`;
+      })
+      .join(", ");
+  }
+
+  function estimateEarning(order) {
+    const total = Number(order.total || 0);
+
+    if (total <= 0) return 95;
+
+    const earning = Math.round(total * 0.08 + 70);
+    return Math.max(75, earning);
+  }
+
+  function calculateDistanceLabel(order) {
+    return order.distance || "2.5 km";
+  }
+
+  function calculateEtaLabel(order) {
+    return order.eta || "20 mins";
+  }
+
+  function normalizeOrderForRider(order) {
+    const id = getOrderId(order);
+    const orderNumber = getOrderNumber(order);
+
+    return {
+      ...order,
+      riderTaskId: id,
+      id,
+      orderNumber,
+      restaurant: getRestaurantName(order),
+      customer: getCustomerName(order),
+      phone: getCustomerPhone(order),
+      pickup: getPickupAddress(order),
+      dropoff: getDropoffAddress(order),
+      itemsSummary: getItemsSummary(order),
+      earning: estimateEarning(order),
+      distance: calculateDistanceLabel(order),
+      eta: calculateEtaLabel(order),
+      image: getOrderImage(order),
+      ready: "Ready for pickup",
+      type: "Ready",
+      icon: "fa-bag-shopping",
+    };
+  }
+
+  function getAvailableReadyOrders() {
+    const orders = getAllOrders();
+
+    return orders
+      .filter((order) => String(order.status || "").toLowerCase() === "ready_for_pickup")
+      .map(normalizeOrderForRider);
+  }
+
+  function getFilteredOrders() {
+    const readyOrders = getAvailableReadyOrders();
+
+    if (activeOrder) {
+      return readyOrders.filter((order) => String(order.id) !== String(activeOrder.id));
+    }
+
+    if (activeFilter === "All") return readyOrders;
+
+    return readyOrders.filter((order) => order.type === activeFilter);
   }
 
   function updateStats() {
-    const totalPotential = availableData.reduce(
-      (sum, order) => sum + order.earning,
+    const availableOrders = getFilteredOrders();
+    const totalPotential = availableOrders.reduce(
+      (sum, order) => sum + Number(order.earning || 0),
       0
     );
 
-    if (availableCount) availableCount.innerText = availableData.length;
+    if (availableCount) availableCount.innerText = availableOrders.length;
     if (activeCount) activeCount.innerText = activeOrder ? "1" : "0";
     if (potentialEarnings) potentialEarnings.innerText = formatMoney(totalPotential);
   }
@@ -105,12 +273,12 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="fake-map-header">
           <div>
             <h4>Route Preview</h4>
-            <p>${order.pickup} → ${order.dropoff}</p>
+            <p>${escapeHtml(order.pickup)} → ${escapeHtml(order.dropoff)}</p>
           </div>
 
           <span class="map-badge">
             <i class="fa-solid fa-route"></i>
-            ${order.distance}
+            ${escapeHtml(order.distance)}
           </span>
         </div>
 
@@ -131,6 +299,33 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
+  function getStepIndexFromStatus(status) {
+    const index = tripSteps.findIndex((step) => step.key === status);
+    return index === -1 ? 0 : index;
+  }
+
+  function getActiveStatus() {
+    return String(activeOrder?.status || "ready_for_pickup").toLowerCase();
+  }
+
+  function getNextActionLabel() {
+    const status = getActiveStatus();
+
+    if (status === "ready_for_pickup") return "Pick Up Order";
+    if (status === "picked_up") return "Start Delivery";
+    if (status === "on_the_way") return "Mark as Delivered";
+    return "Delivery Completed";
+  }
+
+  function getNextStatus() {
+    const status = getActiveStatus();
+
+    if (status === "ready_for_pickup") return "picked_up";
+    if (status === "picked_up") return "on_the_way";
+    if (status === "on_the_way") return "delivered";
+    return "delivered";
+  }
+
   function renderActive() {
     if (!activeBox) return;
 
@@ -140,7 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div>
             <i class="fa-solid fa-box-open"></i>
             <h3>No active delivery</h3>
-            <p>Accept a delivery task to start your next trip.</p>
+            <p>Accept a ready pickup order to start your next trip.</p>
           </div>
         </div>
       `;
@@ -148,22 +343,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const actionLabel =
-      currentStep === 0
-        ? "Arrived at Restaurant"
-        : currentStep === 1
-        ? "Pick Up Order"
-        : currentStep === 2
-        ? "Start Delivery"
-        : currentStep === 3
-        ? "Mark as Delivered"
-        : "Delivery Completed";
+    activeOrder = normalizeOrderForRider(activeOrder);
+    const currentStep = getStepIndexFromStatus(getActiveStatus());
+    const actionLabel = getNextActionLabel();
+    const isCompleted = getActiveStatus() === "delivered";
 
     activeBox.innerHTML = `
       <div class="active-top">
         <div>
           <h3>Active Delivery</h3>
-          <span class="order-pill">${activeOrder.id} • ${activeOrder.restaurant}</span>
+          <span class="order-pill">${escapeHtml(activeOrder.orderNumber)} • ${escapeHtml(activeOrder.restaurant)}</span>
         </div>
 
         <div class="active-earning">
@@ -176,38 +365,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
       <div class="route-card">
         <div class="route-point">
-          <i class="fa-solid ${activeOrder.icon}"></i>
+          <i class="fa-solid fa-store"></i>
           <div>
             <small>Restaurant</small>
-            <strong>${activeOrder.restaurant}</strong>
-            <p>${activeOrder.pickup}</p>
+            <strong>${escapeHtml(activeOrder.restaurant)}</strong>
+            <p>${escapeHtml(activeOrder.pickup)}</p>
           </div>
         </div>
 
         <div class="route-bike">
           <i class="fa-solid fa-motorcycle"></i>
-          <span>${activeOrder.distance}</span>
+          <span>${escapeHtml(activeOrder.distance)}</span>
         </div>
 
         <div class="route-point right">
           <div>
             <small>Customer</small>
-            <strong>${activeOrder.customer}</strong>
-            <p>${activeOrder.dropoff}</p>
+            <strong>${escapeHtml(activeOrder.customer)}</strong>
+            <p>${escapeHtml(activeOrder.dropoff)}</p>
           </div>
           <i class="fa-solid fa-user"></i>
         </div>
       </div>
 
       <div class="progress-steps">
-        ${steps
+        ${tripSteps
           .map(
             (step, index) => `
               <div class="trip-step ${index <= currentStep ? "done" : ""}">
                 <span>
                   ${index <= currentStep ? `<i class="fa-solid fa-check"></i>` : ""}
                 </span>
-                ${step}
+                ${escapeHtml(step.label)}
               </div>
             `
           )
@@ -215,9 +404,9 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
 
       <div class="trip-actions">
-        <button class="primary-btn" id="nextStepBtn">
+        <button class="primary-btn" id="nextStepBtn" ${isCompleted ? "disabled" : ""}>
           <i class="fa-solid fa-circle-check"></i>
-          ${actionLabel}
+          ${escapeHtml(actionLabel)}
         </button>
 
         <button class="secondary-btn" id="activeDetailsBtn">
@@ -245,11 +434,6 @@ document.addEventListener("DOMContentLoaded", () => {
     updateStats();
   }
 
-  function getFilteredOrders() {
-    if (activeFilter === "All") return availableData;
-    return availableData.filter((order) => order.type === activeFilter);
-  }
-
   function renderAvailable() {
     if (!availableBox) return;
 
@@ -260,8 +444,8 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="empty-orders">
           <div>
             <i class="fa-solid fa-magnifying-glass-location"></i>
-            <h3>No deliveries available</h3>
-            <p>No live orders in your zone right now. Refresh to check again.</p>
+            <h3>No ready pickup orders</h3>
+            <p>Orders marked ready by restaurants will appear here.</p>
             <button class="empty-refresh-btn" id="emptyRefreshBtn">
               <i class="fa-solid fa-rotate-right"></i>
               Refresh Orders
@@ -278,14 +462,14 @@ document.addEventListener("DOMContentLoaded", () => {
     availableBox.innerHTML = orders
       .map(
         (order) => `
-          <article class="delivery-card" data-id="${order.id}">
+          <article class="delivery-card" data-id="${escapeHtml(order.id)}">
             <div class="delivery-card-top">
               <div>
                 <div class="food-icon">
-                  <i class="fa-solid ${order.icon}"></i>
+                  <i class="fa-solid ${escapeHtml(order.icon)}"></i>
                 </div>
-                <h4>${order.restaurant}</h4>
-                <p>${order.id} • ${order.customer}</p>
+                <h4>${escapeHtml(order.restaurant)}</h4>
+                <p>${escapeHtml(order.orderNumber)} • ${escapeHtml(order.customer)}</p>
               </div>
 
               <strong class="pay-badge">${formatMoney(order.earning)}</strong>
@@ -293,18 +477,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
             <div class="expire-badge">
               <i class="fa-regular fa-clock"></i>
-              Expires in <span>${order.expires}s</span>
+              ${escapeHtml(order.ready)}
             </div>
 
             <div class="delivery-meta">
-              <span><i class="fa-solid fa-route"></i> ${order.distance}</span>
-              <span><i class="fa-regular fa-clock"></i> ${order.eta}</span>
-              <span><i class="fa-solid fa-bag-shopping"></i> ${order.ready}</span>
+              <span><i class="fa-solid fa-route"></i> ${escapeHtml(order.distance)}</span>
+              <span><i class="fa-regular fa-clock"></i> ${escapeHtml(order.eta)}</span>
+              <span><i class="fa-solid fa-bag-shopping"></i> ${escapeHtml(order.itemsSummary)}</span>
             </div>
 
             <div class="delivery-actions">
-              <button class="accept-btn" data-id="${order.id}">Accept</button>
-              <button class="decline-btn" data-id="${order.id}">Decline</button>
+              <button class="accept-btn" data-id="${escapeHtml(order.id)}">Accept Delivery</button>
+              <button class="decline-btn" data-id="${escapeHtml(order.id)}">Decline</button>
             </div>
           </article>
         `
@@ -313,7 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.querySelectorAll(".delivery-card").forEach((card) => {
       card.addEventListener("click", () => {
-        const order = availableData.find((item) => item.id === card.dataset.id);
+        const order = orders.find((item) => String(item.id) === String(card.dataset.id));
         if (order) openDrawer(order);
       });
     });
@@ -335,67 +519,170 @@ document.addEventListener("DOMContentLoaded", () => {
     updateStats();
   }
 
-  function startCountdown() {
-    clearInterval(countdownInterval);
+  async function updateBackendOrderStatus(order, nextStatus) {
+    const backendOrderId = getBackendOrderId(order);
 
-    countdownInterval = setInterval(() => {
-      availableData = availableData
-        .map((order) => ({
-          ...order,
-          expires: order.expires - 1,
-        }))
-        .filter((order) => order.expires > 0);
+    if (!backendOrderId) {
+      throw new Error("This order does not have a backend order ID. Place a fresh order and try again.");
+    }
 
-      renderAvailable();
-      updateStats();
-    }, 1000);
+    const response = await fetch(
+      "../../backend/controllers/OrderController.php?action=update_status",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          order_id: backendOrderId,
+          status: nextStatus,
+        }),
+      }
+    );
+
+    const raw = await response.text();
+
+    let result;
+    try {
+      result = JSON.parse(raw);
+    } catch (error) {
+      console.error("Raw update status response:", raw);
+      throw new Error("Server did not return valid JSON.");
+    }
+
+    if (!result.success) {
+      throw new Error(result.message || "Backend status update failed.");
+    }
+
+    return result;
   }
 
-  function acceptOrder(id) {
+  function updateLocalOrderStatus(order, nextStatus) {
+    const orders = getAllOrders();
+    const targetId = getOrderId(order);
+
+    const index = orders.findIndex((item) => {
+      return (
+        String(item.id) === String(targetId) ||
+        String(item.orderId) === String(targetId) ||
+        String(item.order_id) === String(targetId) ||
+        String(item.orderNumber) === String(order.orderNumber)
+      );
+    });
+
+    if (index === -1) {
+      throw new Error("Could not find this order in local order history.");
+    }
+
+    const currentOrder = orders[index];
+
+    currentOrder.status = nextStatus;
+    currentOrder.updatedAt = new Date().toISOString();
+
+    if (!Array.isArray(currentOrder.statusHistory)) {
+      currentOrder.statusHistory = [];
+    }
+
+    currentOrder.statusHistory.push({
+      status: nextStatus,
+      time: new Date().toISOString(),
+    });
+
+    orders[index] = currentOrder;
+    saveAllOrders(orders);
+
+    const lastOrder = readJson(LAST_ORDER_KEY, null);
+    if (
+      lastOrder &&
+      (String(lastOrder.id) === String(currentOrder.id) ||
+        String(lastOrder.orderId) === String(currentOrder.orderId) ||
+        String(lastOrder.order_id) === String(currentOrder.order_id) ||
+        String(lastOrder.orderNumber) === String(currentOrder.orderNumber))
+    ) {
+      writeJson(LAST_ORDER_KEY, currentOrder);
+    }
+
+    return normalizeOrderForRider(currentOrder);
+  }
+
+  function markActiveDelivery(order) {
+    writeJson(ACTIVE_RIDER_DELIVERY_KEY, order);
+    activeOrder = order;
+  }
+
+  function clearActiveDelivery() {
+    localStorage.removeItem(ACTIVE_RIDER_DELIVERY_KEY);
+    activeOrder = null;
+  }
+
+  async function acceptOrder(id) {
     if (activeOrder) {
-      showToast("Finish current delivery before accepting another.");
+      showToast("Finish current delivery before accepting another.", "warning");
       return;
     }
 
-    const order = availableData.find((item) => item.id === id);
-    if (!order) return;
+    const order = getFilteredOrders().find((item) => String(item.id) === String(id));
 
-    activeOrder = order;
-    currentStep = 0;
-    availableData = availableData.filter((item) => item.id !== id);
+    if (!order) {
+      showToast("Order is no longer available.", "warning");
+      renderAvailable();
+      return;
+    }
 
-    closeDrawer();
+    markActiveDelivery(order);
     renderActive();
     renderAvailable();
-    showToast(`${order.id} accepted successfully.`);
+
+    showToast(`${order.orderNumber} accepted. Pick it up from ${order.restaurant}.`);
   }
 
   function declineOrder(id) {
-    availableData = availableData.filter((item) => item.id !== id);
+    showToast("Delivery task hidden for now.");
 
-    closeDrawer();
-    renderAvailable();
-    showToast("Delivery task declined.");
+    const card = document.querySelector(`.delivery-card[data-id="${CSS.escape(String(id))}"]`);
+    if (card) {
+      card.remove();
+    }
+
+    updateStats();
   }
 
-  function nextStep() {
+  async function nextStep() {
     if (!activeOrder) return;
 
-    if (currentStep < steps.length - 1) {
-      currentStep++;
-      renderActive();
-      showToast(`Status updated: ${steps[currentStep]}`);
+    const nextStatus = getNextStatus();
+
+    if (getActiveStatus() === "delivered") {
+      showToast("Delivery already completed.");
       return;
     }
 
-    saveDeliveredOrderToEarnings(activeOrder);
-    saveDeliveredOrderToHistory(activeOrder);
+    try {
+      showToast("Updating delivery status...");
 
-    showToast(`${activeOrder.id} completed. Earnings added.`);
-    activeOrder = null;
-    currentStep = 0;
-    renderActive();
-    updateStats();
+      await updateBackendOrderStatus(activeOrder, nextStatus);
+
+      const updatedOrder = updateLocalOrderStatus(activeOrder, nextStatus);
+      markActiveDelivery(updatedOrder);
+
+      if (nextStatus === "picked_up") {
+        showToast("Order picked up from restaurant.");
+      } else if (nextStatus === "on_the_way") {
+        showToast("You are now on the way to the customer.");
+      } else if (nextStatus === "delivered") {
+        saveDeliveredOrderToEarnings(updatedOrder);
+        saveDeliveredOrderToHistory(updatedOrder);
+        clearActiveDelivery();
+        showToast("Delivery completed. Earnings added.");
+      }
+
+      renderActive();
+      renderAvailable();
+      updateStats();
+    } catch (error) {
+      console.error("Delivery status update failed:", error);
+      showToast(error.message || "Could not update delivery status.", "error");
+    }
   }
 
   function createDrawer() {
@@ -415,17 +702,19 @@ document.addEventListener("DOMContentLoaded", () => {
   function openDrawer(order) {
     if (!order) return;
 
+    order = normalizeOrderForRider(order);
+
     createDrawer();
 
     const drawer = document.getElementById("orderDrawer");
     const overlay = document.getElementById("drawerOverlay");
-    const isActive = activeOrder && activeOrder.id === order.id;
+    const isActive = activeOrder && String(activeOrder.id) === String(order.id);
 
     drawer.innerHTML = `
       <div class="drawer-head">
         <div>
-          <h3>${order.restaurant}</h3>
-          <p>${order.id} • ${order.customer}</p>
+          <h3>${escapeHtml(order.restaurant)}</h3>
+          <p>${escapeHtml(order.orderNumber)} • ${escapeHtml(order.customer)}</p>
         </div>
 
         <button class="drawer-close" id="drawerClose">
@@ -444,7 +733,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <i class="fa-solid fa-store"></i>
           <div>
             <span>Pickup</span>
-            <strong>${order.restaurant}, ${order.pickup}</strong>
+            <strong>${escapeHtml(order.restaurant)}, ${escapeHtml(order.pickup)}</strong>
           </div>
         </div>
 
@@ -452,15 +741,15 @@ document.addEventListener("DOMContentLoaded", () => {
           <i class="fa-solid fa-user"></i>
           <div>
             <span>Customer</span>
-            <strong>${order.customer}, ${order.dropoff}</strong>
+            <strong>${escapeHtml(order.customer)}, ${escapeHtml(order.dropoff)}</strong>
           </div>
         </div>
 
         <div class="drawer-info-row">
           <i class="fa-solid fa-bag-shopping"></i>
           <div>
-            <span>Food Status</span>
-            <strong>${order.ready}</strong>
+            <span>Items</span>
+            <strong>${escapeHtml(order.itemsSummary)}</strong>
           </div>
         </div>
       </div>
@@ -473,17 +762,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div class="drawer-stat">
           <span>Distance</span>
-          <strong>${order.distance}</strong>
+          <strong>${escapeHtml(order.distance)}</strong>
         </div>
 
         <div class="drawer-stat">
           <span>ETA</span>
-          <strong>${order.eta}</strong>
+          <strong>${escapeHtml(order.eta)}</strong>
         </div>
 
         <div class="drawer-stat">
           <span>Status</span>
-          <strong>${isActive ? steps[currentStep] : "Available"}</strong>
+          <strong>${escapeHtml(getActiveStatus())}</strong>
         </div>
       </div>
 
@@ -497,7 +786,7 @@ document.addEventListener("DOMContentLoaded", () => {
             `
             : `
               <button class="drawer-primary" id="drawerAcceptBtn">
-                Accept Order
+                Accept Delivery
               </button>
             `
         }
@@ -515,10 +804,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("drawerAcceptBtn")?.addEventListener("click", () => {
       acceptOrder(order.id);
+      closeDrawer();
     });
 
-    document.getElementById("drawerNextBtn")?.addEventListener("click", () => {
-      nextStep();
+    document.getElementById("drawerNextBtn")?.addEventListener("click", async () => {
+      await nextStep();
       if (activeOrder) openDrawer(activeOrder);
       else closeDrawer();
     });
@@ -535,49 +825,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function refreshOrders() {
     refreshBtn?.classList.add("loading");
-    showToast("Checking for new deliveries...");
+    showToast("Checking for ready pickup orders...");
 
     setTimeout(() => {
-      const newOrder = {
-        id: `#ORD-${1003 + Math.floor(Math.random() * 50)}`,
-        restaurant: "Burger House",
-        icon: "fa-burger",
-        distance: "1.6 km",
-        earning: 105,
-        customer: "Aayush Karki",
-        pickup: "New Road, Kathmandu",
-        dropoff: "Putalisadak, Kathmandu",
-        ready: "Pickup soon",
-        eta: "15 mins",
-        type: "Nearby",
-        expires: 90,
-      };
-
-      availableData.push(newOrder);
-
       refreshBtn?.classList.remove("loading");
       renderAvailable();
       updateStats();
-      showToast("New delivery added.");
-    }, 850);
+      showToast("Ready pickup orders refreshed.");
+    }, 700);
   }
 
   function saveDeliveredOrderToEarnings(order) {
     if (!order) return;
-
-    const STORAGE_KEY = "foodexpress_rider_earnings";
 
     const defaultData = {
       todayEarnings: 0,
       weekEarnings: 0,
       availableBalance: 0,
       pendingPayout: 0,
-
       totalDeliveries: 0,
       weeklyTarget: 40,
       onlineHours: "5h 20m",
       completionRate: 94,
-
       breakdown: {
         basePay: 0,
         distancePay: 0,
@@ -585,7 +854,6 @@ document.addEventListener("DOMContentLoaded", () => {
         tips: 0,
         deductions: 0,
       },
-
       chart: [
         { day: "Mon", amount: 0 },
         { day: "Tue", amount: 0 },
@@ -595,13 +863,10 @@ document.addEventListener("DOMContentLoaded", () => {
         { day: "Sat", amount: 0 },
         { day: "Sun", amount: 0 },
       ],
-
       transactions: [],
     };
 
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const data = saved ? JSON.parse(saved) : defaultData;
-
+    const data = readJson(RIDER_EARNINGS_KEY, defaultData);
     const earning = Number(order.earning) || 0;
 
     data.todayEarnings += earning;
@@ -614,7 +879,7 @@ document.addEventListener("DOMContentLoaded", () => {
     data.breakdown.tips += Math.round(earning * 0.15);
 
     data.transactions.unshift({
-      title: `Order ${order.id} Delivered`,
+      title: `Order ${order.orderNumber || order.id} Delivered`,
       date: new Date().toLocaleString("en-NP", {
         month: "short",
         day: "2-digit",
@@ -634,20 +899,18 @@ document.addEventListener("DOMContentLoaded", () => {
       data.chart[fixedIndex].amount += earning;
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    writeJson(RIDER_EARNINGS_KEY, data);
   }
 
   function saveDeliveredOrderToHistory(order) {
     if (!order) return;
 
-    const HISTORY_KEY = "foodexpress_rider_history";
-    const saved = localStorage.getItem(HISTORY_KEY);
-    const history = saved ? JSON.parse(saved) : [];
+    const history = readJson(RIDER_HISTORY_KEY, []);
 
     history.unshift({
-      id: order.id,
+      id: order.orderNumber || order.id,
       restaurant: order.restaurant,
-      icon: order.icon,
+      icon: order.icon || "fa-bag-shopping",
       customer: order.customer,
       pickup: order.pickup,
       dropoff: order.dropoff,
@@ -665,7 +928,7 @@ document.addEventListener("DOMContentLoaded", () => {
       rawDate: new Date().toISOString(),
     });
 
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    writeJson(RIDER_HISTORY_KEY, history);
   }
 
   document.querySelectorAll(".filter-chip").forEach((chip) => {
@@ -682,8 +945,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   refreshBtn?.addEventListener("click", refreshOrders);
 
+  window.addEventListener("storage", (event) => {
+    if (
+      event.key === ORDER_STORAGE_KEY ||
+      event.key === ORDER_UPDATED_KEY ||
+      event.key === LAST_ORDER_KEY
+    ) {
+      activeOrder = readJson(ACTIVE_RIDER_DELIVERY_KEY, null);
+      renderActive();
+      renderAvailable();
+      updateStats();
+    }
+  });
+
   renderActive();
   renderAvailable();
   updateStats();
-  startCountdown();
 });

@@ -3,6 +3,8 @@ const STATUS_FLOW = [
   "pending",
   "confirmed",
   "preparing",
+  "ready_for_pickup",
+  "picked_up",
   "on_the_way",
   "delivered",
 ];
@@ -180,11 +182,18 @@ function renderSummaryValues() {
 }
 
 function updateStepUI(status) {
-  const currentIndex = STATUS_FLOW.indexOf(status);
+  const currentStatus = String(status || "pending").toLowerCase();
+  const currentIndex = STATUS_FLOW.indexOf(currentStatus);
   const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+  const isDelivered = currentStatus === "delivered";
 
   document.querySelectorAll(".step-item").forEach((stepEl, index) => {
     stepEl.classList.remove("active", "done");
+
+    if (isDelivered) {
+      stepEl.classList.add("done");
+      return;
+    }
 
     if (index < safeIndex) {
       stepEl.classList.add("done");
@@ -193,14 +202,17 @@ function updateStepUI(status) {
     }
   });
 
-  const fillPercent = (safeIndex / (STATUS_FLOW.length - 1)) * 100;
+  const fillPercent = isDelivered
+    ? 100
+    : (safeIndex / (STATUS_FLOW.length - 1)) * 100;
+
   const progressFill = document.getElementById("progressFill");
   if (progressFill) {
     progressFill.style.width = `${fillPercent}%`;
   }
 
-  setStatusPill(status);
-  setLiveNote(status);
+  setStatusPill(currentStatus);
+  setLiveNote(currentStatus);
 }
 
 function setStatusPill(status) {
@@ -216,17 +228,14 @@ function setLiveNote(status) {
   if (!note) return;
 
   const messages = {
-    pending:
-      "Your order has been created and is waiting for the restaurant to confirm it.",
-    confirmed:
-      "The restaurant has confirmed your order and is getting started.",
-    preparing:
-      "Your order is being freshly prepared right now.",
-    on_the_way:
-      "Good news — your rider is on the way to your delivery address.",
-    delivered:
-      "Your order has been delivered successfully.",
-  };
+  pending: "Your order has been created and is waiting for the restaurant to confirm it.",
+  confirmed: "The restaurant has confirmed your order and is getting started.",
+  preparing: "Your order is being freshly prepared right now.",
+  ready_for_pickup: "Your food is ready and waiting for a rider to pick it up.",
+  picked_up: "Your rider has picked up your order from the restaurant.",
+  on_the_way: "Good news — your rider is on the way to your delivery address.",
+  delivered: "Your order has been delivered successfully.",
+};
 
   note.textContent = messages[status] || messages.pending;
 }
@@ -296,12 +305,14 @@ function goBackToDashboard() {
 
 function formatStatus(status) {
   const map = {
-    pending: "Pending",
-    confirmed: "Confirmed",
-    preparing: "Preparing",
-    on_the_way: "On the way",
-    delivered: "Delivered",
-  };
+  pending: "Pending",
+  confirmed: "Confirmed",
+  preparing: "Preparing",
+  ready_for_pickup: "Ready for Pickup",
+  picked_up: "Picked Up",
+  on_the_way: "On the way",
+  delivered: "Delivered",
+};
 
   return map[status] || "Pending";
 }
