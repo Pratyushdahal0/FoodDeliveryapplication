@@ -150,14 +150,14 @@ function queueOrderConfirmationEmail($conn, $orderId, $orderNumber, $input, $res
 
                 <p>Hello {$safeCustomerName},</p>
 
-                <p style='line-height:1.6;'>
-                    Thank you for ordering from FoodExpress. We have received your order and it is now waiting for restaurant processing.
-                </p>
+               <p style='line-height:1.6;'>
+    Thank you for ordering from FoodExpress. We have received your order, sent it to the restaurant, and started looking for a nearby rider.
+</p>
 
                 <div style='background:#fff5f5; border:1px solid #fecaca; border-radius:12px; padding:16px; margin:20px 0;'>
                     <p style='margin:0;'><strong>Order Number:</strong> {$safeOrderNumber}</p>
                     <p style='margin:8px 0 0;'><strong>Order Status:</strong> Pending</p>
-                    <p style='margin:8px 0 0;'><strong>Driver Status:</strong> Waiting for rider assignment</p>
+                    <p style='margin:8px 0 0;'><strong>Delivery Status:</strong> Looking for a nearby rider</p>
                     <p style='margin:8px 0 0;'><strong>Restaurant:</strong> {$safeRestaurantName}</p>
                     <p style='margin:8px 0 0;'><strong>Payment Method:</strong> {$safePaymentMethod}</p>
                 </div>
@@ -431,7 +431,8 @@ switch ($action) {
                 "delivery_fee" => $delivery_fee,
                 "total" => $total,
                 "notes" => $input['delivery_note'] ?? $input['notes'] ?? null,
-                "status" => $input['status'] ?? 'pending'
+                "status" => $input['status'] ?? 'pending',
+"delivery_status" => $input['delivery_status'] ?? 'searching'
             ];
 
             $result = $order->create($orderData);
@@ -469,7 +470,8 @@ switch ($action) {
                         "tax" => $tax,
                         "delivery_fee" => $delivery_fee,
                         "total" => $total,
-                        "email_queued" => $emailQueued
+                        "email_queued" => $emailQueued,
+"delivery_status" => $result['delivery_status'] ?? 'searching'
                     ];
                 } else {
                     $failedOrders[] = [
@@ -495,6 +497,7 @@ switch ($action) {
             "order_id" => $firstOrder["order_id"] ?? null,
             "order_number" => $firstOrder["order_number"] ?? null,
             "email_queued" => $firstOrder["email_queued"] ?? false,
+            "delivery_status" => $firstOrder["delivery_status"] ?? "searching",
             "orders" => $createdOrders,
             "failed_orders" => $failedOrders
         ]);
@@ -658,6 +661,136 @@ switch ($action) {
         "success" => $result,
         "message" => $result ? "Status updated" : "Failed to update status",
         "delivered_email_queued" => $deliveredEmailQueued
+    ]);
+    break;
+
+    // ASSIGN rider to order
+case 'assign_rider':
+    $input = json_decode(file_get_contents("php://input"), true);
+
+    if (!isset($input['order_id'], $input['rider_id'], $input['rider_name'])) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Order ID, rider ID and rider name are required"
+        ]);
+        break;
+    }
+
+    $orderId = intval($input['order_id']);
+    $riderId = intval($input['rider_id']);
+    $riderName = trim($input['rider_name']);
+    $riderEmail = trim($input['rider_email'] ?? "");
+    $riderPhone = trim($input['rider_phone'] ?? "");
+
+    $result = $order->assignRider(
+        $orderId,
+        $riderId,
+        $riderName,
+        $riderEmail,
+        $riderPhone
+    );
+
+    echo json_encode([
+        "success" => $result,
+        "message" => $result
+            ? "Rider assigned successfully"
+            : "Failed to assign rider"
+    ]);
+    break;
+
+
+// UPDATE delivery status from rider side
+case 'update_delivery_status':
+    $input = json_decode(file_get_contents("php://input"), true);
+
+    if (!isset($input['order_id'], $input['delivery_status'])) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Order ID and delivery status are required"
+        ]);
+        break;
+    }
+
+    $orderId = intval($input['order_id']);
+    $deliveryStatus = trim($input['delivery_status']);
+
+    $allowedDeliveryStatuses = [
+        "searching",
+        "assigned",
+        "picked_up",
+        "on_the_way",
+        "delivered"
+    ];
+
+    if (!in_array($deliveryStatus, $allowedDeliveryStatuses, true)) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Invalid delivery status"
+        ]);
+        break;
+    }
+
+    if ($deliveryStatus === "delivered") {
+        $existingOrder = $order->getById($orderId);
+
+        if (!$existingOrder) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Order not found"
+            ]);
+            break;
+        }
+
+        $result = $order->markDelivered($orderId);
+
+        $deliveredEmailQueued = false;
+
+        if ($result) {
+            $alreadyQueued = intval($existingOrder['delivered_email_queued'] ?? 0) === 1;
+
+            if (!$alreadyQueued) {
+                $updatedOrder = $order->getById($orderId);
+                $orderItems = $order->getItems($orderId);
+
+                try {
+                    $deliveredEmailQueued = queueOrderDeliveredEmail(
+                        $conn,
+                        $updatedOrder,
+                        $orderItems
+                    );
+
+                    if ($deliveredEmailQueued) {
+                        $markEmailStmt = $conn->prepare("
+                            UPDATE orders
+                            SET delivered_email_queued = 1
+                            WHERE id = ?
+                        ");
+
+                        if ($markEmailStmt) {
+                            $markEmailStmt->bind_param("i", $orderId);
+                            $markEmailStmt->execute();
+                            $markEmailStmt->close();
+                        }
+                    }
+                } catch (Exception $emailException) {
+                    $deliveredEmailQueued = false;
+                }
+            }
+        }
+
+        echo json_encode([
+            "success" => $result,
+            "message" => $result ? "Delivery completed" : "Failed to mark delivered",
+            "delivered_email_queued" => $deliveredEmailQueued
+        ]);
+        break;
+    }
+
+    $result = $order->updateDeliveryStatus($orderId, $deliveryStatus);
+
+    echo json_encode([
+        "success" => $result,
+        "message" => $result ? "Delivery status updated" : "Failed to update delivery status"
     ]);
     break;
 

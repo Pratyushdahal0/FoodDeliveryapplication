@@ -33,41 +33,46 @@ async function refreshDashboardData() {
 }
 
 function loadDashboardStats() {
-  const profile =
-    typeof getSafeProfile === "function" ? getSafeProfile() : {};
+  const profile = getDashboardProfile();
 
   const orders = getSortedOrders();
   const totalOrders = orders.length;
+
   const totalSpent = orders.reduce(
     (sum, order) => sum + Number(order.total || 0),
     0,
   );
+
   const realisticSavings = Math.floor(totalSpent * 0.08);
 
   setText("ordersCount", totalOrders);
-  setText("pointsCount", Number(profile.points || 0));
+  setText("pointsCount", Number(profile.points || localStorage.getItem("userPoints") || 0));
   setText("savingsAmount", `$${realisticSavings}`);
 
   bindDashboardProfileInfo();
 }
 
 function bindDashboardProfileInfo() {
-  const profile =
-    typeof getSafeProfile === "function" ? getSafeProfile() : {};
+  const profile = getDashboardProfile();
 
-  setText("welcomeName", profile.name || "Guest User");
+  setText("welcomeName", profile.name || "User");
   setText("welcomeEmail", profile.email || "No email added");
 
-  if (typeof renderAvatar === "function") {
-    const welcomeAvatar = document.getElementById("welcomeAvatar");
-    if (welcomeAvatar) renderAvatar(welcomeAvatar, profile);
+  if (typeof window.bindProfileEverywhere === "function") {
+    window.bindProfileEverywhere();
   }
 }
 
 function updateRewardsUI() {
-  const profile =
-    typeof getSafeProfile === "function" ? getSafeProfile() : {};
-  const points = Number(profile.points || 0);
+  const profile = getDashboardProfile();
+
+  const points = Number(
+    profile.points ||
+      localStorage.getItem("userPoints") ||
+      localStorage.getItem("foodExpressRewardPoints") ||
+      0,
+  );
+
   const nextThreshold = 1000;
   const progress = Math.min(100, Math.round((points / nextThreshold) * 100));
   const remaining = Math.max(0, nextThreshold - points);
@@ -83,7 +88,7 @@ function updateRewardsUI() {
       `You're ${remaining} points away from a free meal!`,
     );
   } else {
-    setText("rewardsSubtitle", "🎉 You unlocked your free meal reward!");
+    setText("rewardsSubtitle", "🎉 You unlocked your reward!");
   }
 }
 
@@ -508,6 +513,58 @@ function readJson(key, fallback) {
   } catch (error) {
     return fallback;
   }
+}
+function getDashboardProfile() {
+  if (typeof window.getSavedUserProfile === "function") {
+    const savedProfile = window.getSavedUserProfile();
+
+    return {
+      ...savedProfile,
+      points:
+        savedProfile.points ||
+        localStorage.getItem("userPoints") ||
+        localStorage.getItem("foodExpressRewardPoints") ||
+        0,
+    };
+  }
+
+  const profile = readJson("userProfile", {});
+
+  return {
+    name:
+      profile.name ||
+      localStorage.getItem("userName") ||
+      localStorage.getItem("pendingVerificationName") ||
+      "User",
+
+    email:
+      profile.email ||
+      localStorage.getItem("userEmail") ||
+      localStorage.getItem("pendingVerificationEmail") ||
+      "No email added",
+
+    phone:
+      profile.phone ||
+      localStorage.getItem("userPhone") ||
+      "",
+
+    address:
+      profile.address ||
+      localStorage.getItem("userAddress") ||
+      "",
+
+    profileImage:
+      profile.profileImage ||
+      profile.image ||
+      localStorage.getItem("userProfileImage") ||
+      "",
+
+    points:
+      profile.points ||
+      localStorage.getItem("userPoints") ||
+      localStorage.getItem("foodExpressRewardPoints") ||
+      0,
+  };
 }
 
 function setText(id, value) {

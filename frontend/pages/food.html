@@ -9,6 +9,10 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
 
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/global.css" />
@@ -303,15 +307,44 @@
     </style>
 
     <script src="../js/api/productApi2.js"></script>
-    <script src="../js/modules/profile.js"></script>
+    <script src="../js/profile.js"></script>
     <script src="../js/shared.js"></script>
     <script src="../js/modules/cart.js"></script>
+    <script src="../js/components/notifications.js"></script>
     <script src="../js/components/navbar.js"></script>
     <script src="../js/food.js"></script>
+    <script src="../js/api/productApi2.js"></script>
+
+    <!-- Shared customer app files -->
+    <script src="../js/profile.js"></script>
+    <script src="../js/shared.js"></script>
+    <script src="../js/modules/cart.js"></script>
+
+    <!-- Navbar dependencies -->
+    <script src="../js/components/notifications.js"></script>
+    <script src="../js/components/notifications.js"></script>
+
+    <!-- Page-specific JS -->
+    <script src="../js/food.js"></script>
+
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        if (!localStorage.getItem("isLoggedIn")) {
+          alert("Please login first");
+          window.location.href = "login.html";
+          return;
+        }
+
         if (typeof window.renderNavbar === "function") {
           window.renderNavbar("food");
+        }
+
+        if (typeof window.bindProfileEverywhere === "function") {
+          window.bindProfileEverywhere();
+        }
+
+        if (typeof window.bindNotificationBell === "function") {
+          window.bindNotificationBell();
         }
       });
     </script>

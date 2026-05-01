@@ -918,7 +918,8 @@
       <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
     </footer>
 
-    <script src="../js/modules/profile.js"></script>
+    <script src="../js/components/notifications.js"></script>
+    <script src="../js/profile.js"></script>
     <script src="../js/shared.js"></script>
     <script src="../js/modules/cart.js"></script>
     <script src="../js/components/navbar.js"></script>
@@ -1379,6 +1380,8 @@
           total: checkoutSummary.total,
           restaurant_id: checkoutRestaurant.id,
           restaurant_name: checkoutRestaurant.name,
+          status: "pending",
+          delivery_status: "searching",
           items: checkoutItems,
         };
 
@@ -1411,15 +1414,20 @@
             id: result.order_id || generateFallbackOrderId(),
             orderId: result.order_id || generateFallbackOrderId(),
             orderNumber: result.order_number || generateFallbackOrderNumber(),
+
             restaurantId: checkoutRestaurant.id,
             restaurantName: checkoutRestaurant.name,
+
             fullName,
+            customerName: fullName,
+            customerEmail,
             phoneNumber,
             address,
             city,
             postalCode,
             deliveryNote,
             paymentMethod,
+
             subtotal: checkoutSummary.subtotal,
             tax: checkoutSummary.tax,
             deliveryFee: checkoutSummary.deliveryFee,
@@ -1427,12 +1435,38 @@
             couponId: appliedCouponId || null,
             couponDiscount: appliedCouponData ? appliedCouponData.discount : 0,
             total: checkoutSummary.total,
+
             items: checkoutItems,
             itemCount: checkoutItems.reduce(
               (sum, item) => sum + Number(item.quantity || 0),
               0,
             ),
+
+            // Restaurant/kitchen progress
             status: "pending",
+
+            // Rider/delivery progress
+            deliveryStatus: result.delivery_status || "searching",
+            delivery_status: result.delivery_status || "searching",
+            riderId: null,
+            riderName: "",
+            riderEmail: "",
+            riderPhone: "",
+
+            statusHistory: [
+              {
+                status: "pending",
+                time: new Date().toISOString(),
+              },
+            ],
+
+            deliveryHistory: [
+              {
+                status: "searching",
+                time: new Date().toISOString(),
+              },
+            ],
+
             timestamp: new Date().toISOString(),
             estimatedDelivery: generateEstimatedEta(checkoutItems.length),
           };

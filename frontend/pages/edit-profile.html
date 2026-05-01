@@ -142,13 +142,179 @@
       </section>
     </main>
     <footer class="footer" id="footer"></footer>
-    <script src="../js/edit-profile.js"></script>
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Edit Profile - FoodExpress</title>
 
-    <script src="../js/components/footer.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        renderFooter("app");
-      });
-    </script>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+
+        <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        />
+
+        <link rel="stylesheet" href="../css/global.css" />
+        <link rel="stylesheet" href="../css/layout.css" />
+        <link rel="stylesheet" href="../css/shared.css" />
+        <link rel="stylesheet" href="../css/edit-profile.css" />
+      </head>
+
+      <body>
+        <script>
+          if (!localStorage.getItem("isLoggedIn")) {
+            alert("Please login first");
+            window.location.href = "login.html";
+          }
+        </script>
+
+        <div id="navbarContainer"></div>
+
+        <main class="edit-profile-page">
+          <section class="profile-header-card">
+            <div class="avatar-block">
+              <div class="avatar-circle" id="profileAvatar">
+                <img
+                  id="profileAvatarImage"
+                  alt="Profile Photo"
+                  style="display: none"
+                />
+                <span id="profileAvatarInitial">U</span>
+              </div>
+
+              <div>
+                <h1 id="profileHeaderName">User</h1>
+                <p>
+                  Update your personal information and keep your account up to
+                  date.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="profile-content-grid">
+            <div class="profile-form-card">
+              <h2>Personal Information</h2>
+
+              <form id="editProfileForm">
+                <div class="form-group">
+                  <label for="profilePhoto">Profile Photo</label>
+                  <input type="file" id="profilePhoto" accept="image/*" />
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="fullName">Full Name</label>
+                    <input
+                      type="text"
+                      id="fullName"
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="emailAddress">Email Address</label>
+                    <input
+                      type="email"
+                      id="emailAddress"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="phoneNumber">Phone Number</label>
+                    <input
+                      type="text"
+                      id="phoneNumber"
+                      placeholder="Enter your phone number"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="address">Address</label>
+                    <input
+                      type="text"
+                      id="address"
+                      placeholder="Enter your address"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    onclick="resetProfileForm()"
+                  >
+                    Reset
+                  </button>
+
+                  <button type="submit" class="btn-primary">
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <aside class="profile-side-card">
+              <h2>Profile Tips</h2>
+
+              <div class="tip-card">
+                <h3>Keep your phone updated</h3>
+                <p>
+                  So delivery riders can contact you easily when your order
+                  arrives.
+                </p>
+              </div>
+
+              <div class="tip-card">
+                <h3>Use a clear address</h3>
+                <p>Add landmarks and city details to make delivery faster.</p>
+              </div>
+
+              <div class="tip-card">
+                <h3>Check your email</h3>
+                <p>
+                  Your order updates and account messages may be sent there.
+                </p>
+              </div>
+            </aside>
+          </section>
+        </main>
+
+        <footer class="footer" id="footer"></footer>
+
+        <script src="../js/profile.js"></script>
+        <script src="../js/shared.js"></script>
+        <script src="../js/modules/cart.js"></script>
+        <script src="../js/components/notifications.js"></script>
+        <script src="../js/components/navbar.js"></script>
+        <script src="../js/components/footer.js"></script>
+        <script src="../js/edit-profile.js"></script>
+
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            if (typeof window.renderNavbar === "function") {
+              window.renderNavbar("profile");
+            }
+
+            if (typeof window.renderFooter === "function") {
+              window.renderFooter("app");
+            }
+
+            if (typeof window.bindProfileEverywhere === "function") {
+              window.bindProfileEverywhere();
+            }
+          });
+        </script>
+      </body>
+    </html>
   </body>
 </html>

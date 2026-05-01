@@ -454,3 +454,32 @@ body {
   border: 1px solid rgba(229, 57, 53, 0.16);
   background: linear-gradient(135deg, #fff7f7, #ffffff);
 }
+/* ================================
+   FINAL CONTACT PAGE ALIGNMENT FIX
+================================ */
+
+.contact-section {
+  width: min(1180px, calc(100% - 48px)) !important;
+  max-width: 1180px !important;
+  margin: 72px auto !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+}
+
+.contact-section .left,
+.contact-section .right {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.contact-section .card,
+.contact-section .form-box {
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .contact-section {
+    width: min(100% - 32px, 1180px) !important;
+    margin: 48px auto !important;
+  }
+}

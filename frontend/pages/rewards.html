@@ -6,123 +6,280 @@
     <title>Rewards - FoodExpress</title>
 
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
       rel="stylesheet"
+    />
+
+    <!-- Font Awesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
 
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/reward.css" />
   </head>
 
   <body>
-    <!-- USE SHARED NAVBAR -->
+    <script>
+      if (!localStorage.getItem("isLoggedIn")) {
+        alert("Please login first");
+        window.location.href = "login.html";
+      }
+    </script>
+
     <div id="navbarContainer"></div>
 
-    <!-- MAIN -->
     <main class="rewards-page">
-      <!-- HEADER -->
-      <section class="rewards-header">
-        <div>
-          <h1>🎁 Rewards Program</h1>
-          <p>Earn points and unlock exclusive discounts on your orders.</p>
+      <!-- HERO -->
+      <section class="rewards-hero">
+        <div class="hero-copy">
+          <span class="eyebrow">
+            <i class="fa-solid fa-crown"></i>
+            FoodExpress Rewards
+          </span>
+
+          <h1>Earn points. Unlock real savings.</h1>
+
+          <p>
+            Collect points from delivered orders, redeem exclusive discounts,
+            and apply reward coupons at checkout.
+          </p>
+
+          <div class="hero-actions">
+            <a href="food.html" class="primary-link">
+              <span>Order food</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
+
+            <a href="payment.html" class="secondary-link">
+              <i class="fa-solid fa-ticket"></i>
+              <span>Use coupon</span>
+            </a>
+          </div>
         </div>
 
-        <div class="points-box">
-          <h2 id="pointsValue">0</h2>
-          <span>Points</span>
+        <div class="points-panel">
+          <div class="points-panel-icon">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+
+          <span>Your balance</span>
+          <strong id="pointsValue">0</strong>
+          <p>Available points</p>
         </div>
+      </section>
+
+      <!-- STATS -->
+      <section class="rewards-stats-grid">
+        <article class="stat-card">
+          <div class="stat-icon red">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+
+          <div>
+            <span>Lifetime points</span>
+            <strong id="lifetimePoints">0</strong>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon green">
+            <i class="fa-solid fa-ticket-simple"></i>
+          </div>
+
+          <div>
+            <span>Active coupons</span>
+            <strong id="activeCouponCount">0</strong>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon dark">
+            <i class="fa-solid fa-medal"></i>
+          </div>
+
+          <div>
+            <span>Current tier</span>
+            <strong id="currentTierText">Starter</strong>
+          </div>
+        </article>
       </section>
 
       <!-- PROGRESS -->
       <section class="progress-card">
-        <h2>Next Reward</h2>
-        <h3 id="nextRewardTitle">—</h3>
-        <p id="nextRewardSubtitle">—</p>
+        <div class="progress-top">
+          <div>
+            <span class="section-label">
+              <i class="fa-solid fa-gift"></i>
+              Next reward
+            </span>
 
-        <div class="progress-bar">
+            <h2 id="nextRewardTitle">5% OFF</h2>
+            <p id="nextRewardSubtitle">You're 500 points away from 5% OFF.</p>
+          </div>
+
+          <div class="progress-badge" id="progressBadge">0%</div>
+        </div>
+
+        <div class="progress-track">
           <div class="progress-fill" id="progressBar"></div>
         </div>
 
-        <p id="progressNumbers">0 / 0 points</p>
-        <p id="pointsText"></p>
-
-        <p>Total lifetime points: <strong id="lifetimePoints">0</strong></p>
+        <div class="progress-bottom">
+          <span id="progressNumbers">0 / 500 points</span>
+          <span id="pointsText">Keep ordering to unlock rewards.</span>
+        </div>
       </section>
 
       <!-- REWARD TIERS -->
-      <section class="reward-list">
-        <div
-          class="reward-card"
-          data-reward-points="500"
-          data-reward-discount="5"
-        >
-          <h3>🔥 5% OFF</h3>
-          <p>Save on your next order</p>
-          <span>500 Points</span>
-          <p data-reward-status></p>
-          <button data-redeem-button>Redeem</button>
+      <section class="rewards-section">
+        <div class="section-heading">
+          <div>
+            <span class="section-label">
+              <i class="fa-solid fa-unlock-keyhole"></i>
+              Redeem
+            </span>
+
+            <h2>Reward tiers</h2>
+          </div>
+
+          <p>Unlocked coupons can be used from the checkout page.</p>
         </div>
 
-        <div
-          class="reward-card"
-          data-reward-points="900"
-          data-reward-discount="10"
-        >
-          <h3>⚡ 10% OFF</h3>
-          <p>Better savings on meals</p>
-          <span>900 Points</span>
-          <p data-reward-status></p>
-          <button data-redeem-button>Redeem</button>
-        </div>
+        <div class="reward-list">
+          <article
+            class="reward-card"
+            data-reward-points="500"
+            data-reward-discount="5"
+          >
+            <div class="reward-icon fire">
+              <i class="fa-solid fa-fire"></i>
+            </div>
 
-        <div
-          class="reward-card"
-          data-reward-points="1300"
-          data-reward-discount="15"
-        >
-          <h3>💎 15% OFF</h3>
-          <p>Premium discount tier</p>
-          <span>1300 Points</span>
-          <p data-reward-status></p>
-          <button data-redeem-button>Redeem</button>
-        </div>
+            <h3>5% OFF</h3>
+            <p>Save on your next order</p>
+            <strong>500 Points</strong>
+            <span data-reward-status>500 points needed</span>
+            <button type="button" data-redeem-button>Locked</button>
+          </article>
 
-        <div
-          class="reward-card"
-          data-reward-points="2000"
-          data-reward-discount="20"
-        >
-          <h3>👑 20% OFF</h3>
-          <p>Maximum savings unlocked</p>
-          <span>2000 Points</span>
-          <p data-reward-status></p>
-          <button data-redeem-button>Redeem</button>
+          <article
+            class="reward-card"
+            data-reward-points="900"
+            data-reward-discount="10"
+          >
+            <div class="reward-icon bolt">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+
+            <h3>10% OFF</h3>
+            <p>Better savings on meals</p>
+            <strong>900 Points</strong>
+            <span data-reward-status>900 points needed</span>
+            <button type="button" data-redeem-button>Locked</button>
+          </article>
+
+          <article
+            class="reward-card"
+            data-reward-points="1300"
+            data-reward-discount="15"
+          >
+            <div class="reward-icon diamond">
+              <i class="fa-solid fa-gem"></i>
+            </div>
+
+            <h3>15% OFF</h3>
+            <p>Premium discount tier</p>
+            <strong>1300 Points</strong>
+            <span data-reward-status>1300 points needed</span>
+            <button type="button" data-redeem-button>Locked</button>
+          </article>
+
+          <article
+            class="reward-card"
+            data-reward-points="2000"
+            data-reward-discount="20"
+          >
+            <div class="reward-icon crown">
+              <i class="fa-solid fa-crown"></i>
+            </div>
+
+            <h3>20% OFF</h3>
+            <p>Maximum savings unlocked</p>
+            <strong>2000 Points</strong>
+            <span data-reward-status>2000 points needed</span>
+            <button type="button" data-redeem-button>Locked</button>
+          </article>
         </div>
       </section>
 
-      <!-- ACTIVE COUPONS -->
-      <section class="rewards-section">
-        <h2>🎟 Active Coupons</h2>
-        <div id="activeCouponsList"></div>
-      </section>
+      <!-- ACTIVE COUPONS + HISTORY -->
+      <section class="rewards-bottom-grid">
+        <div class="rewards-section">
+          <div class="section-heading">
+            <div>
+              <span class="section-label">
+                <i class="fa-solid fa-ticket"></i>
+                Checkout ready
+              </span>
 
-      <!-- HISTORY -->
-      <section class="rewards-section">
-        <h2>📊 Reward Activity</h2>
-        <div id="rewardHistoryList"></div>
+              <h2>Active coupons</h2>
+            </div>
+          </div>
+
+          <div id="activeCouponsList"></div>
+        </div>
+
+        <div class="rewards-section">
+          <div class="section-heading">
+            <div>
+              <span class="section-label">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                Activity
+              </span>
+
+              <h2>Reward history</h2>
+            </div>
+          </div>
+
+          <div id="rewardHistoryList"></div>
+        </div>
       </section>
     </main>
+
     <footer class="footer" id="footer"></footer>
-    <!-- SCRIPTS -->
-    <script src="../js/modules/profile.js"></script>
+
+    <!-- Shared app scripts -->
+    <script src="../js/profile.js"></script>
+    <script src="../js/shared.js"></script>
+    <script src="../js/modules/cart.js"></script>
+    <script src="../js/components/notifications.js"></script>
     <script src="../js/components/navbar.js"></script>
+    <script src="../js/components/footer.js"></script>
+
+    <!-- Rewards logic -->
     <script src="../js/reward.js"></script>
 
-    <script src="../js/components/footer.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        renderFooter("app");
+        if (typeof window.renderNavbar === "function") {
+          window.renderNavbar("rewards");
+        }
+
+        if (typeof window.renderFooter === "function") {
+          window.renderFooter("app");
+        }
+
+        if (typeof window.bindProfileEverywhere === "function") {
+          window.bindProfileEverywhere();
+        }
+
+        if (typeof window.bindNotificationBell === "function") {
+          window.bindNotificationBell();
+        }
       });
     </script>
   </body>

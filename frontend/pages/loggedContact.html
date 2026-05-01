@@ -3,16 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FoodExpress Contact Page</title>
+    <title>FoodExpress Support</title>
 
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
-    <link rel="stylesheet" href="../css/contact.css" />
     <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/contact.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
   </head>
 
   <body>
-    <!-- LOGIN CHECK -->
     <script>
       if (!localStorage.getItem("isLoggedIn")) {
         alert("Please login first");
@@ -20,207 +24,212 @@
       }
     </script>
 
-    <!-- NAVBAR -->
     <div id="navbarContainer"></div>
 
-    <!-- HERO -->
-    <div class="hero">
-      <h1>Get In <span>Touch</span></h1>
+    <section class="hero">
+      <h1>FoodExpress <span>Support</span></h1>
       <p>
-        Have questions? We'd love to hear from you. Send us a message and we'll
-        respond as soon as possible.
+        Need help with an order, account, payment, delivery, restaurant, rider,
+        or technical issue? Send us a message and our support team will review
+        it.
       </p>
-    </div>
+    </section>
 
-    <!-- CONTACT SECTION -->
-    <div class="container">
-      <!-- LEFT SIDE -->
+    <section class="contact-section">
       <div class="left">
-        <div class="card">
-          <h3>Address</h3>
+        <div class="card contact-info-card">
+          <div class="contact-card-icon">
+            <i class="fa-solid fa-circle-question"></i>
+          </div>
+          <h3>Help Center</h3>
           <p>
-            123 Food Street<br />
-            Culinary City, FC 12345<br />
-            United States
+            Get support for general questions, account access, login problems,
+            food ordering, restaurant registration, rider signup, and platform
+            issues.
           </p>
         </div>
 
-        <div class="card">
-          <h3>Phone</h3>
+        <div class="card contact-info-card">
+          <div class="contact-card-icon">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <h3>Order & Account Support</h3>
           <p>
-            Main: (555) 123-4567<br />
-            Support: (555) 123-4568<br />
-            Toll Free: 1-800-FOOD-EXPRESS
+            For delivery delays, missing items, wrong orders, refunds, rewards,
+            or login issues, include your order reference if available.
           </p>
         </div>
 
-        <div class="card">
-          <h3>Email</h3>
+        <div class="card contact-info-card">
+          <div class="contact-card-icon">
+            <i class="fa-solid fa-truck-fast"></i>
+          </div>
+          <h3>Delivery Support</h3>
           <p>
-            hello@foodexpress.com<br />
-            support@foodexpress.com<br />
-            business@foodexpress.com
+            If your rider is delayed, your order status is wrong, or the
+            delivery flow looks stuck, submit a support request with your order
+            number.
           </p>
         </div>
 
-        <div class="card">
-          <h3>Business Hours</h3>
+        <div class="card contact-info-card urgent-card">
+          <div class="contact-card-icon">
+            <i class="fa-solid fa-shield-heart"></i>
+          </div>
+          <h3>Safety & Urgent Issues</h3>
           <p>
-            Monday – Friday: 8AM – 10PM<br />
-            Saturday – Sunday: 9AM – 11PM<br />
-            Delivery: 24/7
+            Safety, fraud, payment, or delivery-related urgent issues can be
+            reviewed and prioritised by the FoodExpress admin team.
           </p>
         </div>
       </div>
 
-      <!-- RIGHT SIDE (FORM) -->
       <div class="right">
         <div class="form-box">
           <h2>Send Us a Message</h2>
 
-          <form id="contactForm">
+          <form id="supportTicketForm" class="support-ticket-form">
+            <div class="support-context-card">
+              <div>
+                <span class="support-context-label">FoodExpress Support</span>
+                <h3 id="detectedRoleText">How can we help?</h3>
+                <p id="detectedUserText">
+                  Send us your question or issue and our support team will get
+                  back to you soon.
+                </p>
+              </div>
+
+              <i class="fa-solid fa-headset"></i>
+            </div>
+
+            <input type="hidden" id="userType" value="customer" />
+            <input type="hidden" id="userId" value="" />
+            <input type="hidden" id="relatedRestaurantId" value="" />
+            <input type="hidden" id="relatedRiderId" value="" />
+
             <div class="form-row">
               <input
                 type="text"
                 id="firstName"
-                name="firstName"
                 placeholder="First Name"
                 required
               />
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                placeholder="Last Name"
-                required
-              />
+
+              <input type="text" id="lastName" placeholder="Last Name" />
             </div>
 
+            <div class="form-row">
+              <input
+                type="email"
+                id="email"
+                placeholder="Email Address"
+                required
+              />
+
+              <input type="text" id="phone" placeholder="Phone Number" />
+            </div>
+
+            <select id="issueType" required>
+              <option value="">What do you need help with?</option>
+              <option value="order_issue">Order issue</option>
+              <option value="delivery_delay">Delivery delay</option>
+              <option value="missing_item">Missing or wrong item</option>
+              <option value="payment_refund">Payment or refund issue</option>
+              <option value="login_problem">Login or account problem</option>
+              <option value="rewards">Rewards or coupon issue</option>
+              <option value="technical">Website or app problem</option>
+              <option value="safety_issue">Safety or urgent issue</option>
+              <option value="general">General question</option>
+            </select>
+
             <input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="Email Address"
-              required
+              type="text"
+              id="relatedOrderId"
+              placeholder="Order ID / Reference ID (optional)"
             />
 
             <input
               type="text"
-              id="phone"
-              name="phone"
-              placeholder="Phone Number"
-            />
-
-            <input
-              type="text"
-              id="subject"
-              name="subject"
-              placeholder="Subject"
+              id="issueTitle"
+              placeholder="Short title of your issue"
               required
             />
 
             <textarea
               id="message"
-              name="message"
-              placeholder="Tell us more about your inquiry..."
+              placeholder="Tell us more about your issue..."
               required
             ></textarea>
 
-            <button type="submit" id="contactSubmitBtn">Send Message</button>
+            <button type="submit" id="supportSubmitBtn">
+              <i class="fa-solid fa-paper-plane"></i>
+              Send Message
+            </button>
 
-            <p id="contactFormMessage" class="contact-form-message"></p>
+            <p id="supportStatus"></p>
           </form>
         </div>
       </div>
-    </div>
-    <!-- IMPORTANT: container CLOSED here -->
+    </section>
 
-    <!-- FAQ -->
-    <div class="faq">
+    <section class="faq">
       <h1>Frequently Asked <span>Questions</span></h1>
 
       <div class="faq-grid">
         <div class="faq-card">
-          <h3>How long does delivery take?</h3>
-          <p>Most deliveries arrive within 30–45 minutes.</p>
+          <h3>How do I get help with an order?</h3>
+          <p>
+            Add your order reference in the form and explain the issue clearly,
+            such as late delivery, missing item, or wrong order.
+          </p>
         </div>
 
         <div class="faq-card">
-          <h3>What are your delivery fees?</h3>
-          <p>Delivery starts at $2.99 depending on distance.</p>
+          <h3>Can I report delivery issues?</h3>
+          <p>
+            Yes. Use the delivery issue option and include your order number so
+            the support team can review the correct order.
+          </p>
         </div>
 
         <div class="faq-card">
-          <h3>Can I schedule delivery?</h3>
-          <p>Yes! Schedule orders up to 7 days earlier.</p>
+          <h3>How will I know my request was received?</h3>
+          <p>
+            After submitting the form, FoodExpress will show a reference number
+            and save your request for admin review.
+          </p>
         </div>
 
         <div class="faq-card">
-          <h3>Which payments are accepted?</h3>
-          <p>Credit cards, PayPal, Apple Pay & Google Pay.</p>
+          <h3>Can I ask about payments or refunds?</h3>
+          <p>
+            Yes. Payment and refund-related issues are reviewed carefully and
+            can be escalated to admin support.
+          </p>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- MAP -->
-    <div class="map-section">
-      <div class="map-box">
-        <h2>Map Location Here</h2>
-        <p>123 Food Street, Culinary City</p>
-      </div>
-    </div>
+    <footer class="footer" id="footer"></footer>
 
-    <!-- FOOTER -->
-    <div class="footer">
-      <div class="footer-container">
-        <div>
-          <h2>FoodExpress</h2>
-          <p>Delivering happiness to your doorstep.</p>
-        </div>
-
-        <div>
-          <h3>Quick Links</h3>
-          <a href="dashboard.html">Home</a>
-          <a href="food.html">Menu</a>
-          <a href="#">Recipes</a>
-        </div>
-
-        <div>
-          <h3>Support</h3>
-          <a href="#">Help Center</a>
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms</a>
-          <a href="loggedContact.html">Contact</a>
-        </div>
-
-        <div>
-          <h3>Contact</h3>
-          <p>123 Food Street</p>
-          <p>(555) 123-4567</p>
-          <p>hello@foodexpress.com</p>
-        </div>
-      </div>
-
-      <div class="footer-bottom">© 2026 FoodExpress</div>
-    </div>
-
-    <!-- SCRIPTS -->
-    <script src="../js/modules/profile.js"></script>
+    <script src="../js/profile.js"></script>
     <script src="../js/shared.js"></script>
     <script src="../js/modules/cart.js"></script>
+    <script src="../js/components/notifications.js"></script>
     <script src="../js/components/navbar.js"></script>
+    <script src="../js/components/footer.js"></script>
     <script src="../js/contact.js"></script>
 
     <script>
-      function initNavbar() {
+      document.addEventListener("DOMContentLoaded", function () {
         if (typeof window.renderNavbar === "function") {
-          renderNavbar("contact");
-        } else {
-          setTimeout(initNavbar, 100);
+          window.renderNavbar("contact");
         }
-      }
 
-      document.addEventListener("DOMContentLoaded", initNavbar);
+        if (typeof window.renderFooter === "function") {
+          window.renderFooter("app");
+        }
+      });
     </script>
   </body>
 </html>

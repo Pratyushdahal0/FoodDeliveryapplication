@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/track-order.css" />
   </head>
+
   <body>
     <div id="navbarContainer"></div>
 
@@ -26,14 +27,45 @@
 
       <section id="trackContent" class="track-content">
         <div class="track-hero">
-          <div>
+          <div class="track-hero-left">
+            <button
+              class="track-back-btn"
+              type="button"
+              onclick="goBackToDashboard()"
+            >
+              <i class="fa-solid fa-arrow-left"></i>
+              Back to dashboard
+            </button>
+
+            <span class="track-eyebrow">Live delivery tracking</span>
+
             <h1>Track your latest order</h1>
             <p>
-              Stay updated in real time as your restaurant confirms, prepares,
-              and sends your order out for delivery.
+              Stay updated as your restaurant prepares your order and your rider
+              gets assigned for delivery.
             </p>
           </div>
-          <div class="order-pill" id="orderNumberBadge">#ORDER</div>
+
+          <div class="track-hero-right">
+            <div class="track-hero-actions">
+              <a href="dashboard.html" class="track-link-btn">
+                <i class="fa-solid fa-house"></i>
+                Dashboard
+              </a>
+
+              <a href="shop.html" class="track-link-btn">
+                <i class="fa-solid fa-utensils"></i>
+                Browse menu
+              </a>
+
+              <a href="loggedContact.html" class="track-link-btn">
+                <i class="fa-solid fa-headset"></i>
+                Support
+              </a>
+            </div>
+
+            <div class="order-pill" id="orderNumberBadge">#ORDER</div>
+          </div>
         </div>
 
         <div class="track-layout">
@@ -44,6 +76,7 @@
                   <h2 id="restaurantName">Restaurant</h2>
                   <p id="deliveryAddress">Delivery address will appear here</p>
                 </div>
+
                 <div class="status-pill status-pending" id="statusPill">
                   Pending
                 </div>
@@ -54,16 +87,19 @@
                   <span class="label">Estimated arrival</span>
                   <span class="value" id="etaValue">30–40 min</span>
                 </div>
+
                 <div class="meta-box">
                   <span class="label">Payment method</span>
-                  <span class="value" id="paymentMethodValue"
-                    >Cash on Delivery</span
-                  >
+                  <span class="value" id="paymentMethodValue">
+                    Cash on Delivery
+                  </span>
                 </div>
+
                 <div class="meta-box">
                   <span class="label">Items</span>
                   <span class="value" id="itemCountValue">0 items</span>
                 </div>
+
                 <div class="meta-box">
                   <span class="label">Order placed</span>
                   <span class="value" id="placedTimeValue">Just now</span>
@@ -108,6 +144,18 @@
                         Your dishes are being freshly prepared in the kitchen.
                       </p>
                       <div class="step-time" id="time-preparing"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="rider_assigned">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Rider assigned</h3>
+                      <p>
+                        A nearby rider has accepted your delivery and is waiting
+                        for the restaurant to finish preparing your order.
+                      </p>
+                      <div class="step-time" id="time-rider_assigned"></div>
                     </div>
                   </div>
 
@@ -185,25 +233,35 @@
                 <span>Subtotal</span>
                 <strong id="subtotalValue">$0.00</strong>
               </div>
+
               <div class="summary-row">
                 <span>Tax</span>
                 <strong id="taxValue">$0.00</strong>
               </div>
+
               <div class="summary-row">
                 <span>Delivery fee</span>
                 <strong id="deliveryFeeValue">$0.00</strong>
               </div>
+
               <div class="summary-row" id="discountRow" style="display: none">
                 <span>Discount</span>
                 <strong id="discountValue">-$0.00</strong>
               </div>
+
               <div class="summary-row total">
                 <span>Total</span>
                 <span id="totalValue">$0.00</span>
               </div>
             </section>
 
-            <section class="card">
+            <section class="card track-help-card">
+              <h3>Need help?</h3>
+              <p>
+                If your order is delayed or details look wrong, contact support
+                with your order number.
+              </p>
+
               <div class="action-stack">
                 <button
                   class="primary-btn"
@@ -212,6 +270,14 @@
                 >
                   Reorder these items
                 </button>
+
+                <a
+                  class="secondary-btn track-action-link"
+                  href="loggedContact.html"
+                >
+                  Contact support
+                </a>
+
                 <button
                   class="secondary-btn"
                   type="button"
@@ -225,18 +291,27 @@
         </div>
       </section>
     </main>
+
     <footer class="footer" id="footer"></footer>
-    <script src="../js/modules/profile.js"></script>
+
+    <script src="../js/profile.js"></script>
     <script src="../js/shared.js"></script>
     <script src="../js/modules/cart.js"></script>
+    <script src="../js/components/notifications.js"></script>
     <script src="../js/components/navbar.js"></script>
     <script src="../js/reward.js"></script>
     <script src="../js/track-order.js"></script>
-
     <script src="../js/components/footer.js"></script>
+
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        renderFooter("none");
+        if (typeof window.renderNavbar === "function") {
+          window.renderNavbar("track");
+        }
+
+        if (typeof window.renderFooter === "function") {
+          window.renderFooter("none");
+        }
       });
     </script>
   </body>

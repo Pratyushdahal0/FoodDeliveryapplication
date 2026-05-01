@@ -1,94 +1,565 @@
+/* =====================================================
+   FOODEXPRESS REWARDS - PREMIUM SAAS UI
+   Replace full frontend/css/reward.css with this
+===================================================== */
+
 body {
-  background: #f7f7f8;
+  background:
+    radial-gradient(circle at top left, rgba(239, 68, 68, 0.08), transparent 30%),
+    linear-gradient(180deg, #fff8f3 0%, #f7f7f8 34%, #f7f7f8 100%);
+  color: #17172f;
+  font-family: "Inter", sans-serif;
 }
 
 /* PAGE */
 .rewards-page {
-  max-width: 1100px;
-  margin: 40px auto;
-  padding: 20px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 96px 24px 54px;
 }
 
-/* HEADER */
-.rewards-header {
+/* ================= HERO ================= */
+
+.rewards-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 250px;
+  gap: 22px;
+  align-items: stretch;
+  margin-bottom: 22px;
+}
+
+.hero-copy,
+.points-panel,
+.progress-card,
+.rewards-section,
+.stat-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  box-shadow: 0 16px 42px rgba(17, 24, 39, 0.07);
+  backdrop-filter: blur(12px);
+}
+
+.hero-copy {
+  border-radius: 28px;
+  padding: 34px 38px;
+  min-height: 330px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.eyebrow,
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ef3b3b;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hero-copy h1 {
+  margin: 14px 0 14px;
+  max-width: 760px;
+  font-size: clamp(2.6rem, 4.6vw, 4.4rem);
+  line-height: 0.98;
+  font-weight: 900;
+  letter-spacing: -0.065em;
+}
+
+.hero-copy p {
+  max-width: 710px;
+  margin: 0;
+  color: #6b7280;
+  font-size: 1.03rem;
+  line-height: 1.65;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.primary-link,
+.secondary-link {
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 900;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.primary-link {
+  background: #ef3b3b;
+  color: #fff;
+  box-shadow: 0 14px 26px rgba(239, 59, 59, 0.22);
+}
+
+.primary-link:hover,
+.secondary-link:hover {
+  transform: translateY(-2px);
+}
+
+.secondary-link {
+  background: #fff1f1;
+  color: #ef3b3b;
+}
+
+/* POINT BALANCE CARD */
+.points-panel {
+  border-radius: 28px;
+  padding: 30px;
+  background: linear-gradient(145deg, #ef3b3b, #ff7147);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 330px;
+  position: relative;
+  overflow: hidden;
+}
+
+.points-panel::before {
+  content: "";
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  right: -60px;
+  top: -60px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.points-panel::after {
+  content: "";
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  left: -40px;
+  bottom: -40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.points-panel span,
+.points-panel p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-weight: 800;
+}
+
+.points-panel span {
+  font-size: 0.95rem;
+}
+
+.points-panel strong {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin: 14px 0;
+  font-size: 4rem;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+}
+
+/* ================= STATS ================= */
+
+.rewards-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.stat-card {
+  border-radius: 22px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+.stat-icon.red {
+  background: #ef3b3b;
+}
+
+.stat-icon.green {
+  background: #16a34a;
+}
+
+.stat-icon.dark {
+  background: #111827;
+}
+
+.stat-card span {
+  display: block;
+  color: #6b7280;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.stat-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.38rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+/* ================= PROGRESS ================= */
+
+.progress-card {
+  border-radius: 28px;
+  padding: 28px 30px;
+  margin-bottom: 24px;
+}
+
+.progress-top,
+.progress-bottom,
+.section-heading {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.progress-top h2,
+.section-heading h2 {
+  margin: 7px 0 0;
+  font-size: 1.55rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.progress-top p,
+.section-heading p {
+  margin: 8px 0 0;
+  color: #6b7280;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.progress-badge {
+  min-width: 70px;
+  height: 42px;
+  border-radius: 999px;
+  background: #fff1f1;
+  color: #ef3b3b;
+  display: inline-flex;
   align-items: center;
-  background: white;
-  padding: 25px;
-  border-radius: 20px;
-  margin-bottom: 20px;
+  justify-content: center;
+  font-weight: 900;
+  flex-shrink: 0;
 }
 
-.points-box {
-  background: linear-gradient(135deg, #ef4444, #ff6a3d);
-  color: white;
-  padding: 20px;
-  border-radius: 15px;
-  text-align: center;
-}
-
-.points-box h2 {
-  margin: 0;
-  font-size: 2rem;
-}
-
-/* PROGRESS */
-.progress-card {
-  background: white;
-  padding: 25px;
-  border-radius: 20px;
-  margin-bottom: 25px;
-}
-
-.progress-bar {
-  height: 12px;
-  background: #eee;
-  border-radius: 20px;
+.progress-track {
+  margin: 24px 0 13px;
+  height: 13px;
+  border-radius: 999px;
+  background: #eceef2;
   overflow: hidden;
-  margin: 15px 0;
 }
 
 .progress-fill {
   height: 100%;
   width: 0%;
-  background: #ef4444;
-  transition: 0.4s;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ef3b3b, #ff7147);
+  transition: width 0.35s ease;
 }
 
-/* REWARD CARDS */
+.progress-bottom {
+  color: #6b7280;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+/* ================= SECTIONS ================= */
+
+.rewards-section {
+  border-radius: 28px;
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+/* ================= REWARD CARDS ================= */
+
 .reward-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-top: 22px;
 }
 
 .reward-card {
-  background: white;
-  padding: 20px;
-  border-radius: 20px;
-  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #edf0f4;
+  border-radius: 22px;
+  padding: 22px;
+  text-align: left;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.reward-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 38px rgba(17, 24, 39, 0.1);
+}
+
+.reward-card.unlocked {
+  border-color: rgba(22, 163, 74, 0.28);
+  background: linear-gradient(180deg, #ffffff, #f0fdf4);
+}
+
+.reward-card.locked {
+  opacity: 0.82;
+}
+
+.reward-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 17px;
+  background: #fff1f1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.55rem;
+  margin-bottom: 16px;
 }
 
 .reward-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.26rem;
+  font-weight: 900;
+}
+
+.reward-card p {
+  min-height: 42px;
+  margin: 0 0 14px;
+  color: #6b7280;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.reward-card strong {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 900;
   margin-bottom: 10px;
 }
 
 .reward-card span {
   display: block;
-  margin: 10px 0;
-  font-weight: bold;
+  color: #6b7280;
+  font-size: 0.86rem;
+  font-weight: 800;
+  margin-bottom: 15px;
 }
 
 .reward-card button {
-  background: #ef4444;
-  color: white;
+  width: 100%;
+  min-height: 44px;
   border: none;
-  padding: 10px 15px;
-  border-radius: 10px;
+  border-radius: 999px;
+  background: #ef3b3b;
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 900;
   cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
-.reward-card button:hover {
-  opacity: 0.9;
+.reward-card button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.reward-card button:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ================= BOTTOM GRID ================= */
+
+.rewards-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.coupon-card,
+.history-item,
+.empty-state {
+  border: 1px solid #edf0f4;
+  border-radius: 20px;
+  background: #fff;
+  padding: 18px;
+}
+
+.coupon-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.coupon-main strong {
+  display: block;
+  font-size: 1.12rem;
+  font-weight: 900;
+}
+
+.coupon-main p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.coupon-code {
+  border-radius: 999px;
+  background: #fff1f1;
+  color: #ef3b3b;
+  padding: 10px 14px;
+  font-weight: 900;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.history-item strong {
+  display: block;
+  font-weight: 900;
+}
+
+.history-item p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.history-points {
+  white-space: nowrap;
+  font-weight: 900;
+}
+
+.history-points.plus {
+  color: #16a34a;
+}
+
+.history-points.minus {
+  color: #ef3b3b;
+}
+
+.empty-state {
+  margin-top: 14px;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.6;
+  font-size: 0.94rem;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 1080px) {
+  .rewards-hero,
+  .rewards-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-copy,
+  .points-panel {
+    min-height: auto;
+  }
+
+  .points-panel {
+    min-height: 220px;
+  }
+
+  .reward-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .rewards-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .rewards-page {
+    padding: 92px 16px 40px;
+  }
+
+  .hero-copy,
+  .points-panel,
+  .progress-card,
+  .rewards-section {
+    border-radius: 22px;
+    padding: 22px;
+  }
+
+  .hero-copy h1 {
+    font-size: 2.65rem;
+  }
+
+  .points-panel strong {
+    font-size: 3.2rem;
+  }
+
+  .reward-list {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-top,
+  .progress-bottom,
+  .section-heading {
+    flex-direction: column;
+  }
+
+  .coupon-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }

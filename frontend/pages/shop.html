@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/shop.css" />
 
-    <!-- ✅ FONT AWESOME -->
+    <!-- Font Awesome -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
@@ -17,6 +17,13 @@
   </head>
 
   <body>
+    <script>
+      if (!localStorage.getItem("isLoggedIn")) {
+        alert("Please login first");
+        window.location.href = "login.html";
+      }
+    </script>
+
     <div id="navbarContainer"></div>
 
     <main class="restaurant-page">
@@ -46,10 +53,12 @@
 
           <div class="filter-group">
             <h4>Sort By</h4>
+
             <label>
               <input type="radio" name="sort" value="asc" checked />
               A-Z Ascending
             </label>
+
             <label>
               <input type="radio" name="sort" value="desc" />
               Z-A Descending
@@ -58,10 +67,12 @@
 
           <div class="filter-group">
             <h4>Open Status</h4>
+
             <label>
               <input type="radio" name="openStatus" value="all" checked />
               All
             </label>
+
             <label>
               <input type="radio" name="openStatus" value="open" />
               Open Now
@@ -84,8 +95,16 @@
 
     <footer class="footer" id="footer"></footer>
 
+    <!-- Page API -->
     <script src="../js/api/restaurantApi.js"></script>
+
+    <!-- Shared customer app files -->
+    <script src="../js/profile.js"></script>
+    <script src="../js/shared.js"></script>
     <script src="../js/modules/cart.js"></script>
+
+    <!-- Shared navbar/footer components -->
+    <script src="../js/components/notifications.js"></script>
     <script src="../js/components/navbar.js"></script>
     <script src="../js/components/footer.js"></script>
 
@@ -102,22 +121,56 @@
           window.renderFooter("app");
         }
 
+        if (typeof window.bindProfileEverywhere === "function") {
+          window.bindProfileEverywhere();
+        }
+
+        if (typeof window.bindNotificationBell === "function") {
+          window.bindNotificationBell();
+        }
+
         setupRestaurantPage();
       });
 
       async function setupRestaurantPage() {
-        approvedRestaurants = await getApprovedRestaurants();
+        try {
+          approvedRestaurants = await getApprovedRestaurants();
 
-        buildCuisineFilters();
-        attachFilterEvents();
-        renderRestaurants();
+          if (!Array.isArray(approvedRestaurants)) {
+            approvedRestaurants = [];
+          }
+
+          buildCuisineFilters();
+          attachFilterEvents();
+          renderRestaurants();
+        } catch (error) {
+          console.error("[shop.html] Failed to load restaurants:", error);
+
+          const count = document.getElementById("restaurantCount");
+          const container = document.getElementById("restaurantList");
+
+          if (count) {
+            count.textContent = "0 restaurants found";
+          }
+
+          if (container) {
+            container.innerHTML = `
+              <div class="restaurant-empty">
+                <h3>Unable to load restaurants</h3>
+                <p>Please check your backend connection and try again.</p>
+              </div>
+            `;
+          }
+        }
       }
 
       function attachFilterEvents() {
         const searchInput = document.getElementById("restaurantSearchInput");
         const clearBtn = document.getElementById("clearFilterBtn");
 
-        searchInput.addEventListener("input", renderRestaurants);
+        if (searchInput) {
+          searchInput.addEventListener("input", renderRestaurants);
+        }
 
         document.querySelectorAll("input[name='sort']").forEach((input) => {
           input.addEventListener("change", renderRestaurants);
@@ -129,23 +182,34 @@
             input.addEventListener("change", renderRestaurants);
           });
 
-        clearBtn.addEventListener("click", () => {
-          searchInput.value = "";
-          selectedCuisine = "all";
+        if (clearBtn) {
+          clearBtn.addEventListener("click", () => {
+            if (searchInput) {
+              searchInput.value = "";
+            }
 
-          document.querySelector("input[name='sort'][value='asc']").checked =
-            true;
-          document.querySelector(
-            "input[name='openStatus'][value='all']",
-          ).checked = true;
+            selectedCuisine = "all";
 
-          buildCuisineFilters();
-          renderRestaurants();
-        });
+            const ascSort = document.querySelector(
+              "input[name='sort'][value='asc']",
+            );
+
+            const allStatus = document.querySelector(
+              "input[name='openStatus'][value='all']",
+            );
+
+            if (ascSort) ascSort.checked = true;
+            if (allStatus) allStatus.checked = true;
+
+            buildCuisineFilters();
+            renderRestaurants();
+          });
+        }
       }
 
       function buildCuisineFilters() {
         const cuisineContainer = document.getElementById("cuisineFilters");
+        if (!cuisineContainer) return;
 
         const cuisines = [
           ...new Set(
@@ -168,17 +232,20 @@
           >
             All
           </button>
+
           ${cuisines
             .map(
               (cuisine) => `
-              <button
-                type="button"
-                class="cuisine-chip ${selectedCuisine === cuisine ? "active" : ""}"
-                onclick="setCuisineFilter('${escapeAttribute(cuisine)}')"
-              >
-                ${escapeHtml(cuisine)}
-              </button>
-            `,
+                <button
+                  type="button"
+                  class="cuisine-chip ${
+                    selectedCuisine === cuisine ? "active" : ""
+                  }"
+                  onclick="setCuisineFilter('${escapeAttribute(cuisine)}')"
+                >
+                  ${escapeHtml(cuisine)}
+                </button>
+              `,
             )
             .join("")}
         `;
@@ -193,6 +260,8 @@
       function renderRestaurants() {
         const container = document.getElementById("restaurantList");
         const count = document.getElementById("restaurantCount");
+
+        if (!container || !count) return;
 
         const query =
           document
@@ -218,6 +287,7 @@
             .join(" ");
 
           const matchesSearch = query ? searchText.includes(query) : true;
+
           const matchesCuisine =
             selectedCuisine === "all"
               ? true
@@ -260,95 +330,120 @@
       function createRestaurantCard(restaurant) {
         const open = isRestaurantOpen(restaurant);
 
-        // ✅ FIX IMAGE (no more 404)
         const image =
           restaurant.logo_url && restaurant.logo_url !== "null"
             ? restaurant.logo_url
             : "https://via.placeholder.com/120x120?text=Restaurant";
 
         return `
-    <article class="restaurant-row-card">
+          <article class="restaurant-row-card">
+            <div class="restaurant-logo-wrap">
+              <img
+                src="${escapeHtml(image)}"
+                alt="${escapeHtml(restaurant.restaurant_name || "Restaurant")}"
+                onerror="this.onerror=null; this.src='https://via.placeholder.com/120x120?text=Restaurant';"
+              />
+            </div>
 
-      <!-- IMAGE -->
-      <div class="restaurant-logo-wrap">
-        <img
-          src="${escapeHtml(image)}"
-          alt="${escapeHtml(restaurant.restaurant_name || "Restaurant")}"
-          onerror="this.onerror=null; this.src='https://via.placeholder.com/120x120?text=Restaurant';"
-        />
-      </div>
+            <div class="restaurant-main-info">
+              <div class="restaurant-title-line">
+                <h3>${escapeHtml(
+                  restaurant.restaurant_name || "Unnamed Restaurant",
+                )}</h3>
 
-      <!-- INFO -->
-      <div class="restaurant-main-info">
+                <span class="open-badge ${open ? "open" : "closed"}">
+                  ${open ? "Open" : "Closed"}
+                </span>
+              </div>
 
-        <div class="restaurant-title-line">
-          <h3>${escapeHtml(restaurant.restaurant_name || "Unnamed Restaurant")}</h3>
-          <span class="open-badge ${open ? "open" : "closed"}">
-            ${open ? "Open" : "Closed"}
-          </span>
-        </div>
+              <p class="restaurant-meta">
+                <i class="fa-solid fa-location-dot"></i>
+                ${escapeHtml(
+                  restaurant.location ||
+                    restaurant.city ||
+                    "Location not added",
+                )}
+              </p>
 
-        <!-- LOCATION -->
-        <p class="restaurant-meta">
-          <i class="fa-solid fa-location-dot"></i>
-          ${escapeHtml(restaurant.location || restaurant.city || "Location not added")}
-        </p>
+              <p class="restaurant-meta">
+                <i class="fa-solid fa-utensils"></i>
+                ${escapeHtml(restaurant.cuisine_type || "Restaurant")}
+              </p>
 
-        <!-- CUISINE -->
-        <p class="restaurant-meta">
-          <i class="fa-solid fa-utensils"></i>
-          ${escapeHtml(restaurant.cuisine_type || "Restaurant")}
-        </p>
+              <p class="restaurant-rating">
+                <i class="fa-solid fa-star"></i>
+                <span>${escapeHtml(restaurant.rating || "4.8")}</span>
+              </p>
 
-        <!-- ⭐ NEW: RATING -->
-        <p class="restaurant-rating">
-          <i class="fa-solid fa-star"></i>
-          <span>4.8</span>
-        </p>
+              <p class="restaurant-desc">
+                ${escapeHtml(
+                  restaurant.description ||
+                    "Fresh food available from this restaurant.",
+                )}
+              </p>
 
-        <!-- DESCRIPTION -->
-        <p class="restaurant-desc">
-          ${escapeHtml(restaurant.description || "Fresh food available from this restaurant.")}
-        </p>
+              <div class="restaurant-offer">
+                ${
+                  restaurant.delivery_available == 1
+                    ? '<i class="fa-solid fa-truck"></i> Delivery available'
+                    : '<i class="fa-solid fa-store"></i> Pickup only'
+                }
+              </div>
+            </div>
 
-        <!-- DELIVERY -->
-        <div class="restaurant-offer">
-          ${
-            restaurant.delivery_available == 1
-              ? '<i class="fa-solid fa-truck"></i> Delivery available'
-              : '<i class="fa-solid fa-store"></i> Pickup only'
-          }
-        </div>
-      </div>
-
-      <!-- BUTTON -->
-      <div class="restaurant-action">
-        <button onclick="viewRestaurantMenu(${restaurant.id})">
-          View Menu
-        </button>
-      </div>
-
-    </article>
-  `;
+            <div class="restaurant-action">
+              <button type="button" onclick="viewRestaurantMenu(${Number(
+                restaurant.id || 0,
+              )})">
+                View Menu
+              </button>
+            </div>
+          </article>
+        `;
       }
 
       function viewRestaurantMenu(id) {
-        localStorage.setItem("selectedRestaurantId", id);
+        if (!id) {
+          alert("Restaurant ID not found.");
+          return;
+        }
+
+        localStorage.setItem("selectedRestaurantId", String(id));
+
+        /*
+          Real-world next step:
+          Later, this should open the selected restaurant menu page.
+          Example:
+          window.location.href = `restaurant-menu.html?id=${id}`;
+        */
+
         alert("Next step: show menu for restaurant ID " + id);
       }
 
       function isRestaurantOpen(restaurant) {
-        if (!restaurant.opening_time || !restaurant.closing_time) return true;
+        if (!restaurant.opening_time || !restaurant.closing_time) {
+          return true;
+        }
 
         const now = new Date();
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-        const [openHour, openMinute] = restaurant.opening_time
+        const [openHour, openMinute] = String(restaurant.opening_time)
           .split(":")
           .map(Number);
-        const [closeHour, closeMinute] = restaurant.closing_time
+
+        const [closeHour, closeMinute] = String(restaurant.closing_time)
           .split(":")
           .map(Number);
+
+        if (
+          Number.isNaN(openHour) ||
+          Number.isNaN(openMinute) ||
+          Number.isNaN(closeHour) ||
+          Number.isNaN(closeMinute)
+        ) {
+          return true;
+        }
 
         const openMinutes = openHour * 60 + openMinute;
         const closeMinutes = closeHour * 60 + closeMinute;
@@ -366,7 +461,9 @@
       }
 
       function escapeAttribute(value) {
-        return String(value ?? "").replace(/'/g, "\\'");
+        return String(value ?? "")
+          .replace(/\\/g, "\\\\")
+          .replace(/'/g, "\\'");
       }
     </script>
   </body>

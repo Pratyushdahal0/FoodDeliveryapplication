@@ -41,6 +41,15 @@ console.log("[navbar.js] Script loaded successfully");
               <span class="cart-count" id="cartCount">0</span>
             </a>
 
+            <div class="notification-wrapper">
+              <button class="notification-bell" type="button" id="notificationBell" aria-label="Open notifications">
+                <i class="fa-regular fa-bell"></i>
+                <span class="notification-badge" id="notificationBadge">0</span>
+              </button>
+
+              <div class="notification-dropdown" id="notificationDropdown"></div>
+            </div>
+
             <button
               class="navbar-avatar"
               id="navbarAvatar"
@@ -82,7 +91,7 @@ console.log("[navbar.js] Script loaded successfully");
 
     const navbarAvatar = document.getElementById("navbarAvatar");
     if (navbarAvatar) {
-      navbarAvatar.addEventListener("click", () => {
+      navbarAvatar.addEventListener("click", function () {
         window.location.href = "edit-profile.html";
       });
     }
@@ -91,8 +100,76 @@ console.log("[navbar.js] Script loaded successfully");
       window.updateCartCount();
     }
 
+    if (typeof window.bindNotificationBell === "function") {
+      window.bindNotificationBell();
+    }
+
     if (typeof window.bindProfileEverywhere === "function") {
       window.bindProfileEverywhere();
+
+      setTimeout(window.bindProfileEverywhere, 100);
+      setTimeout(window.bindProfileEverywhere, 400);
+    } else {
+      bindNavbarAvatarFallback();
+    }
+  }
+
+  function bindNavbarAvatarFallback() {
+    const avatar = document.getElementById("navbarAvatar");
+    if (!avatar) return;
+
+    const profile = safeJsonParse(localStorage.getItem("userProfile"), null);
+
+    const name =
+      profile?.name ||
+      localStorage.getItem("userName") ||
+      localStorage.getItem("pendingVerificationName") ||
+      "User";
+
+    const image =
+      profile?.profileImage ||
+      profile?.image ||
+      localStorage.getItem("userProfileImage") ||
+      "";
+
+    avatar.innerHTML = "";
+
+    if (image) {
+      const img = document.createElement("img");
+      img.src = image;
+      img.alt = name;
+      img.className = "profile-avatar-img";
+
+      img.onerror = function () {
+        avatar.innerHTML = getInitials(name);
+        avatar.classList.remove("has-image");
+      };
+
+      avatar.appendChild(img);
+      avatar.classList.add("has-image");
+      return;
+    }
+
+    avatar.textContent = getInitials(name);
+    avatar.classList.remove("has-image");
+  }
+
+  function getInitials(name) {
+    const text = String(name || "").trim();
+    if (!text) return "U";
+
+    return text
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("");
+  }
+
+  function safeJsonParse(value, fallback = null) {
+    try {
+      return value ? JSON.parse(value) : fallback;
+    } catch (error) {
+      return fallback;
     }
   }
 
