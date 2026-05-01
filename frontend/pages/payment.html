@@ -23,8 +23,6 @@
         --shadow-soft: 0 10px 30px rgba(17, 24, 39, 0.08);
         --shadow-hover: 0 16px 40px rgba(17, 24, 39, 0.12);
         --radius-lg: 24px;
-        --radius-md: 18px;
-        --radius-sm: 14px;
       }
 
       * {
@@ -71,7 +69,7 @@
         padding: 12px 16px;
         border-radius: 999px;
         font-size: 0.95rem;
-        font-weight: 600;
+        font-weight: 700;
         white-space: nowrap;
       }
 
@@ -148,7 +146,7 @@
         border-radius: 999px;
         background: #fff;
         border: 1px solid var(--border-soft);
-        font-weight: 700;
+        font-weight: 800;
         font-size: 0.92rem;
       }
 
@@ -188,7 +186,7 @@
       .item-info h4 {
         margin: 0 0 6px;
         font-size: 1rem;
-        font-weight: 700;
+        font-weight: 800;
       }
 
       .item-meta {
@@ -212,13 +210,13 @@
         border: 1px solid var(--border-soft);
         color: var(--text-muted);
         font-size: 0.82rem;
-        font-weight: 700;
+        font-weight: 800;
       }
 
       .item-total .price {
         display: block;
         font-size: 1rem;
-        font-weight: 800;
+        font-weight: 900;
         color: var(--text-strong);
       }
 
@@ -241,7 +239,7 @@
 
       .form-group label {
         font-size: 0.95rem;
-        font-weight: 700;
+        font-weight: 800;
         color: var(--text-strong);
       }
 
@@ -259,11 +257,6 @@
         transition:
           border-color 0.2s ease,
           box-shadow 0.2s ease;
-      }
-
-      .form-group textarea {
-        min-height: 110px;
-        resize: vertical;
       }
 
       .form-group input:focus,
@@ -298,8 +291,8 @@
       }
 
       .payment-method.selected {
-        border-color: rgba(var(--primary-rgb), 0.4);
-        background: rgba(var(--primary-rgb), 0.05);
+        border-color: rgba(var(--primary-rgb), 0.55);
+        background: rgba(var(--primary-rgb), 0.06);
       }
 
       .payment-method input[type="radio"] {
@@ -316,7 +309,7 @@
 
       .payment-method-title {
         font-size: 1rem;
-        font-weight: 700;
+        font-weight: 800;
       }
 
       .payment-method-desc {
@@ -349,7 +342,7 @@
       .summary-top h3 {
         margin: 0;
         font-size: 1.2rem;
-        font-weight: 800;
+        font-weight: 900;
       }
 
       .summary-top p {
@@ -368,7 +361,7 @@
         color: #c2410c;
         border: 1px solid #fdba74;
         font-size: 0.84rem;
-        font-weight: 700;
+        font-weight: 800;
       }
 
       .summary-lines {
@@ -401,7 +394,7 @@
         justify-content: space-between;
         align-items: center;
         font-size: 1.15rem;
-        font-weight: 800;
+        font-weight: 900;
       }
 
       .summary-note {
@@ -424,19 +417,20 @@
       .rewards-box h4 {
         margin: 0 0 6px;
         font-size: 1rem;
-        font-weight: 800;
+        font-weight: 900;
       }
 
       .rewards-box p {
         margin: 0;
         color: rgba(255, 255, 255, 0.8);
         font-size: 0.9rem;
+        line-height: 1.45;
       }
 
       .rewards-points {
         margin-top: 12px;
         font-size: 1.4rem;
-        font-weight: 800;
+        font-weight: 900;
       }
 
       .coupon-box {
@@ -450,7 +444,7 @@
       .coupon-box h5 {
         margin: 0 0 8px;
         font-size: 0.95rem;
-        font-weight: 800;
+        font-weight: 900;
       }
 
       .coupon-box p {
@@ -480,7 +474,7 @@
         padding: 0 16px;
         background: #fff;
         color: #111827;
-        font-weight: 700;
+        font-weight: 900;
         cursor: pointer;
       }
 
@@ -488,7 +482,7 @@
         min-height: 18px;
         margin-top: 10px;
         font-size: 0.84rem;
-        font-weight: 700;
+        font-weight: 800;
       }
 
       .coupon-message.success {
@@ -508,7 +502,7 @@
         background: var(--primary);
         color: #fff;
         font-size: 1rem;
-        font-weight: 800;
+        font-weight: 900;
         cursor: pointer;
         transition:
           transform 0.2s ease,
@@ -555,11 +549,7 @@
         background: var(--primary);
         color: #fff;
         text-decoration: none;
-        font-weight: 700;
-      }
-
-      .muted {
-        color: var(--text-muted);
+        font-weight: 800;
       }
 
       @media (max-width: 1024px) {
@@ -606,6 +596,7 @@
       }
     </style>
   </head>
+
   <body>
     <script>
       if (!localStorage.getItem("isLoggedIn")) {
@@ -635,6 +626,7 @@
               before FoodExpress sends your order to the restaurant.
             </p>
           </div>
+
           <div class="checkout-pill" id="checkoutRestaurantPill">
             Restaurant
           </div>
@@ -675,7 +667,7 @@
                   <h2 class="section-title">Delivery details</h2>
                   <p class="section-subtitle">
                     We’ll use these details to deliver your order and contact
-                    you if needed
+                    you if needed.
                   </p>
                 </div>
               </div>
@@ -729,11 +721,10 @@
 
                 <div class="form-group">
                   <label for="deliveryNote">Delivery note</label>
-                  <input
-                    type="text"
+                  <textarea
                     id="deliveryNote"
-                    placeholder="Apartment, gate color, floor, etc."
-                  />
+                    placeholder="Example: Leave at door, call before arrival, gate code, floor number"
+                  ></textarea>
                 </div>
               </div>
             </div>
@@ -743,7 +734,7 @@
                 <div>
                   <h2 class="section-title">Payment method</h2>
                   <p class="section-subtitle">
-                    Choose the most convenient way to pay for this order
+                    Choose the most convenient way to pay for this order.
                   </p>
                 </div>
               </div>
@@ -760,21 +751,21 @@
                     <span class="payment-method-title"
                       >💵 Cash on Delivery</span
                     >
-                    <span class="payment-method-desc"
-                      >Pay when your order arrives at your doorstep</span
-                    >
+                    <span class="payment-method-desc">
+                      Pay when your order arrives at your doorstep
+                    </span>
                   </div>
                 </label>
 
                 <label class="payment-method">
                   <input type="radio" name="paymentMethod" value="card" />
                   <div class="payment-method-content">
-                    <span class="payment-method-title"
-                      >💳 Credit / Debit Card</span
-                    >
-                    <span class="payment-method-desc"
-                      >Fast and secure payment for a smooth checkout</span
-                    >
+                    <span class="payment-method-title">
+                      💳 Credit / Debit Card
+                    </span>
+                    <span class="payment-method-desc">
+                      Fast and secure payment for a smooth checkout
+                    </span>
                   </div>
                 </label>
 
@@ -782,9 +773,9 @@
                   <input type="radio" name="paymentMethod" value="digital" />
                   <div class="payment-method-content">
                     <span class="payment-method-title">📱 Digital Wallet</span>
-                    <span class="payment-method-desc"
-                      >Use eSewa or Khalti for quick digital payments</span
-                    >
+                    <span class="payment-method-desc">
+                      Use eSewa or Khalti for quick digital payments
+                    </span>
                   </div>
                 </label>
               </div>
@@ -881,6 +872,7 @@
                 You’ll earn points on this order after it is delivered
                 successfully.
               </p>
+
               <div class="rewards-points" id="rewardPreview">+0 points</div>
 
               <div class="coupon-box">
@@ -918,34 +910,29 @@
       <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
     </footer>
 
-    <script src="../js/components/notifications.js"></script>
     <script src="../js/profile.js"></script>
     <script src="../js/shared.js"></script>
     <script src="../js/modules/cart.js"></script>
+    <script src="../js/components/notifications.js"></script>
     <script src="../js/components/navbar.js"></script>
     <script src="../js/reward.js"></script>
+
     <script>
       function initNavbar() {
-        console.log(
-          "[payment.html] initNavbar called - renderNavbar available:",
-          typeof window.renderNavbar,
-        );
         if (typeof window.renderNavbar === "function") {
-          renderNavbar("payment");
+          window.renderNavbar("payment");
         } else {
-          console.error(
-            "[payment.html] renderNavbar not available, retrying in 100ms",
-          );
           setTimeout(initNavbar, 100);
         }
       }
+
       document.addEventListener("DOMContentLoaded", initNavbar);
     </script>
 
     <script>
-      const ORDER_HISTORY_KEY = "foodExpressOrders";
-      const USER_PROFILE_KEY = "foodExpressUserProfile";
-      const DEFAULT_IMAGE = "https://via.placeholder.com/80?text=Food";
+      const PAYMENT_ORDER_HISTORY_KEY = "foodExpressOrders";
+      const PAYMENT_USER_PROFILE_KEY = "foodExpressUserProfile";
+      const PAYMENT_DEFAULT_IMAGE = "https://via.placeholder.com/80?text=Food";
 
       let checkoutItems = [];
       let checkoutSummary = {
@@ -955,6 +942,7 @@
         discount: 0,
         total: 0,
       };
+
       let checkoutRestaurant = {
         id: "",
         name: "Restaurant",
@@ -963,11 +951,15 @@
       let appliedCouponId = "";
       let appliedCouponData = null;
 
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", function () {
         initializeCheckout();
         initializePaymentMethods();
         initializeCardFormatting();
         initializeCoupons();
+
+        setTimeout(function () {
+          applyAccountSettingsToCheckout();
+        }, 150);
 
         const placeOrderBtn = document.getElementById("placeOrderBtn");
         if (placeOrderBtn) {
@@ -980,10 +972,173 @@
         }
       });
 
+      /* ===============================
+         ACCOUNT SETTINGS INTEGRATION
+      ================================ */
+
+      function getAccountSettings() {
+        try {
+          const raw = localStorage.getItem("foodExpressAccountSettings");
+          const parsed = raw ? JSON.parse(raw) : {};
+
+          return {
+            ...parsed,
+
+            defaultDeliveryNote:
+              localStorage.getItem("foodExpressDefaultDeliveryNote") ||
+              parsed.defaultDeliveryNote ||
+              "",
+
+            contactlessDelivery:
+              localStorage.getItem("foodExpressContactlessDelivery") ===
+                "true" || parsed.contactlessDelivery === true,
+
+            defaultPaymentMethod:
+              localStorage.getItem("foodExpressPreferredPayment") ||
+              parsed.defaultPaymentMethod ||
+              "cash",
+
+            autoApplyBestCoupon:
+              localStorage.getItem("foodExpressAutoApplyBestCoupon") !==
+                "false" && parsed.autoApplyBestCoupon !== false,
+
+            saveDeliveryDetails:
+              localStorage.getItem("foodExpressSaveDeliveryDetails") !==
+                "false" && parsed.saveDeliveryDetails !== false,
+
+            saveOrderHistory:
+              localStorage.getItem("foodExpressSaveOrderHistory") !== "false" &&
+              parsed.saveOrderHistory !== false,
+          };
+        } catch (error) {
+          return {
+            defaultDeliveryNote:
+              localStorage.getItem("foodExpressDefaultDeliveryNote") || "",
+            contactlessDelivery:
+              localStorage.getItem("foodExpressContactlessDelivery") === "true",
+            defaultPaymentMethod:
+              localStorage.getItem("foodExpressPreferredPayment") || "cash",
+            autoApplyBestCoupon:
+              localStorage.getItem("foodExpressAutoApplyBestCoupon") !==
+              "false",
+            saveDeliveryDetails:
+              localStorage.getItem("foodExpressSaveDeliveryDetails") !==
+              "false",
+            saveOrderHistory:
+              localStorage.getItem("foodExpressSaveOrderHistory") !== "false",
+          };
+        }
+      }
+
+      function applyAccountSettingsToCheckout() {
+        const settings = getAccountSettings();
+
+        applyPreferredPayment(settings.defaultPaymentMethod);
+        applyDeliveryNoteSettings(settings);
+        autoApplyBestRewardCoupon(settings);
+      }
+
+      function applyPreferredPayment(preferredPayment) {
+        const paymentValue =
+          preferredPayment ||
+          localStorage.getItem("foodExpressPreferredPayment") ||
+          "cash";
+
+        const radio = document.querySelector(
+          `input[name="paymentMethod"][value="${paymentValue}"]`,
+        );
+
+        if (!radio) return;
+
+        radio.checked = true;
+
+        document.querySelectorAll(".payment-method").forEach(function (method) {
+          method.classList.remove("selected");
+        });
+
+        const wrapper = radio.closest(".payment-method");
+        if (wrapper) wrapper.classList.add("selected");
+
+        const cardFields = document.getElementById("cardFields");
+        if (cardFields) {
+          cardFields.style.display = paymentValue === "card" ? "block" : "none";
+        }
+      }
+
+      function applyDeliveryNoteSettings(settings) {
+        const deliveryNoteInput = document.getElementById("deliveryNote");
+        if (!deliveryNoteInput) return;
+
+        const existingNote = deliveryNoteInput.value.trim();
+        const notes = [];
+
+        if (existingNote) notes.push(existingNote);
+
+        if (settings.defaultDeliveryNote) {
+          notes.push(settings.defaultDeliveryNote);
+        }
+
+        if (settings.contactlessDelivery) {
+          notes.push("Contactless delivery enabled");
+        }
+
+        const uniqueNotes = [
+          ...new Set(notes.map((note) => note.trim()).filter(Boolean)),
+        ];
+
+        deliveryNoteInput.value = uniqueNotes.join(" | ");
+      }
+
+      function autoApplyBestRewardCoupon(settings) {
+        if (!settings.autoApplyBestCoupon) return;
+
+        const couponSelect = document.getElementById("couponSelect");
+
+        if (
+          !couponSelect ||
+          typeof window.getAvailableCoupons !== "function" ||
+          typeof window.previewCouponDiscount !== "function"
+        ) {
+          return;
+        }
+
+        const coupons = window.getAvailableCoupons();
+
+        if (!Array.isArray(coupons) || !coupons.length) {
+          setCouponMessage(
+            "No active reward coupon yet. Redeem one from Rewards first.",
+            "error",
+          );
+          return;
+        }
+
+        const bestCoupon = [...coupons].sort(function (a, b) {
+          return Number(b.discount || 0) - Number(a.discount || 0);
+        })[0];
+
+        if (!bestCoupon) return;
+
+        couponSelect.value = bestCoupon.id;
+        applyCouponToCheckout();
+
+        setCouponMessage(
+          `Best reward coupon auto-applied: ${bestCoupon.discount}% OFF.`,
+          "success",
+        );
+      }
+
+      /* ===============================
+         CHECKOUT INIT
+      ================================ */
+
       function initializeCheckout() {
         const preparedItems = readJson("checkoutItems", []);
         const cartItems = readJson("foodDeliveryCartItems", []);
-        checkoutItems = preparedItems.length ? preparedItems : cartItems;
+
+        checkoutItems =
+          Array.isArray(preparedItems) && preparedItems.length
+            ? preparedItems
+            : cartItems;
 
         if (!Array.isArray(checkoutItems) || !checkoutItems.length) {
           showEmptyCheckout();
@@ -993,11 +1148,13 @@
         const storedRestaurantName =
           localStorage.getItem("checkoutRestaurantName") ||
           checkoutItems[0]?.restaurant_name ||
+          checkoutItems[0]?.restaurantName ||
           "Restaurant";
 
         const storedRestaurantId =
           localStorage.getItem("checkoutRestaurantId") ||
           checkoutItems[0]?.restaurant_id ||
+          checkoutItems[0]?.restaurantId ||
           "";
 
         checkoutRestaurant = {
@@ -1008,16 +1165,18 @@
         const subtotalFromStorage = parseFloat(
           localStorage.getItem("checkoutSubtotal") || "0",
         );
+
         const taxFromStorage = parseFloat(
           localStorage.getItem("checkoutTax") || "0",
         );
 
-        const calculatedSubtotal = checkoutItems.reduce((sum, item) => {
+        const calculatedSubtotal = checkoutItems.reduce(function (sum, item) {
           return sum + Number(item.price || 0) * Number(item.quantity || 0);
         }, 0);
 
         const subtotal =
           subtotalFromStorage > 0 ? subtotalFromStorage : calculatedSubtotal;
+
         const deliveryFee = checkoutItems.length ? 5 : 0;
         const tax = taxFromStorage > 0 ? taxFromStorage : subtotal * 0.1;
         const total = subtotal + deliveryFee + tax;
@@ -1038,6 +1197,7 @@
 
       function initializeCoupons() {
         const couponSelect = document.getElementById("couponSelect");
+
         if (!couponSelect || typeof window.getAvailableCoupons !== "function") {
           return;
         }
@@ -1045,12 +1205,12 @@
         const coupons = window.getAvailableCoupons();
         couponSelect.innerHTML = `<option value="">Select a coupon</option>`;
 
-        if (!coupons.length) {
+        if (!Array.isArray(coupons) || !coupons.length) {
           couponSelect.innerHTML = `<option value="">No active coupons available</option>`;
           return;
         }
 
-        coupons.forEach((coupon) => {
+        coupons.forEach(function (coupon) {
           const option = document.createElement("option");
           option.value = coupon.id;
           option.textContent = `${coupon.discount}% OFF (${coupon.id})`;
@@ -1060,11 +1220,10 @@
 
       function applyCouponToCheckout() {
         const couponSelect = document.getElementById("couponSelect");
-        const couponMessage = document.getElementById("couponMessage");
-
         if (!couponSelect) return;
 
         const selectedCouponId = couponSelect.value;
+
         if (!selectedCouponId) {
           setCouponMessage("Please select a coupon first.", "error");
           return;
@@ -1104,6 +1263,7 @@
         checkoutSummary.total = Math.max(0, Number(preview.finalTotal || 0));
 
         renderSummary();
+
         setCouponMessage(
           `${preview.coupon.discount}% coupon applied successfully.`,
           "success",
@@ -1113,6 +1273,7 @@
       function setCouponMessage(message, type) {
         const couponMessage = document.getElementById("couponMessage");
         if (!couponMessage) return;
+
         couponMessage.textContent = message;
         couponMessage.className = `coupon-message ${type}`;
       }
@@ -1120,29 +1281,25 @@
       function showEmptyCheckout() {
         const empty = document.getElementById("emptyCheckout");
         const content = document.getElementById("checkoutContent");
+
         if (empty) empty.style.display = "block";
         if (content) content.style.display = "none";
       }
 
       function renderCheckoutHeader() {
-        const itemCount = checkoutItems.reduce(
-          (sum, item) => sum + Number(item.quantity || 0),
-          0,
-        );
+        const itemCount = checkoutItems.reduce(function (sum, item) {
+          return sum + Number(item.quantity || 0);
+        }, 0);
+
         const eta = generateEstimatedEta(itemCount);
 
-        const restaurantNameEl = document.getElementById("restaurantName");
-        const restaurantMetaEl = document.getElementById("restaurantMeta");
-        const estimatedEtaEl = document.getElementById("estimatedEta");
-        const pillEl = document.getElementById("checkoutRestaurantPill");
-
-        if (restaurantNameEl)
-          restaurantNameEl.textContent = checkoutRestaurant.name;
-        if (restaurantMetaEl) {
-          restaurantMetaEl.textContent = `${itemCount} item${itemCount !== 1 ? "s" : ""} • Fresh prep • Reliable delivery through FoodExpress`;
-        }
-        if (estimatedEtaEl) estimatedEtaEl.textContent = eta;
-        if (pillEl) pillEl.textContent = checkoutRestaurant.name;
+        setText("restaurantName", checkoutRestaurant.name);
+        setText(
+          "restaurantMeta",
+          `${itemCount} item${itemCount !== 1 ? "s" : ""} • Fresh prep • Reliable delivery through FoodExpress`,
+        );
+        setText("estimatedEta", eta);
+        setText("checkoutRestaurantPill", checkoutRestaurant.name);
       }
 
       function renderOrderItems() {
@@ -1150,23 +1307,31 @@
         if (!container) return;
 
         container.innerHTML = checkoutItems
-          .map((item) => {
+          .map(function (item) {
             const name = escapeHtml(item.name || "Unnamed Item");
-            const image = item.image_url || DEFAULT_IMAGE;
+            const image = escapeHtml(
+              item.image_url || item.image || PAYMENT_DEFAULT_IMAGE,
+            );
             const quantity = Number(item.quantity || 0);
             const unitPrice = Number(item.price || 0);
             const lineTotal = unitPrice * quantity;
 
             return `
               <div class="order-item">
-                <img src="${image}" alt="${name}" onerror="this.src='${DEFAULT_IMAGE}'" />
+                <img
+                  src="${image}"
+                  alt="${name}"
+                  onerror="this.src='${PAYMENT_DEFAULT_IMAGE}'"
+                />
+
                 <div class="item-info">
                   <h4>${name}</h4>
                   <div class="item-meta">
-                    <span>${escapeHtml(item.restaurant_name || checkoutRestaurant.name)}</span>
+                    <span>${escapeHtml(item.restaurant_name || item.restaurantName || checkoutRestaurant.name)}</span>
                     <span>$${unitPrice.toFixed(2)} each</span>
                   </div>
                 </div>
+
                 <div class="item-total">
                   <span class="qty">Qty ${quantity}</span>
                   <span class="price">$${lineTotal.toFixed(2)}</span>
@@ -1178,10 +1343,9 @@
       }
 
       function renderSummary() {
-        const itemCount = checkoutItems.reduce(
-          (sum, item) => sum + Number(item.quantity || 0),
-          0,
-        );
+        const itemCount = checkoutItems.reduce(function (sum, item) {
+          return sum + Number(item.quantity || 0);
+        }, 0);
 
         const baseTotal =
           Number(checkoutSummary.subtotal) +
@@ -1196,12 +1360,14 @@
           "summaryItemsLabel",
           `${itemCount} item${itemCount !== 1 ? "s" : ""}`,
         );
+
         setText("summarySubtotal", checkoutSummary.subtotal.toFixed(2));
         setText("summaryDelivery", checkoutSummary.deliveryFee.toFixed(2));
         setText("summaryTax", checkoutSummary.tax.toFixed(2));
         setText("summaryTotal", checkoutSummary.total.toFixed(2));
 
         const discountRow = document.getElementById("discountRow");
+
         if (checkoutSummary.discount > 0) {
           if (discountRow) discountRow.style.display = "flex";
           setText("summaryDiscount", checkoutSummary.discount.toFixed(2));
@@ -1217,52 +1383,125 @@
       }
 
       function prefillUserDetails() {
-        const profile = readJson(USER_PROFILE_KEY, {});
-        const fallbackEmail = localStorage.getItem("userEmail") || "";
+        const settings = getAccountSettings();
+
+        const profileFromGlobal =
+          typeof window.getSavedUserProfile === "function"
+            ? window.getSavedUserProfile()
+            : {};
+
+        const foodExpressProfile = readJson(PAYMENT_USER_PROFILE_KEY, {});
+        const userProfile = readJson("userProfile", {});
+        const currentUser = readJson("currentUser", {});
+        const loggedInUser = readJson("loggedInUser", {});
+        const authUser = readJson("foodExpressAuthUser", {});
+
+        const profile = {
+          ...authUser,
+          ...loggedInUser,
+          ...currentUser,
+          ...foodExpressProfile,
+          ...userProfile,
+          ...profileFromGlobal,
+        };
+
+        const fallbackEmail =
+          localStorage.getItem("userEmail") ||
+          localStorage.getItem("pendingVerificationEmail") ||
+          localStorage.getItem("foodExpressUserEmail") ||
+          "";
+
+        const fallbackName =
+          localStorage.getItem("userName") ||
+          localStorage.getItem("pendingVerificationName") ||
+          localStorage.getItem("foodExpressUserName") ||
+          getNameFromEmail(fallbackEmail) ||
+          "";
 
         const derivedName =
           profile.name ||
           profile.full_name ||
+          profile.fullName ||
           [profile.first_name, profile.last_name].filter(Boolean).join(" ") ||
+          fallbackName ||
           "";
 
-        document.getElementById("fullName").value = derivedName;
+        const fullNameInput = document.getElementById("fullName");
+        const emailInput = document.getElementById("customerEmail");
+        const phoneInput = document.getElementById("phoneNumber");
+        const addressInput = document.getElementById("address");
+        const cityInput = document.getElementById("city");
+        const postalInput = document.getElementById("postalCode");
+        const deliveryNoteInput = document.getElementById("deliveryNote");
 
-        const customerEmailInput = document.getElementById("customerEmail");
-        if (customerEmailInput) {
-          customerEmailInput.value =
+        if (fullNameInput) fullNameInput.value = derivedName;
+
+        if (emailInput) {
+          emailInput.value =
             profile.email ||
             profile.user_email ||
             profile.email_address ||
             fallbackEmail ||
             "";
         }
-        document.getElementById("phoneNumber").value =
-          profile.phone || profile.phone_number || "";
-        document.getElementById("address").value = profile.address || "";
-        document.getElementById("city").value = profile.city || "";
-        document.getElementById("postalCode").value = profile.postal_code || "";
-        document.getElementById("deliveryNote").value =
-          profile.delivery_note || "";
 
-        if (!derivedName && fallbackEmail) {
-          document.getElementById("fullName").placeholder =
-            `Order for ${fallbackEmail}`;
+        if (phoneInput) {
+          phoneInput.value =
+            profile.phone ||
+            profile.phone_number ||
+            localStorage.getItem("userPhone") ||
+            "";
+        }
+
+        if (addressInput) {
+          addressInput.value =
+            profile.address ||
+            profile.address_line1 ||
+            localStorage.getItem("userAddress") ||
+            "";
+        }
+
+        if (cityInput) {
+          cityInput.value =
+            profile.city || localStorage.getItem("userCity") || "";
+        }
+
+        if (postalInput) {
+          postalInput.value =
+            profile.postal_code ||
+            profile.postalCode ||
+            localStorage.getItem("userPostalCode") ||
+            "";
+        }
+
+        if (deliveryNoteInput) {
+          deliveryNoteInput.value =
+            profile.delivery_note ||
+            localStorage.getItem("foodExpressDefaultDeliveryNote") ||
+            settings.defaultDeliveryNote ||
+            "";
+        }
+
+        if (!derivedName && fallbackEmail && fullNameInput) {
+          fullNameInput.placeholder = `Order for ${fallbackEmail}`;
         }
       }
 
       function initializePaymentMethods() {
         document
           .querySelectorAll('input[name="paymentMethod"]')
-          .forEach((radio) => {
-            radio.addEventListener("change", () => {
-              document.querySelectorAll(".payment-method").forEach((method) => {
-                method.classList.remove("selected");
-              });
+          .forEach(function (radio) {
+            radio.addEventListener("change", function () {
+              document
+                .querySelectorAll(".payment-method")
+                .forEach(function (method) {
+                  method.classList.remove("selected");
+                });
 
               const selected = document.querySelector(
                 'input[name="paymentMethod"]:checked',
               );
+
               if (selected) {
                 const wrapper = selected.closest(".payment-method");
                 if (wrapper) wrapper.classList.add("selected");
@@ -1283,7 +1522,7 @@
         const cardCVV = document.getElementById("cardCVV");
 
         if (cardNumber) {
-          cardNumber.addEventListener("input", () => {
+          cardNumber.addEventListener("input", function () {
             let value = cardNumber.value.replace(/\D/g, "").slice(0, 16);
             value = value.replace(/(.{4})/g, "$1 ").trim();
             cardNumber.value = value;
@@ -1291,7 +1530,7 @@
         }
 
         if (cardExpiry) {
-          cardExpiry.addEventListener("input", () => {
+          cardExpiry.addEventListener("input", function () {
             let value = cardExpiry.value.replace(/\D/g, "").slice(0, 4);
             if (value.length >= 3) {
               value = value.slice(0, 2) + "/" + value.slice(2);
@@ -1301,11 +1540,15 @@
         }
 
         if (cardCVV) {
-          cardCVV.addEventListener("input", () => {
+          cardCVV.addEventListener("input", function () {
             cardCVV.value = cardCVV.value.replace(/\D/g, "").slice(0, 4);
           });
         }
       }
+
+      /* ===============================
+         PLACE ORDER
+      ================================ */
 
       async function placeOrder() {
         const fullName = document.getElementById("fullName").value.trim();
@@ -1319,9 +1562,11 @@
         const deliveryNote = document
           .getElementById("deliveryNote")
           .value.trim();
+
         const selectedPayment = document.querySelector(
           'input[name="paymentMethod"]:checked',
         );
+
         const paymentMethod = selectedPayment ? selectedPayment.value : "cash";
 
         if (
@@ -1358,9 +1603,12 @@
         }
 
         const btn = document.getElementById("placeOrderBtn");
-        const originalText = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = "Placing Order...";
+        const originalText = btn ? btn.textContent : "Place Order";
+
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "Placing Order...";
+        }
 
         const orderData = {
           customer_name: fullName,
@@ -1410,10 +1658,13 @@
             throw new Error(result.message || "Failed to place order.");
           }
 
+          const fallbackOrderId = generateFallbackOrderId();
+          const fallbackOrderNumber = generateFallbackOrderNumber();
+
           const newOrder = {
-            id: result.order_id || generateFallbackOrderId(),
-            orderId: result.order_id || generateFallbackOrderId(),
-            orderNumber: result.order_number || generateFallbackOrderNumber(),
+            id: result.order_id || fallbackOrderId,
+            orderId: result.order_id || fallbackOrderId,
+            orderNumber: result.order_number || fallbackOrderNumber,
 
             restaurantId: checkoutRestaurant.id,
             restaurantName: checkoutRestaurant.name,
@@ -1437,17 +1688,14 @@
             total: checkoutSummary.total,
 
             items: checkoutItems,
-            itemCount: checkoutItems.reduce(
-              (sum, item) => sum + Number(item.quantity || 0),
-              0,
-            ),
+            itemCount: checkoutItems.reduce(function (sum, item) {
+              return sum + Number(item.quantity || 0);
+            }, 0),
 
-            // Restaurant/kitchen progress
             status: "pending",
-
-            // Rider/delivery progress
             deliveryStatus: result.delivery_status || "searching",
             delivery_status: result.delivery_status || "searching",
+
             riderId: null,
             riderName: "",
             riderEmail: "",
@@ -1462,7 +1710,7 @@
 
             deliveryHistory: [
               {
-                status: "searching",
+                status: result.delivery_status || "searching",
                 time: new Date().toISOString(),
               },
             ],
@@ -1473,7 +1721,19 @@
 
           localStorage.setItem("latestOrder", JSON.stringify(newOrder));
           localStorage.setItem("lastOrder", JSON.stringify(newOrder));
+
           saveOrderHistory(newOrder);
+
+          if (typeof window.addFoodExpressNotification === "function") {
+            window.addFoodExpressNotification({
+              title: "Order placed",
+              message: `Your order ${newOrder.orderNumber} was sent to ${newOrder.restaurantName}.`,
+              type: "order",
+              category: "order",
+              icon: "fa-bag-shopping",
+              link: "track-order.html",
+            });
+          }
 
           if (
             appliedCouponId &&
@@ -1484,6 +1744,7 @@
 
           updateSavedDeliveryProfile({
             fullName,
+            customerEmail,
             phoneNumber,
             address,
             city,
@@ -1496,27 +1757,43 @@
           alert(
             `✅ Order placed successfully!\n\nOrder Number: ${newOrder.orderNumber}`,
           );
+
           window.location.href = "track-order.html";
         } catch (error) {
           console.error("Order placement failed:", error);
           alert(`Failed to place order: ${error.message}`);
         } finally {
-          btn.disabled = false;
-          btn.textContent = originalText;
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+          }
         }
       }
 
       function saveOrderHistory(order) {
-        const orders = readJson(ORDER_HISTORY_KEY, []);
+        const settings = getAccountSettings();
+
+        if (settings.saveOrderHistory === false) {
+          return;
+        }
+
+        const orders = readJson(PAYMENT_ORDER_HISTORY_KEY, []);
         orders.unshift(order);
+
         localStorage.setItem(
-          ORDER_HISTORY_KEY,
+          PAYMENT_ORDER_HISTORY_KEY,
           JSON.stringify(orders.slice(0, 25)),
         );
       }
 
       function updateSavedDeliveryProfile(details) {
-        const profile = readJson(USER_PROFILE_KEY, {});
+        const settings = getAccountSettings();
+
+        if (settings.saveDeliveryDetails === false) {
+          return;
+        }
+
+        const profile = readJson(PAYMENT_USER_PROFILE_KEY, {});
         const existingName =
           profile.name ||
           profile.full_name ||
@@ -1526,6 +1803,8 @@
           ...profile,
           name: existingName || details.fullName,
           full_name: existingName || details.fullName,
+          email: profile.email || details.customerEmail,
+          user_email: profile.user_email || details.customerEmail,
           phone: details.phoneNumber,
           phone_number: details.phoneNumber,
           address: details.address,
@@ -1534,7 +1813,37 @@
           delivery_note: details.deliveryNote,
         };
 
-        localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(updatedProfile));
+        localStorage.setItem(
+          PAYMENT_USER_PROFILE_KEY,
+          JSON.stringify(updatedProfile),
+        );
+
+        const globalProfile = readJson("userProfile", {});
+        const updatedGlobalProfile = {
+          ...globalProfile,
+          name: globalProfile.name || existingName || details.fullName,
+          email:
+            globalProfile.email ||
+            localStorage.getItem("userEmail") ||
+            details.customerEmail ||
+            "",
+          phone: details.phoneNumber,
+          address: details.address,
+          city: details.city,
+          postal_code: details.postalCode,
+          delivery_note: details.deliveryNote,
+        };
+
+        localStorage.setItem(
+          "userProfile",
+          JSON.stringify(updatedGlobalProfile),
+        );
+
+        localStorage.setItem("userEmail", updatedGlobalProfile.email);
+        localStorage.setItem("userPhone", details.phoneNumber);
+        localStorage.setItem("userAddress", details.address);
+        localStorage.setItem("userCity", details.city);
+        localStorage.setItem("userPostalCode", details.postalCode);
       }
 
       function clearCheckoutState() {
@@ -1552,6 +1861,10 @@
         }
       }
 
+      /* ===============================
+         HELPERS
+      ================================ */
+
       function generateEstimatedEta(itemCount) {
         const baseMin = 25 + itemCount * 2;
         const baseMax = 35 + itemCount * 3;
@@ -1564,6 +1877,17 @@
 
       function generateFallbackOrderNumber() {
         return "FDX-" + String(Date.now()).slice(-6);
+      }
+
+      function getNameFromEmail(email) {
+        if (!email) return "";
+
+        return String(email)
+          .split("@")[0]
+          .replace(/[._-]+/g, " ")
+          .replace(/\b\w/g, function (char) {
+            return char.toUpperCase();
+          });
       }
 
       function readJson(key, fallback) {
@@ -1581,7 +1905,7 @@
       }
 
       function escapeHtml(value) {
-        return String(value)
+        return String(value ?? "")
           .replace(/&/g, "&amp;")
           .replace(/"/g, "&quot;")
           .replace(/'/g, "&#39;")

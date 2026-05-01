@@ -1,6 +1,92 @@
-console.log("[notifications.js] Loaded - global notification bell");
+console.log("[notifications.js] Loaded - preference-aware notification bell");
 
 const NOTIFICATION_KEY = "foodExpressNotifications";
+const ACCOUNT_SETTINGS_KEY = "foodExpressAccountSettings";
+
+const DEFAULT_NOTIFICATION_PREFS = {
+  notifyOrderUpdates: true,
+  notifyRiderUpdates: true,
+  notifyRewardUpdates: true,
+  notifySupportReplies: true,
+  notifyPromotions: false,
+};
+
+function getAccountSettingsForNotifications() {
+  try {
+    const raw = localStorage.getItem(ACCOUNT_SETTINGS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+
+    return {
+      ...DEFAULT_NOTIFICATION_PREFS,
+      ...parsed,
+    };
+  } catch (error) {
+    return { ...DEFAULT_NOTIFICATION_PREFS };
+  }
+}
+
+function getNotificationCategory(notification = {}) {
+  if (notification.category) return notification.category;
+
+  const type = String(notification.type || "").toLowerCase();
+  const title = String(notification.title || "").toLowerCase();
+  const message = String(notification.message || "").toLowerCase();
+
+  if (
+    type === "rider" ||
+    title.includes("rider") ||
+    message.includes("rider") ||
+    title.includes("picked up") ||
+    title.includes("delivered")
+  ) {
+    return "rider";
+  }
+
+  if (
+    type === "reward" ||
+    title.includes("reward") ||
+    title.includes("coupon") ||
+    title.includes("points") ||
+    message.includes("coupon") ||
+    message.includes("points")
+  ) {
+    return "reward";
+  }
+
+  if (
+    type === "support" ||
+    title.includes("support") ||
+    message.includes("support") ||
+    title.includes("ticket")
+  ) {
+    return "support";
+  }
+
+  if (
+    type === "promotion" ||
+    type === "promo" ||
+    title.includes("offer") ||
+    title.includes("promotion") ||
+    title.includes("discount deal")
+  ) {
+    return "promotion";
+  }
+
+  return "order";
+}
+
+function isNotificationAllowed(notification = {}) {
+  const settings = getAccountSettingsForNotifications();
+  const category = getNotificationCategory(notification);
+
+  if (category === "order") return Boolean(settings.notifyOrderUpdates);
+  if (category === "rider") return Boolean(settings.notifyRiderUpdates);
+  if (category === "reward") return Boolean(settings.notifyRewardUpdates);
+  if (category === "support") return Boolean(settings.notifySupportReplies);
+  if (category === "promotion") return Boolean(settings.notifyPromotions);
+
+  return true;
+}
 
 function getNotifications() {
   try {
@@ -14,6 +100,10 @@ function getNotifications() {
     console.warn("[notifications.js] Failed to read notifications:", error);
     return [];
   }
+}
+
+function getVisibleNotifications() {
+  return getNotifications().filter(isNotificationAllowed);
 }
 
 function saveNotifications(notifications) {
@@ -30,7 +120,8 @@ function seedDemoNotificationIfEmpty() {
       id: "demo-rider-assigned",
       title: "Rider assigned",
       message: "FoodExpress Rider has accepted your delivery.",
-      type: "success",
+      type: "rider",
+      category: "rider",
       icon: "fa-motorcycle",
       read: false,
       createdAt: Date.now() - 60 * 60 * 1000,
@@ -58,33 +149,41 @@ function formatNotificationTime(timestamp) {
 function getNotificationIcon(notification) {
   if (notification.icon) return notification.icon;
 
+  const category = getNotificationCategory(notification);
   const type = notification.type || "info";
 
   const map = {
+    order: "fa-bag-shopping",
+    rider: "fa-motorcycle",
+    reward: "fa-coins",
+    support: "fa-message",
+    promotion: "fa-tags",
     success: "fa-circle-check",
     warning: "fa-triangle-exclamation",
     danger: "fa-circle-exclamation",
     info: "fa-bell",
-    order: "fa-bag-shopping",
-    rider: "fa-motorcycle",
   };
 
-  return map[type] || "fa-bell";
+  return map[category] || map[type] || "fa-bell";
 }
 
 function getNotificationIconClass(notification) {
+  const category = getNotificationCategory(notification);
   const type = notification.type || "info";
 
   const map = {
+    order: "notification-info",
+    rider: "notification-success",
+    reward: "notification-warning",
+    support: "notification-info",
+    promotion: "notification-danger",
     success: "notification-success",
     warning: "notification-warning",
     danger: "notification-danger",
     info: "notification-info",
-    order: "notification-info",
-    rider: "notification-success",
   };
 
-  return map[type] || "notification-info";
+  return map[category] || map[type] || "notification-info";
 }
 
 function renderNotificationDropdown() {
@@ -93,7 +192,7 @@ function renderNotificationDropdown() {
 
   if (!dropdown || !badge) return;
 
-  const notifications = getNotifications();
+  const notifications = getVisibleNotifications();
   const unreadCount = notifications.filter((item) => !item.read).length;
 
   badge.textContent = unreadCount;
@@ -104,13 +203,13 @@ function renderNotificationDropdown() {
       <div class="notification-head">
         <div>
           <strong>Notifications</strong>
-          <span>No updates yet</span>
+          <span>No visible updates</span>
         </div>
       </div>
 
       <div class="notification-empty">
         <i class="fa-regular fa-bell"></i>
-        <p>No notifications yet.</p>
+        <p>No notifications based on your current preferences.</p>
       </div>
     `;
     return;
@@ -158,10 +257,13 @@ function renderNotificationDropdown() {
     markAllBtn.addEventListener("click", function (event) {
       event.stopPropagation();
 
-      const updated = getNotifications().map((item) => ({
-        ...item,
-        read: true,
-      }));
+      const visibleIds = new Set(
+        getVisibleNotifications().map((item) => String(item.id)),
+      );
+
+      const updated = getNotifications().map((item) =>
+        visibleIds.has(String(item.id)) ? { ...item, read: true } : item,
+      );
 
       saveNotifications(updated);
       renderNotificationDropdown();
@@ -228,19 +330,27 @@ function bindNotificationBell() {
 }
 
 function addFoodExpressNotification(notification) {
-  const notifications = getNotifications();
-
   const newNotification = {
     id: notification.id || `notification-${Date.now()}`,
     title: notification.title || "FoodExpress update",
     message: notification.message || "",
     type: notification.type || "info",
+    category: notification.category || getNotificationCategory(notification),
     icon: notification.icon || "",
     read: false,
     createdAt: notification.createdAt || Date.now(),
     link: notification.link || "",
   };
 
+  if (!isNotificationAllowed(newNotification)) {
+    console.log("[notifications.js] Notification blocked by user settings:", {
+      title: newNotification.title,
+      category: newNotification.category,
+    });
+    return false;
+  }
+
+  const notifications = getNotifications();
   notifications.unshift(newNotification);
   saveNotifications(notifications);
 
@@ -249,6 +359,7 @@ function addFoodExpressNotification(notification) {
   }
 
   renderNotificationDropdown();
+  return true;
 }
 
 function escapeNotificationHtml(value) {
@@ -261,11 +372,6 @@ function escapeNotificationHtml(value) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  /*
-    Navbar is dynamic, so it may not exist immediately.
-    These delayed binds make notification work on shop, food,
-    dashboard, contact, track-order, payment, etc.
-  */
   bindNotificationBell();
   setTimeout(bindNotificationBell, 100);
   setTimeout(bindNotificationBell, 400);
@@ -276,6 +382,12 @@ window.addEventListener("foodExpressNotificationsUpdated", function () {
   renderNotificationDropdown();
 });
 
+window.addEventListener("foodExpressAccountSettingsUpdated", function () {
+  renderNotificationDropdown();
+});
+
 window.bindNotificationBell = bindNotificationBell;
 window.renderNotificationDropdown = renderNotificationDropdown;
 window.addFoodExpressNotification = addFoodExpressNotification;
+window.getNotifications = getNotifications;
+window.getVisibleNotifications = getVisibleNotifications;

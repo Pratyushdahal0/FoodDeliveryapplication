@@ -1,15 +1,23 @@
+console.log("[dashboard.js] Loaded - premium dashboard fixed");
+
 const ORDER_HISTORY_KEY = "foodExpressOrders";
 const NOTIFICATION_PREF_KEY = "foodExpressNotificationsEnabled";
 const DASHBOARD_PREFS_KEY = "foodExpressDashboardPrefs";
+const REWARDS_STORAGE_KEY = "foodexpressRewards";
+
 const DASHBOARD_DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80";
 
 let allOrdersCache = [];
 let showAllOrders = false;
 
+/* ===============================
+   INIT
+================================ */
+
 document.addEventListener("DOMContentLoaded", async () => {
-  if (typeof bindProfileEverywhere === "function") {
-    bindProfileEverywhere();
+  if (typeof window.bindProfileEverywhere === "function") {
+    window.bindProfileEverywhere();
   }
 
   restoreDashboardPrefs();
@@ -17,14 +25,55 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupTabs();
   setupDashboardActions();
   updateRewardsUI();
+
   await refreshDashboardData();
+
+  // Delayed sync because navbar/profile/rewards may render after dashboard.
+  setTimeout(() => {
+    bindDashboardProfileInfo();
+    updateRewardsUI();
+
+    if (typeof window.bindProfileEverywhere === "function") {
+      window.bindProfileEverywhere();
+    }
+
+    if (typeof window.bindNotificationBell === "function") {
+      window.bindNotificationBell();
+    }
+  }, 300);
 });
 
-window.addEventListener("foodexpress:profile-updated", async () => {
+window.addEventListener("foodExpressProfileUpdated", async () => {
   bindDashboardProfileInfo();
   updateRewardsUI();
   await refreshDashboardData();
 });
+
+window.addEventListener("foodExpressRewardsUpdated", () => {
+  updateRewardsUI();
+  loadDashboardStats();
+});
+
+window.addEventListener("storage", (event) => {
+  if (
+    event.key === "userProfile" ||
+    event.key === "userName" ||
+    event.key === "userEmail" ||
+    event.key === "userProfileImage" ||
+    event.key === "userPoints" ||
+    event.key === "foodExpressRewardPoints" ||
+    event.key === REWARDS_STORAGE_KEY ||
+    event.key === ORDER_HISTORY_KEY
+  ) {
+    bindDashboardProfileInfo();
+    updateRewardsUI();
+    loadDashboardStats();
+  }
+});
+
+/* ===============================
+   MAIN DASHBOARD DATA
+================================ */
 
 async function refreshDashboardData() {
   allOrdersCache = getSortedOrders();
@@ -44,9 +93,10 @@ function loadDashboardStats() {
   );
 
   const realisticSavings = Math.floor(totalSpent * 0.08);
+  const points = getCurrentRewardPoints(profile);
 
   setText("ordersCount", totalOrders);
-  setText("pointsCount", Number(profile.points || localStorage.getItem("userPoints") || 0));
+  setText("pointsCount", points);
   setText("savingsAmount", `$${realisticSavings}`);
 
   bindDashboardProfileInfo();
@@ -63,34 +113,58 @@ function bindDashboardProfileInfo() {
   }
 }
 
+/* ===============================
+   REWARDS DASHBOARD CARD
+================================ */
+
 function updateRewardsUI() {
   const profile = getDashboardProfile();
+  const points = getCurrentRewardPoints(profile);
 
-  const points = Number(
-    profile.points ||
-      localStorage.getItem("userPoints") ||
-      localStorage.getItem("foodExpressRewardPoints") ||
-      0,
-  );
+  const rewardTiers = [
+    { points: 500, label: "5% OFF" },
+    { points: 900, label: "10% OFF" },
+    { points: 1300, label: "15% OFF" },
+    { points: 2000, label: "20% OFF" },
+  ];
 
-  const nextThreshold = 1000;
-  const progress = Math.min(100, Math.round((points / nextThreshold) * 100));
-  const remaining = Math.max(0, nextThreshold - points);
+  const nextTier = rewardTiers.find((tier) => points < tier.points);
+  const finalTier = rewardTiers[rewardTiers.length - 1];
+
+  let targetPoints = nextTier ? nextTier.points : finalTier.points;
+  let progress = Math.min(100, Math.round((points / targetPoints) * 100));
+  let remaining = nextTier ? Math.max(0, nextTier.points - points) : 0;
 
   const fill = document.getElementById("rewardsProgressFill");
   if (fill) fill.style.width = `${progress}%`;
 
-  setText("rewardsProgressText", `${points} / ${nextThreshold} points`);
+  setText("rewardsProgressText", `${points} / ${targetPoints} points`);
 
-  if (remaining > 0) {
+  if (nextTier) {
     setText(
       "rewardsSubtitle",
-      `You're ${remaining} points away from a free meal!`,
+      `You're ${remaining} points away from ${nextTier.label}.`,
     );
   } else {
-    setText("rewardsSubtitle", "🎉 You unlocked your reward!");
+    setText("rewardsSubtitle", "🎉 You unlocked all reward tiers!");
   }
 }
+
+function getCurrentRewardPoints(profile = {}) {
+  const rewardsData = readJson(REWARDS_STORAGE_KEY, null);
+
+  return Number(
+    rewardsData?.currentPoints ??
+      profile.points ??
+      localStorage.getItem("userPoints") ??
+      localStorage.getItem("foodExpressRewardPoints") ??
+      0,
+  );
+}
+
+/* ===============================
+   TABS
+================================ */
 
 function setupTabs() {
   const recentTab = document.getElementById("recentTab");
@@ -99,13 +173,17 @@ function setupTabs() {
   const favoritesContent = document.getElementById("favoritesContent");
   const viewAllBtn = document.getElementById("viewAllOrdersBtn");
 
-  if (!recentTab || !favoriteTab || !ordersContent || !favoritesContent) return;
+  if (!recentTab || !favoriteTab || !ordersContent || !favoritesContent) {
+    return;
+  }
 
   recentTab.addEventListener("click", () => {
     recentTab.classList.add("active");
     favoriteTab.classList.remove("active");
+
     ordersContent.style.display = "block";
     favoritesContent.style.display = "none";
+
     if (viewAllBtn) {
       viewAllBtn.style.display = allOrdersCache.length > 4 ? "flex" : "none";
     }
@@ -114,11 +192,17 @@ function setupTabs() {
   favoriteTab.addEventListener("click", () => {
     favoriteTab.classList.add("active");
     recentTab.classList.remove("active");
+
     ordersContent.style.display = "none";
     favoritesContent.style.display = "block";
+
     if (viewAllBtn) viewAllBtn.style.display = "none";
   });
 }
+
+/* ===============================
+   RECENT ORDERS
+================================ */
 
 function renderOrdersList() {
   const list = document.getElementById("recentOrdersList");
@@ -132,6 +216,7 @@ function renderOrdersList() {
   if (!orders.length) {
     list.innerHTML = "";
     empty.style.display = "block";
+
     if (viewAllBtn) viewAllBtn.style.display = "none";
     return;
   }
@@ -149,21 +234,30 @@ function renderOrdersList() {
         order.storeName ||
         "Restaurant";
 
-      const orderId = order.orderId || order.id || `ORD-${index + 1}`;
-      const status = order.status || "pending";
+      const orderId =
+        order.orderNumber || order.orderId || order.id || `ORD-${index + 1}`;
+
+      const status = getDisplayOrderStatus(order);
 
       return `
         <div class="dashboard-order-item" data-order-index="${index}">
           <div class="dashboard-order-left">
-            <div class="dashboard-order-title">${escapeHtml(orderTitle)}</div>
+            <div class="dashboard-order-title">
+              ${escapeHtml(orderTitle)}
+            </div>
+
             <div class="dashboard-order-meta">
               Order #${escapeHtml(String(orderId))} • ${count} item${
                 count !== 1 ? "s" : ""
               } • ${formatPlacedTime(order.timestamp || order.created_at)}
             </div>
           </div>
+
           <div class="dashboard-order-right">
-            <div class="dashboard-order-total">$${Number(order.total || 0).toFixed(2)}</div>
+            <div class="dashboard-order-total">
+              $${Number(order.total || 0).toFixed(2)}
+            </div>
+
             <div class="dashboard-order-status status-${escapeHtml(status)}">
               ${formatStatus(status)}
             </div>
@@ -178,9 +272,11 @@ function renderOrdersList() {
     .forEach((itemEl, visibleIndex) => {
       itemEl.addEventListener("click", () => {
         const selectedOrder = ordersToShow[visibleIndex];
+
         if (selectedOrder) {
           localStorage.setItem("lastOrder", JSON.stringify(selectedOrder));
         }
+
         window.location.href = "track-order.html";
       });
     });
@@ -198,6 +294,21 @@ function renderOrdersList() {
     : `View All Orders <i class="fa-solid fa-chevron-right"></i>`;
 }
 
+function getDisplayOrderStatus(order = {}) {
+  const deliveryStatus = order.delivery_status || order.deliveryStatus || "";
+  const kitchenStatus = order.status || "pending";
+
+  if (deliveryStatus && deliveryStatus !== "searching") {
+    return deliveryStatus;
+  }
+
+  return kitchenStatus;
+}
+
+/* ===============================
+   FAVORITES
+================================ */
+
 async function loadFavoritesData() {
   const favoriteIds = getFavoriteIdsSafe();
   const list = document.getElementById("favoritesList");
@@ -213,7 +324,7 @@ async function loadFavoritesData() {
 
   try {
     const products =
-      typeof getAllProducts === "function" ? await getAllProducts() : [];
+      typeof window.getAllProducts === "function" ? await getAllProducts() : [];
 
     const favorites = products.filter((product) =>
       favoriteIds.includes(String(product.id)),
@@ -237,6 +348,7 @@ async function loadFavoritesData() {
           DASHBOARD_DEFAULT_IMAGE;
 
         const name = item.name || "Favorite item";
+
         const subtitle =
           item.restaurant_name ||
           item.restaurantName ||
@@ -247,9 +359,10 @@ async function loadFavoritesData() {
         const isFavorite = favoriteIds.includes(String(item.id));
 
         return `
-          <div class="dashboard-favorite-item" data-product-id="${escapeHtml(
-            String(item.id || ""),
-          )}">
+          <div
+            class="dashboard-favorite-item"
+            data-product-id="${escapeHtml(String(item.id || ""))}"
+          >
             <div class="dashboard-favorite-left">
               <img
                 src="${escapeHtml(image)}"
@@ -257,14 +370,21 @@ async function loadFavoritesData() {
                 class="dashboard-favorite-image"
                 onerror="this.src='${DASHBOARD_DEFAULT_IMAGE}'"
               />
+
               <div class="dashboard-favorite-info">
-                <div class="dashboard-favorite-name">${escapeHtml(name)}</div>
-                <div class="dashboard-favorite-meta">${escapeHtml(subtitle)}</div>
+                <div class="dashboard-favorite-name">
+                  ${escapeHtml(name)}
+                </div>
+
+                <div class="dashboard-favorite-meta">
+                  ${escapeHtml(subtitle)}
+                </div>
               </div>
             </div>
 
             <div class="dashboard-favorite-actions">
               <div class="dashboard-favorite-price">$${price}</div>
+
               <button
                 class="dashboard-favorite-btn ${isFavorite ? "active" : ""}"
                 type="button"
@@ -283,7 +403,7 @@ async function loadFavoritesData() {
     bindFavoriteRemoveButtons();
     bindFavoriteOpenButtons();
   } catch (error) {
-    console.error("Failed to load favorites preview:", error);
+    console.error("[dashboard.js] Failed to load favorites preview:", error);
     list.innerHTML = "";
     empty.style.display = "block";
   }
@@ -302,27 +422,25 @@ function bindFavoriteRemoveButtons() {
         let ids = getFavoriteIdsSafe();
 
         if (ids.includes(String(productId))) {
-          // ❌ REMOVE from favorites
           ids = ids.filter((id) => id !== String(productId));
           saveFavoriteIdsSafe(ids);
 
-          // ✅ REMOVE CARD instantly from UI
           const card = button.closest(".dashboard-favorite-item");
           if (card) card.remove();
 
-          // ✅ if empty → show message
           if (!ids.length) {
             const empty = document.getElementById("noFavoritesMsg");
             if (empty) empty.style.display = "block";
           }
 
-        } else {
-          // (rare case: add back)
-          ids.push(String(productId));
-          saveFavoriteIdsSafe(ids);
-          button.classList.add("active");
-          button.textContent = "♥";
+          return;
         }
+
+        ids.push(String(productId));
+        saveFavoriteIdsSafe(ids);
+
+        button.classList.add("active");
+        button.textContent = "♥";
       });
     });
 }
@@ -336,6 +454,10 @@ function bindFavoriteOpenButtons() {
       });
     });
 }
+
+/* ===============================
+   DASHBOARD ACTIONS
+================================ */
 
 function setupDashboardActions() {
   const viewAllBtn = document.getElementById("viewAllOrdersBtn");
@@ -367,7 +489,7 @@ function setupDashboardActions() {
       return;
     }
 
-    alert("No order found yet. Place an order first.");
+    alert("No active order found yet. Place an order first.");
   });
 
   bindClick("actionRedeemPoints", () => {
@@ -379,65 +501,123 @@ function setupDashboardActions() {
   });
 
   bindClick("actionAddresses", () => {
-    const profile =
-      typeof getSafeProfile === "function" ? getSafeProfile() : {};
-
-    const address = getSavedAddress(profile);
-
-    if (address) {
-      alert(`Saved address:\n\n${address}`);
-    } else {
-      alert("No saved address found yet. Add one from Edit Profile.");
-      window.location.href = "edit-profile.html";
-    }
+    /*
+      Real-world flow:
+      For now, delivery address is managed from Edit Profile.
+      Later you can build addresses.html.
+    */
+    window.location.href = "edit-profile.html";
   });
 
   bindClick("actionPaymentMethods", () => {
+    /*
+      Real-world flow:
+      Payment method is currently managed inside checkout.
+      Later you can build payment-methods.html.
+    */
     window.location.href = "payment.html";
   });
 
-  bindClick("actionNotifications", () => {
-    const current = localStorage.getItem(NOTIFICATION_PREF_KEY);
-    const nextValue = current === "false" ? "true" : "false";
-    localStorage.setItem(NOTIFICATION_PREF_KEY, nextValue);
+bindClick("actionNotifications", () => {
+  if (typeof window.bindNotificationBell === "function") {
+    window.bindNotificationBell();
+  }
 
-    alert(
-      nextValue === "true"
-        ? "Notifications turned ON."
-        : "Notifications turned OFF.",
-    );
-  });
+  const bell = document.getElementById("notificationBell");
+
+  if (bell) {
+    bell.click();
+    return;
+  }
+
+  alert("Notifications are available from the top navbar bell.");
+});
+
+bindClick("actionSettings", () => {
+  window.location.href = "account-settings.html";
+});
 
   bindClick("actionSettings", () => {
-    const profile =
-      typeof getSafeProfile === "function" ? getSafeProfile() : {};
-    const notificationsEnabled =
-      localStorage.getItem(NOTIFICATION_PREF_KEY) !== "false";
-
-    alert(
-      `Account Settings\n\nName: ${profile.name || "Guest User"}\nEmail: ${
-        profile.email || "No email"
-      }\nNotifications: ${notificationsEnabled ? "On" : "Off"}`,
-    );
+    /*
+      Real-world flow:
+      Until settings.html exists, account settings are managed from Edit Profile.
+    */
+    window.location.href = "edit-profile.html";
   });
 
   bindClick("actionLogout", () => {
-    if (typeof logout === "function") {
-      logout();
-    } else {
-      localStorage.removeItem("isLoggedIn");
-      window.location.href = "landingpage.html";
+    const confirmLogout = confirm("Are you sure you want to log out?");
+
+    if (!confirmLogout) return;
+
+    if (typeof window.logout === "function") {
+      window.logout();
+      return;
     }
+
+    localStorage.removeItem("isLoggedIn");
+    window.location.href = "landingpage.html";
   });
 }
 
 function bindClick(id, handler) {
   const el = document.getElementById(id);
-  if (el) el.addEventListener("click", handler);
+  if (!el || el.dataset.dashboardBound === "true") return;
+
+  el.dataset.dashboardBound = "true";
+  el.addEventListener("click", handler);
 }
+
+/* ===============================
+   PROFILE HELPERS
+================================ */
+
+function getDashboardProfile() {
+  if (typeof window.getSavedUserProfile === "function") {
+    const savedProfile = window.getSavedUserProfile();
+
+    return {
+      ...savedProfile,
+      points: getCurrentRewardPoints(savedProfile),
+    };
+  }
+
+  const profile = readJson("userProfile", {});
+
+  return {
+    name:
+      profile.name ||
+      localStorage.getItem("userName") ||
+      localStorage.getItem("pendingVerificationName") ||
+      "User",
+
+    email:
+      profile.email ||
+      localStorage.getItem("userEmail") ||
+      localStorage.getItem("pendingVerificationEmail") ||
+      "No email added",
+
+    phone: profile.phone || localStorage.getItem("userPhone") || "",
+
+    address: profile.address || localStorage.getItem("userAddress") || "",
+
+    profileImage:
+      profile.profileImage ||
+      profile.image ||
+      localStorage.getItem("userProfileImage") ||
+      "",
+
+    points: getCurrentRewardPoints(profile),
+  };
+}
+
+/* ===============================
+   STORAGE HELPERS
+================================ */
 
 function getSortedOrders() {
   const orders = readJson(ORDER_HISTORY_KEY, []);
+
   return Array.isArray(orders)
     ? [...orders].sort((a, b) => {
         const aTime = new Date(a.timestamp || a.created_at || 0).getTime();
@@ -447,31 +627,16 @@ function getSortedOrders() {
     : [];
 }
 
-function getSavedAddress(profile = {}) {
-  const parts = [
-    profile.address,
-    profile.address_line1,
-    profile.address_line2,
-    profile.city,
-    profile.state,
-    profile.country,
-  ]
-    .filter(Boolean)
-    .map((item) => String(item).trim())
-    .filter(Boolean);
-
-  return parts.join(", ");
-}
-
 function getFavoriteIdsSafe() {
-  if (typeof getFavoriteIds === "function") {
-    return getFavoriteIds();
+  if (typeof window.getFavoriteIds === "function") {
+    return window.getFavoriteIds();
   }
 
   try {
     const parsed = JSON.parse(
       localStorage.getItem("foodDeliveryFavorites") || "[]",
     );
+
     return Array.isArray(parsed) ? parsed.map(String) : [];
   } catch (error) {
     return [];
@@ -479,8 +644,8 @@ function getFavoriteIdsSafe() {
 }
 
 function saveFavoriteIdsSafe(ids) {
-  if (typeof saveFavoriteIds === "function") {
-    saveFavoriteIds(ids);
+  if (typeof window.saveFavoriteIds === "function") {
+    window.saveFavoriteIds(ids);
     return;
   }
 
@@ -491,6 +656,7 @@ function persistDashboardPrefs() {
   const prefs = {
     showAllOrders,
   };
+
   localStorage.setItem(DASHBOARD_PREFS_KEY, JSON.stringify(prefs));
 }
 
@@ -514,58 +680,10 @@ function readJson(key, fallback) {
     return fallback;
   }
 }
-function getDashboardProfile() {
-  if (typeof window.getSavedUserProfile === "function") {
-    const savedProfile = window.getSavedUserProfile();
 
-    return {
-      ...savedProfile,
-      points:
-        savedProfile.points ||
-        localStorage.getItem("userPoints") ||
-        localStorage.getItem("foodExpressRewardPoints") ||
-        0,
-    };
-  }
-
-  const profile = readJson("userProfile", {});
-
-  return {
-    name:
-      profile.name ||
-      localStorage.getItem("userName") ||
-      localStorage.getItem("pendingVerificationName") ||
-      "User",
-
-    email:
-      profile.email ||
-      localStorage.getItem("userEmail") ||
-      localStorage.getItem("pendingVerificationEmail") ||
-      "No email added",
-
-    phone:
-      profile.phone ||
-      localStorage.getItem("userPhone") ||
-      "",
-
-    address:
-      profile.address ||
-      localStorage.getItem("userAddress") ||
-      "",
-
-    profileImage:
-      profile.profileImage ||
-      profile.image ||
-      localStorage.getItem("userProfileImage") ||
-      "",
-
-    points:
-      profile.points ||
-      localStorage.getItem("userPoints") ||
-      localStorage.getItem("foodExpressRewardPoints") ||
-      0,
-  };
-}
+/* ===============================
+   UI HELPERS
+================================ */
 
 function setText(id, value) {
   const el = document.getElementById(id);
@@ -577,10 +695,16 @@ function formatStatus(status) {
     pending: "Pending",
     confirmed: "Confirmed",
     preparing: "Preparing",
+    ready_for_pickup: "Ready for pickup",
+    searching: "Finding rider",
+    rider_assigned: "Rider assigned",
+    accepted: "Rider accepted",
+    picked_up: "Picked up",
     on_the_way: "On the way",
     delivered: "Delivered",
     cancelled: "Cancelled",
   };
+
   return map[status] || "Pending";
 }
 
@@ -600,7 +724,7 @@ function formatPlacedTime(timestamp) {
 }
 
 function escapeHtml(value) {
-  return String(value)
+  return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;")

@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account Settings - FoodExpress</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/account-settings.css" />
+  </head>
+
+  <body>
+    <script>
+      if (!localStorage.getItem("isLoggedIn")) {
+        alert("Please login first");
+        window.location.href = "login.html";
+      }
+    </script>
+
+    <div id="navbarContainer"></div>
+
+    <main class="settings-page">
+      <section class="settings-header">
+        <div>
+          <span class="page-kicker">
+            <i class="fa-solid fa-sliders"></i>
+            Customer account
+          </span>
+          <h1>Account Settings</h1>
+          <p>
+            Manage your profile, delivery details, checkout preferences,
+            notifications, rewards, and account security.
+          </p>
+        </div>
+
+        <button class="header-btn" type="button" id="headerEditProfileBtn">
+          <i class="fa-regular fa-user"></i>
+          Edit profile
+        </button>
+      </section>
+
+      <section class="settings-layout">
+        <aside class="settings-sidebar">
+          <section class="profile-card">
+            <div class="settings-avatar" id="settingsAvatar"></div>
+
+            <h2 id="settingsName">User</h2>
+            <p id="settingsEmail">No email added</p>
+
+            <div class="profile-actions">
+              <button type="button" id="editProfileBtn">
+                <i class="fa-regular fa-user"></i>
+                Edit Profile
+              </button>
+
+              <button type="button" id="contactSupportBtn">
+                <i class="fa-regular fa-message"></i>
+                Contact Support
+              </button>
+            </div>
+          </section>
+
+          <section class="mini-card">
+            <h3>Account status</h3>
+
+            <div class="status-row">
+              <i class="fa-solid fa-circle-check"></i>
+              <div>
+                <strong>Email verified</strong>
+                <span id="emailVerifiedText">Verified customer account</span>
+              </div>
+            </div>
+
+            <div class="status-row">
+              <i class="fa-solid fa-shield-halved"></i>
+              <div>
+                <strong>Security</strong>
+                <span>Protected by login verification</span>
+              </div>
+            </div>
+          </section>
+
+          <button
+            class="logout-btn-settings"
+            type="button"
+            id="settingsLogoutBtn"
+          >
+            <i class="fa-solid fa-right-from-bracket"></i>
+            Log out
+          </button>
+        </aside>
+
+        <section class="settings-content">
+          <section class="settings-card">
+            <div class="card-head">
+              <div>
+                <span class="section-kicker">Delivery</span>
+                <h2>Delivery details</h2>
+              </div>
+              <div class="head-icon">
+                <i class="fa-solid fa-location-dot"></i>
+              </div>
+            </div>
+
+            <div class="delivery-preview">
+              <div>
+                <strong id="savedAddressText">No address saved</strong>
+                <span id="savedPhoneText">No phone number saved</span>
+              </div>
+
+              <button type="button" id="editDeliveryBtn">Edit</button>
+            </div>
+
+            <div class="form-group full">
+              <label for="defaultDeliveryNote">Default delivery note</label>
+              <input
+                type="text"
+                id="defaultDeliveryNote"
+                placeholder="Example: Call before arriving, leave at reception"
+              />
+            </div>
+
+            <div class="toggle-list compact">
+              <label class="setting-toggle">
+                <div>
+                  <strong>Contactless delivery</strong>
+                  <span
+                    >Ask rider to leave the order at your door or
+                    reception.</span
+                  >
+                </div>
+                <input type="checkbox" id="contactlessDelivery" />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="card-head">
+              <div>
+                <span class="section-kicker">Checkout</span>
+                <h2>Payment and rewards</h2>
+              </div>
+              <div class="head-icon">
+                <i class="fa-solid fa-credit-card"></i>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="defaultPaymentMethod"
+                  >Preferred payment method</label
+                >
+                <select id="defaultPaymentMethod">
+                  <option value="cash">Cash on Delivery</option>
+                  <option value="card">Credit / Debit Card</option>
+                  <option value="digital">Digital Wallet</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="checkoutReminder">Checkout reminder</label>
+                <select id="checkoutReminder">
+                  <option value="standard">Standard reminder</option>
+                  <option value="minimal">Minimal reminder</option>
+                  <option value="detailed">Detailed order reminder</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="toggle-list compact">
+              <label class="setting-toggle">
+                <div>
+                  <strong>Auto-apply best reward coupon</strong>
+                  <span
+                    >Use the best available coupon automatically at
+                    checkout.</span
+                  >
+                </div>
+                <input type="checkbox" id="autoApplyBestCoupon" />
+                <span class="toggle-ui"></span>
+              </label>
+
+              <label class="setting-toggle">
+                <div>
+                  <strong>Save delivery details for checkout</strong>
+                  <span
+                    >Use saved name, phone, address, and delivery note next
+                    time.</span
+                  >
+                </div>
+                <input type="checkbox" id="saveDeliveryDetails" />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="card-head">
+              <div>
+                <span class="section-kicker">Notifications</span>
+                <h2>Notification preferences</h2>
+              </div>
+              <div class="head-icon">
+                <i class="fa-regular fa-bell"></i>
+              </div>
+            </div>
+
+            <div class="toggle-list">
+              <label class="setting-toggle">
+                <div>
+                  <strong>Order updates</strong>
+                  <span
+                    >Pending, confirmed, preparing, and ready for pickup.</span
+                  >
+                </div>
+                <input type="checkbox" id="notifyOrderUpdates" />
+                <span class="toggle-ui"></span>
+              </label>
+
+              <label class="setting-toggle">
+                <div>
+                  <strong>Rider updates</strong>
+                  <span
+                    >Rider assigned, picked up, on the way, and delivered.</span
+                  >
+                </div>
+                <input type="checkbox" id="notifyRiderUpdates" />
+                <span class="toggle-ui"></span>
+              </label>
+
+              <label class="setting-toggle">
+                <div>
+                  <strong>Rewards and coupons</strong>
+                  <span
+                    >Points earned, coupon unlocked, and reward reminders.</span
+                  >
+                </div>
+                <input type="checkbox" id="notifyRewardUpdates" />
+                <span class="toggle-ui"></span>
+              </label>
+
+              <label class="setting-toggle">
+                <div>
+                  <strong>Support replies</strong>
+                  <span>Ticket replies and support message updates.</span>
+                </div>
+                <input type="checkbox" id="notifySupportReplies" />
+                <span class="toggle-ui"></span>
+              </label>
+
+              <label class="setting-toggle">
+                <div>
+                  <strong>Promotional offers</strong>
+                  <span>Restaurant offers, campaigns, and discount deals.</span>
+                </div>
+                <input type="checkbox" id="notifyPromotions" />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="card-head">
+              <div>
+                <span class="section-kicker">Privacy</span>
+                <h2>Privacy and data</h2>
+              </div>
+              <div class="head-icon">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+            </div>
+
+            <div class="toggle-list">
+              <label class="setting-toggle">
+                <div>
+                  <strong>Personalized recommendations</strong>
+                  <span
+                    >Use favorites and order history to suggest better
+                    meals.</span
+                  >
+                </div>
+                <input type="checkbox" id="personalizedRecommendations" />
+                <span class="toggle-ui"></span>
+              </label>
+
+              <label class="setting-toggle">
+                <div>
+                  <strong>Save order history</strong>
+                  <span
+                    >Keep your recent orders visible on dashboard and tracking
+                    pages.</span
+                  >
+                </div>
+                <input type="checkbox" id="saveOrderHistory" />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+
+            <div class="danger-zone">
+              <div>
+                <strong>Clear local saved app data</strong>
+                <span>
+                  Clears temporary FoodExpress local data such as preferences,
+                  not your backend account.
+                </span>
+              </div>
+
+              <button type="button" id="clearLocalDataBtn">Clear data</button>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <div class="settings-save-bar">
+        <div>
+          <strong>Settings changes</strong>
+          <span id="settingsStatus">No changes yet</span>
+        </div>
+
+        <button type="button" id="saveSettingsBtn">
+          <i class="fa-solid fa-floppy-disk"></i>
+          Save settings
+        </button>
+      </div>
+    </main>
+
+    <footer class="footer" id="footer"></footer>
+
+    <script src="../js/profile.js"></script>
+    <script src="../js/shared.js"></script>
+    <script src="../js/modules/cart.js"></script>
+    <script src="../js/components/notifications.js"></script>
+    <script src="../js/components/navbar.js"></script>
+    <script src="../js/components/footer.js"></script>
+    <script src="../js/account-settings.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (typeof window.renderNavbar === "function") {
+          window.renderNavbar("settings");
+        }
+
+        if (typeof window.renderFooter === "function") {
+          window.renderFooter("app");
+        }
+
+        if (typeof window.bindProfileEverywhere === "function") {
+          window.bindProfileEverywhere();
+        }
+
+        if (typeof window.bindNotificationBell === "function") {
+          window.bindNotificationBell();
+        }
+      });
+    </script>
+  </body>
+</html>

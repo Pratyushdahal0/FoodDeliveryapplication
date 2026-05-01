@@ -1,17 +1,189 @@
-console.log("LOGIN JS LOADED - CLEAN SESSION VERSION");
+console.log("[login.js] Loaded - production auth flow");
 
-// ===== SWITCH BETWEEN LOGIN & REGISTER =====
-function switchTab(tab) {
-  const loginForm = document.getElementById("loginForm");
-  const registerForm = document.getElementById("registerForm");
+/* ===============================
+   AUTH CONFIG
+================================ */
 
-  const loginTab = document.getElementById("loginTab");
-  const registerTab = document.getElementById("registerTab");
+function getAuthUrl() {
+  /*
+    Relative path works on localhost and hosting.
+    login.html is inside frontend/pages, so backend is ../../backend.
+  */
+  return "../../backend/controllers/AuthController.php";
+}
 
-  if (!loginForm || !registerForm || !loginTab || !registerTab) {
-    console.error("Login/register forms or tabs not found!");
+/* ===============================
+   SMALL HELPERS
+================================ */
+
+function getEl(id) {
+  return document.getElementById(id);
+}
+
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+}
+
+function normalizeRole(role) {
+  const value = String(role || "customer").toLowerCase().trim();
+
+  if (
+    value === "restaurant_owner" ||
+    value === "restaurant-owner" ||
+    value === "owner" ||
+    value.includes("restaurant")
+  ) {
+    return "restaurant_owner";
+  }
+
+  if (
+    value === "delivery_rider" ||
+    value === "delivery-rider" ||
+    value === "rider" ||
+    value.includes("rider") ||
+    value.includes("delivery")
+  ) {
+    return "rider";
+  }
+
+  return "customer";
+}
+
+function clearFieldStates() {
+  document.querySelectorAll(".input-wrapper, .select-wrapper").forEach((el) => {
+    el.classList.remove("field-error");
+  });
+}
+
+function markFieldError(wrapperId) {
+  const wrapper = getEl(wrapperId);
+  if (wrapper) wrapper.classList.add("field-error");
+}
+
+function clearMessages() {
+  const alertBox = getEl("alertBox");
+  const successBox = getEl("successBox");
+
+  if (alertBox) {
+    alertBox.innerHTML = "";
+    alertBox.classList.remove("show");
+    alertBox.style.display = "none";
+  }
+
+  if (successBox) {
+    successBox.innerHTML = "";
+    successBox.classList.remove("show");
+    successBox.style.display = "none";
+  }
+
+  clearFieldStates();
+}
+
+function showError(message) {
+  const alertBox = getEl("alertBox");
+  const successBox = getEl("successBox");
+
+  if (successBox) {
+    successBox.innerHTML = "";
+    successBox.classList.remove("show");
+    successBox.style.display = "none";
+  }
+
+  if (!alertBox) {
+    alert(message);
     return;
   }
+
+  alertBox.innerHTML = `
+    <i class="fa-solid fa-circle-exclamation"></i>
+    <span>${escapeHtml(message)}</span>
+  `;
+  alertBox.classList.add("show");
+  alertBox.style.display = "flex";
+}
+
+function showSuccess(message) {
+  const alertBox = getEl("alertBox");
+  const successBox = getEl("successBox");
+
+  if (alertBox) {
+    alertBox.innerHTML = "";
+    alertBox.classList.remove("show");
+    alertBox.style.display = "none";
+  }
+
+  if (!successBox) {
+    alert(message);
+    return;
+  }
+
+  successBox.innerHTML = `
+    <i class="fa-solid fa-circle-check"></i>
+    <span>${escapeHtml(message)}</span>
+  `;
+  successBox.classList.add("show");
+  successBox.style.display = "flex";
+}
+
+function setButtonLoading(button, isLoading, loadingText = "Please wait...") {
+  if (!button) return;
+
+  if (isLoading) {
+    if (!button.dataset.originalHtml) {
+      button.dataset.originalHtml = button.innerHTML;
+    }
+
+    button.disabled = true;
+    button.innerHTML = `
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <span>${loadingText}</span>
+    `;
+  } else {
+    button.disabled = false;
+    button.innerHTML = button.dataset.originalHtml || button.innerHTML;
+  }
+}
+
+async function parseJsonResponse(response) {
+  const raw = await response.text();
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error("[login.js] Non-JSON response:", raw);
+    throw new Error("Server returned an invalid response. Please check backend.");
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/* ===============================
+   TAB SWITCHING
+================================ */
+
+function switchTab(tab) {
+  const loginForm = getEl("loginForm");
+  const registerForm = getEl("registerForm");
+  const loginTab = getEl("loginTab");
+  const registerTab = getEl("registerTab");
+
+  if (!loginForm || !registerForm || !loginTab || !registerTab) {
+    console.error("[login.js] Login/register forms or tabs not found.");
+    return;
+  }
+
+  clearMessages();
 
   if (tab === "login") {
     loginForm.style.display = "block";
@@ -19,75 +191,41 @@ function switchTab(tab) {
 
     loginTab.classList.add("active");
     registerTab.classList.remove("active");
-  } else {
-    loginForm.style.display = "none";
-    registerForm.style.display = "block";
 
-    loginTab.classList.remove("active");
-    registerTab.classList.add("active");
+    setTimeout(() => getEl("loginEmail")?.focus(), 80);
+    return;
   }
 
-  clearMessages();
+  loginForm.style.display = "none";
+  registerForm.style.display = "block";
+
+  loginTab.classList.remove("active");
+  registerTab.classList.add("active");
+
+  setTimeout(() => getEl("regName")?.focus(), 80);
 }
 
-// ===== MESSAGE HELPERS =====
-function clearMessages() {
-  const alertBox = document.getElementById("alertBox");
-  const successBox = document.getElementById("successBox");
+/* ===============================
+   SESSION HANDLING
+================================ */
 
-  if (alertBox) alertBox.innerText = "";
-  if (successBox) successBox.innerText = "";
-}
-
-function showError(message) {
-  const alertBox = document.getElementById("alertBox");
-  const successBox = document.getElementById("successBox");
-
-  if (successBox) successBox.innerText = "";
-  if (alertBox) alertBox.innerText = message;
-}
-
-function showSuccess(message) {
-  const alertBox = document.getElementById("alertBox");
-  const successBox = document.getElementById("successBox");
-
-  if (alertBox) alertBox.innerText = "";
-  if (successBox) successBox.innerText = message;
-}
-
-function setButtonLoading(button, isLoading, loadingText = "Please wait...") {
-  if (!button) return;
-
-  if (isLoading) {
-    button.dataset.originalText = button.innerText;
-    button.disabled = true;
-    button.innerText = loadingText;
-  } else {
-    button.disabled = false;
-    button.innerText = button.dataset.originalText || button.innerText;
-  }
-}
-
-// Use lowercase path because your working backend URL is /fooddeliveryapp/
-function getAuthUrl() {
-  return "http://localhost/fooddeliveryapp/backend/controllers/AuthController.php";
-}
-
-// ===== CLEAN OLD SESSION BEFORE NEW LOGIN =====
 function clearOldAuthSession() {
   const keysToRemove = [
-    // Main auth keys
     "isLoggedIn",
     "userEmail",
+    "userName",
     "userRole",
+    "userPhone",
+    "userAddress",
+    "userCity",
+    "userPostalCode",
+
     "foodExpressCurrentUser",
     "foodExpressEmailVerified",
 
-    // OTP/temp keys
     "pendingVerificationEmail",
     "pendingVerificationName",
 
-    // Profile/avatar keys that often cause wrong name/avatar
     "foodExpressProfile",
     "foodExpressUserProfile",
     "foodExpressCurrentProfile",
@@ -96,16 +234,17 @@ function clearOldAuthSession() {
     "profileData",
     "profilePhoto",
     "userAvatar",
+    "userProfileImage",
 
-    // Owner/rider sessions
     "isOwnerLoggedIn",
     "foodExpressCurrentOwner",
     "ownerRestaurantId",
     "ownerRestaurantName",
+
     "isRiderLoggedIn",
     "foodExpressCurrentRider",
 
-    // Customer dashboard cached demo/local data
+    "latestOrder",
     "lastOrder",
     "foodExpressOrders",
     "checkoutItems",
@@ -113,20 +252,44 @@ function clearOldAuthSession() {
     "checkoutRestaurantName",
     "checkoutTotal",
     "checkoutSubtotal",
-    "checkoutTax"
+    "checkoutTax",
   ];
 
   keysToRemove.forEach((key) => localStorage.removeItem(key));
 }
 
-function saveLoggedInUser(user, email, emailVerified) {
+function saveRememberedEmail(email, remember) {
+  if (remember) {
+    localStorage.setItem("foodExpressRememberedEmail", email);
+  } else {
+    localStorage.removeItem("foodExpressRememberedEmail");
+  }
+}
+
+function restoreRememberedEmail() {
+  const rememberedEmail = localStorage.getItem("foodExpressRememberedEmail");
+  const emailInput = getEl("loginEmail");
+  const rememberMe = getEl("rememberMe");
+
+  if (rememberedEmail && emailInput) {
+    emailInput.value = rememberedEmail;
+  }
+
+  if (rememberedEmail && rememberMe) {
+    rememberMe.checked = true;
+  }
+}
+
+function saveLoggedInUser(user, fallbackEmail, emailVerified) {
+  const cleanRole = normalizeRole(user.role);
+
   const cleanUser = {
-    id: user.id || "",
-    name: user.name || "",
-    email: user.email || email,
-    phone: user.phone || "",
+    id: user.id || user.user_id || "",
+    name: user.name || user.full_name || user.fullName || "",
+    email: normalizeEmail(user.email || user.user_email || fallbackEmail),
+    phone: user.phone || user.phone_number || "",
     address: user.address || "",
-    role: user.role || "customer",
+    role: cleanRole,
     status: user.status || "active",
     created_at: user.created_at || "",
     email_verified_at: user.email_verified_at || null,
@@ -134,29 +297,53 @@ function saveLoggedInUser(user, email, emailVerified) {
 
   localStorage.setItem("isLoggedIn", "true");
   localStorage.setItem("userEmail", cleanUser.email);
+  localStorage.setItem("userName", cleanUser.name);
   localStorage.setItem("userRole", cleanUser.role);
+  localStorage.setItem("userPhone", cleanUser.phone);
+  localStorage.setItem("userAddress", cleanUser.address);
   localStorage.setItem("foodExpressCurrentUser", JSON.stringify(cleanUser));
-  localStorage.setItem("foodExpressEmailVerified", emailVerified ? "true" : "false");
+  localStorage.setItem(
+    "foodExpressEmailVerified",
+    emailVerified ? "true" : "false",
+  );
 
-  // Compatibility keys for pages that may still read old profile storage
   localStorage.setItem("currentUser", JSON.stringify(cleanUser));
   localStorage.setItem("userProfile", JSON.stringify(cleanUser));
   localStorage.setItem("foodExpressProfile", JSON.stringify(cleanUser));
   localStorage.setItem("foodExpressUserProfile", JSON.stringify(cleanUser));
+
+  window.dispatchEvent(new Event("foodExpressProfileUpdated"));
+
+  return cleanUser;
 }
 
-// ===== ROLE REDIRECT FOR REGISTER DROPDOWN =====
-function handleRoleRedirect() {
-  const roleSelect = document.getElementById("regRole");
+function redirectAfterLogin(role) {
+  const normalizedRole = normalizeRole(role);
 
-  if (!roleSelect) {
-    console.warn("regRole dropdown not found.");
-    return false;
+  if (normalizedRole === "restaurant_owner") {
+    window.location.href = "ownerdashboard.html";
+    return;
   }
 
-  const role = String(roleSelect.value || "").toLowerCase().trim();
+  if (normalizedRole === "rider") {
+    window.location.href = "rider-dashboard.html";
+    return;
+  }
 
-  if (role === "restaurant_owner" || role.includes("restaurant")) {
+  window.location.href = "dashboard.html";
+}
+
+/* ===============================
+   REGISTER ROLE REDIRECT
+================================ */
+
+function handleRoleRedirect() {
+  const roleSelect = getEl("regRole");
+  if (!roleSelect) return false;
+
+  const role = normalizeRole(roleSelect.value);
+
+  if (role === "restaurant_owner") {
     showSuccess("Redirecting to restaurant registration...");
 
     setTimeout(() => {
@@ -166,12 +353,7 @@ function handleRoleRedirect() {
     return true;
   }
 
-  if (
-    role === "rider" ||
-    role === "delivery_rider" ||
-    role.includes("rider") ||
-    role.includes("delivery")
-  ) {
+  if (role === "rider") {
     showSuccess("Redirecting to rider registration...");
 
     setTimeout(() => {
@@ -184,16 +366,41 @@ function handleRoleRedirect() {
   return false;
 }
 
-// ===== LOGIN FUNCTION =====
-async function handleLogin() {
-  const email = document.getElementById("loginEmail")?.value.trim();
-  const password = document.getElementById("loginPassword")?.value.trim();
-  const submitBtn = document.querySelector("#loginForm .submit-btn");
+/* ===============================
+   LOGIN
+================================ */
+
+async function handleLogin(event) {
+  if (event) event.preventDefault();
+
+  const emailInput = getEl("loginEmail");
+  const passwordInput = getEl("loginPassword");
+  const rememberMe = getEl("rememberMe");
+  const submitBtn = getEl("loginSubmitBtn");
+
+  const email = normalizeEmail(emailInput?.value);
+  const password = String(passwordInput?.value || "").trim();
 
   clearMessages();
 
-  if (!email || !password) {
-    showError("Please enter email and password.");
+  if (!email) {
+    showError("Please enter your email address.");
+    markFieldError("loginEmailWrapper");
+    emailInput?.focus();
+    return;
+  }
+
+  if (!isValidEmail(email)) {
+    showError("Please enter a valid email address.");
+    markFieldError("loginEmailWrapper");
+    emailInput?.focus();
+    return;
+  }
+
+  if (!password) {
+    showError("Please enter your password.");
+    markFieldError("loginPasswordWrapper");
+    passwordInput?.focus();
     return;
   }
 
@@ -211,25 +418,38 @@ async function handleLogin() {
       credentials: "same-origin",
     });
 
-    const result = await response.json();
-    console.log("Login Response:", result);
+    const result = await parseJsonResponse(response);
+    console.log("[login.js] Login response:", result);
 
     if (!result.success) {
-      showError(result.message || "Login failed.");
+      /*
+        Production-safe message:
+        Do not reveal whether email or password was wrong.
+      */
+      showError("Invalid email or password. Please check your details and try again.");
+      markFieldError("loginEmailWrapper");
+      markFieldError("loginPasswordWrapper");
       return;
     }
 
-    const user = result.data || {};
+    const user = result.data || result.user || {};
+    const isEmailVerified =
+      result.email_verified === true ||
+      result.email_verified === "true" ||
+      user.email_verified_at ||
+      user.is_email_verified === true;
 
-    // Important fix: remove stale old account data first
     clearOldAuthSession();
 
-    saveLoggedInUser(user, email, result.email_verified);
+    const savedUser = saveLoggedInUser(user, email, isEmailVerified);
 
-    if (!result.email_verified) {
-      localStorage.setItem("pendingVerificationEmail", user.email || email);
+    saveRememberedEmail(email, Boolean(rememberMe?.checked));
 
-      showSuccess("Login successful. Please verify your email for full access.");
+    if (!isEmailVerified) {
+      localStorage.setItem("pendingVerificationEmail", savedUser.email || email);
+      localStorage.setItem("pendingVerificationName", savedUser.name || "");
+
+      showSuccess("Login successful. Please verify your email to continue.");
 
       setTimeout(() => {
         window.location.href = "verify-email-otp.html";
@@ -241,43 +461,83 @@ async function handleLogin() {
     showSuccess("Login successful. Redirecting...");
 
     setTimeout(() => {
-      if (user.role === "restaurant-owner") {
-        window.location.href = "ownerdashboard.html";
-      } else if (user.role === "delivery-rider") {
-        window.location.href = "rider-dashboard.html";
-      } else {
-        window.location.href = "dashboard.html";
-      }
-    }, 800);
+      redirectAfterLogin(savedUser.role);
+    }, 700);
   } catch (error) {
-    console.error("Login Error:", error);
-    showError("Something went wrong: " + error.message);
+    console.error("[login.js] Login error:", error);
+    showError(
+      "We could not sign you in right now. Please check your connection and try again.",
+    );
   } finally {
     setButtonLoading(submitBtn, false);
   }
 }
 
-// ===== REGISTER FUNCTION =====
-async function handleRegister() {
-  const name = document.getElementById("regName")?.value.trim();
-  const email = document.getElementById("regEmail")?.value.trim();
-  const password = document.getElementById("regPassword")?.value.trim();
-  const phone = document.getElementById("regPhone")?.value.trim();
-  const address = document.getElementById("regAddress")?.value.trim();
-  const role = document.getElementById("regRole")?.value.trim();
-  const submitBtn = document.querySelector("#registerForm .submit-btn");
+/* ===============================
+   REGISTER
+================================ */
+
+async function handleRegister(event) {
+  if (event) event.preventDefault();
+
+  const nameInput = getEl("regName");
+  const emailInput = getEl("regEmail");
+  const passwordInput = getEl("regPassword");
+  const phoneInput = getEl("regPhone");
+  const addressInput = getEl("regAddress");
+  const roleInput = getEl("regRole");
+  const submitBtn = getEl("registerSubmitBtn");
+
+  const name = String(nameInput?.value || "").trim();
+  const email = normalizeEmail(emailInput?.value);
+  const password = String(passwordInput?.value || "").trim();
+  const phone = String(phoneInput?.value || "").trim();
+  const address = String(addressInput?.value || "").trim();
+  const role = normalizeRole(roleInput?.value);
 
   clearMessages();
 
   if (handleRoleRedirect()) return;
 
-  if (!name || !email || !password) {
-    showError("Please fill all required fields.");
+  if (!name) {
+    showError("Please enter your full name.");
+    markFieldError("regNameWrapper");
+    nameInput?.focus();
+    return;
+  }
+
+  if (!email) {
+    showError("Please enter your email address.");
+    markFieldError("regEmailWrapper");
+    emailInput?.focus();
+    return;
+  }
+
+  if (!isValidEmail(email)) {
+    showError("Please enter a valid email address.");
+    markFieldError("regEmailWrapper");
+    emailInput?.focus();
+    return;
+  }
+
+  if (!password) {
+    showError("Please enter a password.");
+    markFieldError("regPasswordWrapper");
+    passwordInput?.focus();
     return;
   }
 
   if (password.length < 6) {
     showError("Password must be at least 6 characters.");
+    markFieldError("regPasswordWrapper");
+    passwordInput?.focus();
+    return;
+  }
+
+  if (phone && !/^\d{10}$/.test(phone)) {
+    showError("Phone number must be 10 digits.");
+    markFieldError("regPhoneWrapper");
+    phoneInput?.focus();
     return;
   }
 
@@ -299,75 +559,135 @@ async function handleRegister() {
       credentials: "same-origin",
     });
 
-    const result = await response.json();
-    console.log("Register Response:", result);
+    const result = await parseJsonResponse(response);
+    console.log("[login.js] Register response:", result);
 
     if (!result.success) {
-      showError(result.message || "Registration failed.");
+      showError(result.message || "Registration failed. Please try again.");
       return;
     }
 
-    // Clean previous logged user before new signup verification
     clearOldAuthSession();
 
     localStorage.setItem("pendingVerificationEmail", email);
     localStorage.setItem("pendingVerificationName", name);
 
-    showSuccess(result.message || "Account created. Please verify your email.");
+    showSuccess(
+      result.message || "Account created. Please verify your email.",
+    );
 
     setTimeout(() => {
       window.location.href = "verify-email-otp.html";
     }, 900);
   } catch (error) {
-    console.error("Register Error:", error);
-    showError("Registration failed: " + error.message);
+    console.error("[login.js] Register error:", error);
+    showError(
+      "We could not create your account right now. Please try again later.",
+    );
   } finally {
     setButtonLoading(submitBtn, false);
   }
 }
 
-// ===== TOGGLE PASSWORD VISIBILITY =====
-function togglePassword(id, btn) {
-  const input = document.getElementById(id);
+/* ===============================
+   PASSWORD TOGGLE
+================================ */
 
-  if (!input || !btn) return;
+function togglePassword(idOrButton, maybeButton) {
+  let inputId = idOrButton;
+  let button = maybeButton;
+
+  if (idOrButton instanceof HTMLElement) {
+    button = idOrButton;
+    inputId = button.dataset.target;
+  }
+
+  const input = getEl(inputId);
+  if (!input || !button) return;
+
+  const icon = button.querySelector("i");
 
   if (input.type === "password") {
     input.type = "text";
-    btn.innerText = "🙈";
-  } else {
-    input.type = "password";
-    btn.innerText = "👁️";
+    button.setAttribute("aria-label", "Hide password");
+    if (icon) {
+      icon.className = "fa-regular fa-eye-slash";
+    }
+    return;
+  }
+
+  input.type = "password";
+  button.setAttribute("aria-label", "Show password");
+  if (icon) {
+    icon.className = "fa-regular fa-eye";
   }
 }
 
-// ===== INIT =====
-document.addEventListener("DOMContentLoaded", () => {
-  const roleSelect = document.getElementById("regRole");
+/* ===============================
+   INIT
+================================ */
 
-  if (roleSelect) {
-    roleSelect.addEventListener("change", handleRoleRedirect);
+document.addEventListener("DOMContentLoaded", () => {
+  if (localStorage.getItem("isLoggedIn") === "true") {
+    redirectAfterLogin(localStorage.getItem("userRole") || "customer");
+    return;
   }
+
+  restoreRememberedEmail();
+
+  const loginTab = getEl("loginTab");
+  const registerTab = getEl("registerTab");
+  const goToRegister = getEl("goToRegister");
+  const goToLogin = getEl("goToLogin");
+
+  const loginForm = getEl("loginForm");
+  const registerForm = getEl("registerForm");
+
+  loginTab?.addEventListener("click", () => switchTab("login"));
+  registerTab?.addEventListener("click", () => switchTab("register"));
+
+  goToRegister?.addEventListener("click", (event) => {
+    event.preventDefault();
+    switchTab("register");
+  });
+
+  goToLogin?.addEventListener("click", (event) => {
+    event.preventDefault();
+    switchTab("login");
+  });
+
+  loginForm?.addEventListener("submit", handleLogin);
+  registerForm?.addEventListener("submit", handleRegister);
+
+  document.querySelectorAll(".toggle-password").forEach((button) => {
+    button.addEventListener("click", () => togglePassword(button));
+  });
+
+  getEl("regRole")?.addEventListener("change", handleRoleRedirect);
 
   ["loginEmail", "loginPassword", "regName", "regEmail", "regPassword"].forEach(
     (id) => {
-      const input = document.getElementById(id);
+      const input = getEl(id);
       if (!input) return;
 
-      input.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter") return;
+      input.addEventListener("input", () => {
+        clearFieldStates();
 
-        if (id.startsWith("login")) {
-          handleLogin();
-        } else {
-          handleRegister();
+        const alertBox = getEl("alertBox");
+        if (alertBox && alertBox.innerHTML.trim()) {
+          alertBox.innerHTML = "";
+          alertBox.classList.remove("show");
+          alertBox.style.display = "none";
         }
       });
-    }
+    },
   );
 });
 
-// ===== MAKE FUNCTIONS GLOBAL =====
+/* ===============================
+   GLOBAL EXPORTS
+================================ */
+
 window.switchTab = switchTab;
 window.handleLogin = handleLogin;
 window.handleRegister = handleRegister;

@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FoodExpress – Login</title>
 
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Font Awesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/login.css" />
@@ -27,48 +38,45 @@
       <div class="auth-card">
         <!-- Tabs -->
         <div class="auth-tabs">
-          <div
-            class="auth-tab active"
-            id="loginTab"
-            onclick="switchTab('login')"
-          >
+          <button class="auth-tab active" id="loginTab" type="button">
             Sign In
-          </div>
+          </button>
 
-          <div
-            class="auth-tab"
-            id="registerTab"
-            onclick="switchTab('register')"
-          >
+          <button class="auth-tab" id="registerTab" type="button">
             Sign Up
-          </div>
+          </button>
         </div>
 
         <!-- Alert -->
-        <div class="alert alert-error" id="alertBox"></div>
-        <div class="alert alert-success" id="successBox"></div>
+        <div class="alert alert-error" id="alertBox" role="alert"></div>
+        <div class="alert alert-success" id="successBox" role="status"></div>
 
         <!-- ===== LOGIN FORM ===== -->
-        <div id="loginForm">
+        <form id="loginForm" novalidate>
           <h2>Sign In</h2>
 
           <div class="form-group">
             <label for="loginEmail">Email Address</label>
-            <div class="input-wrapper">
-              <span class="input-icon">✉️</span>
+            <div class="input-wrapper" id="loginEmailWrapper">
+              <span class="input-icon" aria-hidden="true">
+                <i class="fa-regular fa-envelope"></i>
+              </span>
               <input
                 type="email"
                 id="loginEmail"
                 placeholder="john.doe@example.com"
                 autocomplete="email"
+                inputmode="email"
               />
             </div>
           </div>
 
           <div class="form-group">
             <label for="loginPassword">Password</label>
-            <div class="input-wrapper">
-              <span class="input-icon">🔒</span>
+            <div class="input-wrapper" id="loginPasswordWrapper">
+              <span class="input-icon" aria-hidden="true">
+                <i class="fa-solid fa-lock"></i>
+              </span>
               <input
                 type="password"
                 id="loginPassword"
@@ -78,38 +86,45 @@
               <button
                 class="toggle-password"
                 type="button"
-                onclick="togglePassword('loginPassword', this)"
+                data-target="loginPassword"
+                aria-label="Show password"
               >
-                👁️
+                <i class="fa-regular fa-eye"></i>
               </button>
             </div>
           </div>
 
-          <div class="form-row">
+          <div class="form-row auth-options-row">
             <label class="remember-me">
               <input type="checkbox" id="rememberMe" />
-              Remember me
+              <span>Remember me</span>
             </label>
-          </div>
 
-          <button class="submit-btn" type="button" onclick="handleLogin()">
-            Sign In →
+            <a href="forgot-password.html" class="forgot-link">
+              Forgot password?
+            </a>
+          </div>
+          <button class="submit-btn" id="loginSubmitBtn" type="submit">
+            <span>Sign In</span>
+            <i class="fa-solid fa-arrow-right"></i>
           </button>
 
           <p class="auth-switch">
             Don't have an account?
-            <a href="#" onclick="switchTab('register')">Sign Up</a>
+            <a href="#" id="goToRegister">Sign Up</a>
           </p>
-        </div>
+        </form>
 
         <!-- ===== REGISTER FORM ===== -->
-        <div id="registerForm" style="display: none">
+        <form id="registerForm" style="display: none" novalidate>
           <h2>Create Account</h2>
 
           <div class="form-group">
             <label for="regName">Full Name</label>
-            <div class="input-wrapper">
-              <span class="input-icon">👤</span>
+            <div class="input-wrapper" id="regNameWrapper">
+              <span class="input-icon" aria-hidden="true">
+                <i class="fa-regular fa-user"></i>
+              </span>
               <input
                 type="text"
                 id="regName"
@@ -121,21 +136,26 @@
 
           <div class="form-group">
             <label for="regEmail">Email Address</label>
-            <div class="input-wrapper">
-              <span class="input-icon">✉️</span>
+            <div class="input-wrapper" id="regEmailWrapper">
+              <span class="input-icon" aria-hidden="true">
+                <i class="fa-regular fa-envelope"></i>
+              </span>
               <input
                 type="email"
                 id="regEmail"
                 placeholder="john.doe@example.com"
                 autocomplete="email"
+                inputmode="email"
               />
             </div>
           </div>
 
           <div class="form-group">
             <label for="regPassword">Password</label>
-            <div class="input-wrapper">
-              <span class="input-icon">🔒</span>
+            <div class="input-wrapper" id="regPasswordWrapper">
+              <span class="input-icon" aria-hidden="true">
+                <i class="fa-solid fa-lock"></i>
+              </span>
               <input
                 type="password"
                 id="regPassword"
@@ -145,31 +165,37 @@
               <button
                 class="toggle-password"
                 type="button"
-                onclick="togglePassword('regPassword', this)"
+                data-target="regPassword"
+                aria-label="Show password"
               >
-                👁️
+                <i class="fa-regular fa-eye"></i>
               </button>
             </div>
           </div>
 
           <div class="form-group">
             <label for="regPhone">Phone Number</label>
-            <div class="input-wrapper">
-              <span class="input-icon">📱</span>
+            <div class="input-wrapper" id="regPhoneWrapper">
+              <span class="input-icon" aria-hidden="true">
+                <i class="fa-solid fa-phone"></i>
+              </span>
               <input
                 type="tel"
                 id="regPhone"
                 placeholder="10-digit phone number"
                 autocomplete="tel"
                 maxlength="10"
+                inputmode="numeric"
               />
             </div>
           </div>
 
           <div class="form-group">
             <label for="regAddress">Address</label>
-            <div class="input-wrapper">
-              <span class="input-icon">📍</span>
+            <div class="input-wrapper" id="regAddressWrapper">
+              <span class="input-icon" aria-hidden="true">
+                <i class="fa-solid fa-location-dot"></i>
+              </span>
               <input
                 type="text"
                 id="regAddress"
@@ -181,22 +207,28 @@
 
           <div class="form-group">
             <label for="regRole">Register As</label>
-            <select class="role-select" id="regRole">
-              <option value="customer">Customer</option>
-              <option value="restaurant_owner">Restaurant Owner</option>
-              <option value="rider">Delivery Rider</option>
-            </select>
+            <div class="select-wrapper">
+              <span class="input-icon" aria-hidden="true">
+                <i class="fa-solid fa-user-tag"></i>
+              </span>
+              <select class="role-select" id="regRole">
+                <option value="customer">Customer</option>
+                <option value="restaurant_owner">Restaurant Owner</option>
+                <option value="rider">Delivery Rider</option>
+              </select>
+            </div>
           </div>
 
-          <button class="submit-btn" type="button" onclick="handleRegister()">
-            Create Account →
+          <button class="submit-btn" id="registerSubmitBtn" type="submit">
+            <span>Create Account</span>
+            <i class="fa-solid fa-arrow-right"></i>
           </button>
 
           <p class="auth-switch">
             Already have an account?
-            <a href="#" onclick="switchTab('login')">Sign In</a>
+            <a href="#" id="goToLogin">Sign In</a>
           </p>
-        </div>
+        </form>
       </div>
 
       <!-- ===== RIGHT PANEL ===== -->
@@ -214,22 +246,30 @@
 
           <div class="why-list">
             <div class="why-item">
-              <div class="why-icon">⚡</div>
+              <div class="why-icon">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
               <span>Lightning-fast delivery in under 30 minutes</span>
             </div>
 
             <div class="why-item">
-              <div class="why-icon">🍕</div>
+              <div class="why-icon">
+                <i class="fa-solid fa-utensils"></i>
+              </div>
               <span>500+ restaurants and thousands of menu items</span>
             </div>
 
             <div class="why-item">
-              <div class="why-icon">💳</div>
+              <div class="why-icon">
+                <i class="fa-regular fa-credit-card"></i>
+              </div>
               <span>Secure online payments or cash on delivery</span>
             </div>
 
             <div class="why-item">
-              <div class="why-icon">📦</div>
+              <div class="why-icon">
+                <i class="fa-solid fa-truck-fast"></i>
+              </div>
               <span>Real-time order tracking and notifications</span>
             </div>
           </div>
