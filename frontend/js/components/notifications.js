@@ -1,393 +1,422 @@
-console.log("[notifications.js] Loaded - preference-aware notification bell");
+console.log("[notifications.js] Loaded - backend notification bell with smart routing");
 
-const NOTIFICATION_KEY = "foodExpressNotifications";
-const ACCOUNT_SETTINGS_KEY = "foodExpressAccountSettings";
+(function () {
+  const NOTIFICATION_API = "../../backend/controllers/NotificationController.php";
+  const POLL_INTERVAL = 5000;
 
-const DEFAULT_NOTIFICATION_PREFS = {
-  notifyOrderUpdates: true,
-  notifyRiderUpdates: true,
-  notifyRewardUpdates: true,
-  notifySupportReplies: true,
-  notifyPromotions: false,
-};
+  let notificationsCache = [];
+  let unreadCount = 0;
+  let pollTimer = null;
+  let isLoading = false;
+  let isBound = false;
 
-function getAccountSettingsForNotifications() {
-  try {
-    const raw = localStorage.getItem(ACCOUNT_SETTINGS_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
+  function bindNotificationBell() {
+    const bell = document.getElementById("notificationBell");
+    const dropdown = document.getElementById("notificationDropdown");
+    const badge = document.getElementById("notificationBadge");
+
+    if (!bell || !dropdown || !badge) {
+      console.warn("[notifications.js] Bell/dropdown/badge not found yet");
+      return;
+    }
+
+    if (!isBound) {
+      bell.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        dropdown.classList.toggle("show");
+        dropdown.classList.toggle("open");
+
+        await loadNotificationsFromBackend();
+        renderDropdown();
+      });
+
+      document.addEventListener("click", (event) => {
+        const wrapper = bell.closest(".notification-wrapper");
+
+        if (wrapper && !wrapper.contains(event.target)) {
+          dropdown.classList.remove("show", "open");
+        }
+      });
+
+      isBound = true;
+    }
+
+    loadNotificationsFromBackend();
+    startPolling();
+  }
+
+  function getCurrentNotificationUser() {
+    const profile =
+      readJson("foodExpressCurrentUser", null) ||
+      readJson("currentUser", null) ||
+      readJson("foodExpressProfile", null) ||
+      readJson("foodExpressUserProfile", null);
+
+    const email =
+      profile?.email ||
+      profile?.user_email ||
+      localStorage.getItem("userEmail") ||
+      "";
+
+    const role =
+      profile?.role ||
+      localStorage.getItem("userRole") ||
+      "customer";
 
     return {
-      ...DEFAULT_NOTIFICATION_PREFS,
-      ...parsed,
+      email: String(email || "").trim(),
+      role: normalizeRole(role),
     };
-  } catch (error) {
-    return { ...DEFAULT_NOTIFICATION_PREFS };
-  }
-}
-
-function getNotificationCategory(notification = {}) {
-  if (notification.category) return notification.category;
-
-  const type = String(notification.type || "").toLowerCase();
-  const title = String(notification.title || "").toLowerCase();
-  const message = String(notification.message || "").toLowerCase();
-
-  if (
-    type === "rider" ||
-    title.includes("rider") ||
-    message.includes("rider") ||
-    title.includes("picked up") ||
-    title.includes("delivered")
-  ) {
-    return "rider";
   }
 
-  if (
-    type === "reward" ||
-    title.includes("reward") ||
-    title.includes("coupon") ||
-    title.includes("points") ||
-    message.includes("coupon") ||
-    message.includes("points")
-  ) {
-    return "reward";
+  function normalizeRole(role) {
+    const value = String(role || "customer").trim().toLowerCase();
+
+    if (value === "restaurant-owner") return "restaurant-owner";
+    if (value === "restaurant_owner") return "restaurant-owner";
+    if (value === "owner") return "restaurant-owner";
+
+    if (value === "delivery-rider") return "delivery-rider";
+    if (value === "delivery_rider") return "delivery-rider";
+    if (value === "rider") return "delivery-rider";
+
+    if (value === "admin") return "admin";
+
+    return "customer";
   }
 
-  if (
-    type === "support" ||
-    title.includes("support") ||
-    message.includes("support") ||
-    title.includes("ticket")
-  ) {
-    return "support";
+  async function loadNotificationsFromBackend() {
+    if (isLoading) return;
+
+    const user = getCurrentNotificationUser();
+
+    if (!user.email) {
+      notificationsCache = [];
+      unreadCount = 0;
+      updateBadge();
+      renderDropdown();
+      return;
+    }
+
+    try {
+      isLoading = true;
+
+      const url = `${NOTIFICATION_API}?action=list&email=${encodeURIComponent(
+        user.email
+      )}&role=${encodeURIComponent(user.role)}&limit=30&_=${Date.now()}`;
+
+      const response = await fetch(url);
+      const raw = await response.text();
+
+      let result;
+
+      try {
+        result = JSON.parse(raw);
+      } catch (error) {
+        console.error("[notifications.js] Backend returned non-JSON:", raw);
+        throw new Error("Notification backend returned invalid JSON.");
+      }
+
+      if (!result.success) {
+        throw new Error(result.message || "Could not load notifications.");
+      }
+
+      notificationsCache = Array.isArray(result.data) ? result.data : [];
+      unreadCount = Number(result.unread_count || 0);
+
+      updateBadge();
+      renderDropdown();
+    } catch (error) {
+      console.error("[notifications.js] Failed to load notifications:", error);
+    } finally {
+      isLoading = false;
+    }
   }
 
-  if (
-    type === "promotion" ||
-    type === "promo" ||
-    title.includes("offer") ||
-    title.includes("promotion") ||
-    title.includes("discount deal")
-  ) {
-    return "promotion";
+  function startPolling() {
+    if (pollTimer) return;
+
+    pollTimer = setInterval(() => {
+      if (document.hidden) return;
+      loadNotificationsFromBackend();
+    }, POLL_INTERVAL);
   }
 
-  return "order";
-}
+  function updateBadge() {
+    const badge = document.getElementById("notificationBadge");
+    if (!badge) return;
 
-function isNotificationAllowed(notification = {}) {
-  const settings = getAccountSettingsForNotifications();
-  const category = getNotificationCategory(notification);
-
-  if (category === "order") return Boolean(settings.notifyOrderUpdates);
-  if (category === "rider") return Boolean(settings.notifyRiderUpdates);
-  if (category === "reward") return Boolean(settings.notifyRewardUpdates);
-  if (category === "support") return Boolean(settings.notifySupportReplies);
-  if (category === "promotion") return Boolean(settings.notifyPromotions);
-
-  return true;
-}
-
-function getNotifications() {
-  try {
-    const raw = localStorage.getItem(NOTIFICATION_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed;
-  } catch (error) {
-    console.warn("[notifications.js] Failed to read notifications:", error);
-    return [];
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 9 ? "9+" : String(unreadCount);
+      badge.style.display = "flex";
+    } else {
+      badge.textContent = "";
+      badge.style.display = "none";
+    }
   }
-}
 
-function getVisibleNotifications() {
-  return getNotifications().filter(isNotificationAllowed);
-}
+  function renderDropdown() {
+    const dropdown = document.getElementById("notificationDropdown");
+    if (!dropdown) return;
 
-function saveNotifications(notifications) {
-  localStorage.setItem(NOTIFICATION_KEY, JSON.stringify(notifications || []));
-}
-
-function seedDemoNotificationIfEmpty() {
-  const notifications = getNotifications();
-
-  if (notifications.length) return;
-
-  const demo = [
-    {
-      id: "demo-rider-assigned",
-      title: "Rider assigned",
-      message: "FoodExpress Rider has accepted your delivery.",
-      type: "rider",
-      category: "rider",
-      icon: "fa-motorcycle",
-      read: false,
-      createdAt: Date.now() - 60 * 60 * 1000,
-      link: "track-order.html",
-    },
-  ];
-
-  saveNotifications(demo);
-}
-
-function formatNotificationTime(timestamp) {
-  if (!timestamp) return "Just now";
-
-  const diff = Date.now() - Number(timestamp);
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  if (hours < 24) return `${hours} hr ago`;
-  return `${days} day${days > 1 ? "s" : ""} ago`;
-}
-
-function getNotificationIcon(notification) {
-  if (notification.icon) return notification.icon;
-
-  const category = getNotificationCategory(notification);
-  const type = notification.type || "info";
-
-  const map = {
-    order: "fa-bag-shopping",
-    rider: "fa-motorcycle",
-    reward: "fa-coins",
-    support: "fa-message",
-    promotion: "fa-tags",
-    success: "fa-circle-check",
-    warning: "fa-triangle-exclamation",
-    danger: "fa-circle-exclamation",
-    info: "fa-bell",
-  };
-
-  return map[category] || map[type] || "fa-bell";
-}
-
-function getNotificationIconClass(notification) {
-  const category = getNotificationCategory(notification);
-  const type = notification.type || "info";
-
-  const map = {
-    order: "notification-info",
-    rider: "notification-success",
-    reward: "notification-warning",
-    support: "notification-info",
-    promotion: "notification-danger",
-    success: "notification-success",
-    warning: "notification-warning",
-    danger: "notification-danger",
-    info: "notification-info",
-  };
-
-  return map[category] || map[type] || "notification-info";
-}
-
-function renderNotificationDropdown() {
-  const dropdown = document.getElementById("notificationDropdown");
-  const badge = document.getElementById("notificationBadge");
-
-  if (!dropdown || !badge) return;
-
-  const notifications = getVisibleNotifications();
-  const unreadCount = notifications.filter((item) => !item.read).length;
-
-  badge.textContent = unreadCount;
-  badge.style.display = unreadCount > 0 ? "flex" : "none";
-
-  if (!notifications.length) {
-    dropdown.innerHTML = `
-      <div class="notification-head">
-        <div>
-          <strong>Notifications</strong>
-          <span>No visible updates</span>
+    const itemsHTML = notificationsCache.length
+      ? notificationsCache.map(createNotificationHTML).join("")
+      : `
+        <div class="notification-empty">
+          <i class="fa-regular fa-bell"></i>
+          <h4>No notifications yet</h4>
+          <p>Order updates will appear here.</p>
         </div>
+      `;
+
+    dropdown.innerHTML = `
+      <div class="notification-dropdown-header">
+        <div class="notification-header-text">
+          <h3>Notifications</h3>
+          <p>${unreadCount} unread update${unreadCount === 1 ? "" : "s"}</p>
+        </div>
+
+        <button type="button" class="notification-mark-read" id="markAllNotificationsRead">
+          Mark all read
+        </button>
       </div>
 
-      <div class="notification-empty">
-        <i class="fa-regular fa-bell"></i>
-        <p>No notifications based on your current preferences.</p>
+      <div class="notification-list">
+        ${itemsHTML}
       </div>
     `;
-    return;
-  }
 
-  dropdown.innerHTML = `
-    <div class="notification-head">
-      <div>
-        <strong>Notifications</strong>
-        <span>${unreadCount} unread update${unreadCount === 1 ? "" : "s"}</span>
-      </div>
+    document
+      .getElementById("markAllNotificationsRead")
+      ?.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        await markAllRead();
+      });
 
-      <button type="button" id="markAllNotificationsRead">
-        Mark all read
-      </button>
-    </div>
+    dropdown.querySelectorAll(".notification-item").forEach((item) => {
+      item.addEventListener("click", async () => {
+        const id = item.dataset.id;
+        const orderNumber = item.dataset.orderNumber;
+        const type = item.dataset.type;
 
-    <div class="notification-list">
-      ${notifications
-        .map(
-          (notification) => `
-            <button
-              type="button"
-              class="notification-item ${notification.read ? "" : "unread"}"
-              data-notification-id="${escapeNotificationHtml(notification.id)}"
-            >
-              <span class="notification-icon ${getNotificationIconClass(notification)}">
-                <i class="fa-solid ${getNotificationIcon(notification)}"></i>
-              </span>
+        await markOneRead(id);
 
-              <span class="notification-content">
-                <strong>${escapeNotificationHtml(notification.title || "Notification")}</strong>
-                <small>${escapeNotificationHtml(notification.message || "")}</small>
-                <em>${formatNotificationTime(notification.createdAt)}</em>
-              </span>
-            </button>
-          `,
-        )
-        .join("")}
-    </div>
-  `;
-
-  const markAllBtn = document.getElementById("markAllNotificationsRead");
-  if (markAllBtn) {
-    markAllBtn.addEventListener("click", function (event) {
-      event.stopPropagation();
-
-      const visibleIds = new Set(
-        getVisibleNotifications().map((item) => String(item.id)),
-      );
-
-      const updated = getNotifications().map((item) =>
-        visibleIds.has(String(item.id)) ? { ...item, read: true } : item,
-      );
-
-      saveNotifications(updated);
-      renderNotificationDropdown();
+        routeNotificationClick(type, orderNumber);
+      });
     });
   }
 
-  dropdown.querySelectorAll(".notification-item").forEach((item) => {
-    item.addEventListener("click", function () {
-      const id = item.dataset.notificationId;
-      const notifications = getNotifications();
+function routeNotificationClick(type, orderNumber) {
+  const cleanType = String(type || "").trim();
+  const cleanOrderNumber = String(orderNumber || "").trim();
 
-      const selected = notifications.find(
-        (notification) => String(notification.id) === String(id),
-      );
+  if (!cleanOrderNumber) return;
 
-      const updated = notifications.map((notification) =>
-        String(notification.id) === String(id)
-          ? { ...notification, read: true }
-          : notification,
-      );
+  const encodedOrder = encodeURIComponent(cleanOrderNumber);
 
-      saveNotifications(updated);
-      renderNotificationDropdown();
+  const riderFocusTypes = [
+    "rider_assigned",
+    "rider_picked_up",
+    "rider_on_the_way",
+  ];
 
-      if (selected?.link) {
-        window.location.href = selected.link;
+  if (riderFocusTypes.includes(cleanType)) {
+    sessionStorage.setItem("foodExpressTrackFocus", "rider");
+
+    const targetUrl = `track-order.html?order=${encodedOrder}&focus=rider#rider`;
+    const isTrackPage = window.location.pathname.includes("track-order.html");
+
+    if (isTrackPage) {
+      const params = new URLSearchParams(window.location.search);
+      const currentOrder = params.get("order") || params.get("order_number") || "";
+
+      if (String(currentOrder) === cleanOrderNumber) {
+        if (typeof window.focusTrackSection === "function") {
+          window.focusTrackSection("rider");
+        } else {
+          const riderCard = document.getElementById("riderInfoCard");
+          if (riderCard) {
+            riderCard.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+        }
+
+        const dropdown = document.getElementById("notificationDropdown");
+        if (dropdown) dropdown.classList.remove("show", "open");
+
+        return;
       }
-    });
-  });
-}
+    }
 
-function bindNotificationBell() {
-  const bell = document.getElementById("notificationBell");
-  const dropdown = document.getElementById("notificationDropdown");
-
-  if (!bell || !dropdown) {
+    window.location.href = targetUrl;
     return;
   }
 
-  seedDemoNotificationIfEmpty();
-  renderNotificationDropdown();
-
-  if (bell.dataset.notificationBound === "true") {
+  if (cleanType === "order_delivered") {
+    sessionStorage.setItem("foodExpressTrackFocus", "summary");
+    window.location.href = `track-order.html?order=${encodedOrder}&focus=summary#summary`;
     return;
   }
 
-  bell.dataset.notificationBound = "true";
+  if (
+    [
+      "order_placed",
+      "order_confirmed",
+      "food_ready",
+      "order_cancelled",
+    ].includes(cleanType)
+  ) {
+    window.location.href = `track-order.html?order=${encodedOrder}`;
+    return;
+  }
 
-  bell.addEventListener("click", function (event) {
-    event.preventDefault();
-    event.stopPropagation();
+  if (
+    [
+      "new_order",
+      "rider_assigned_owner",
+      "rider_picked_up_owner",
+      "order_delivered_owner",
+    ].includes(cleanType)
+  ) {
+    window.location.href = `owner-orders.html?order=${encodedOrder}`;
+    return;
+  }
 
-    renderNotificationDropdown();
-    dropdown.classList.toggle("show");
-  });
+  if (["delivery_accepted", "delivery_completed"].includes(cleanType)) {
+    window.location.href = `rider-deliveries.html?order=${encodedOrder}`;
+    return;
+  }
 
-  dropdown.addEventListener("click", function (event) {
-    event.stopPropagation();
-  });
-
-  document.addEventListener("click", function () {
-    dropdown.classList.remove("show");
-  });
+  window.location.href = `track-order.html?order=${encodedOrder}`;
 }
 
-function addFoodExpressNotification(notification) {
-  const newNotification = {
-    id: notification.id || `notification-${Date.now()}`,
-    title: notification.title || "FoodExpress update",
-    message: notification.message || "",
-    type: notification.type || "info",
-    category: notification.category || getNotificationCategory(notification),
-    icon: notification.icon || "",
-    read: false,
-    createdAt: notification.createdAt || Date.now(),
-    link: notification.link || "",
-  };
+  function createNotificationHTML(notification) {
+    const isUnread = Number(notification.is_read || 0) === 0;
+    const icon = getIcon(notification.type);
+    const orderNumber = notification.order_number || "";
 
-  if (!isNotificationAllowed(newNotification)) {
-    console.log("[notifications.js] Notification blocked by user settings:", {
-      title: newNotification.title,
-      category: newNotification.category,
+    return `
+      <div 
+        class="notification-item ${isUnread ? "unread" : "read"}"
+        data-id="${escapeHtml(notification.id)}"
+        data-order-number="${escapeHtml(orderNumber)}"
+        data-type="${escapeHtml(notification.type || "")}"
+        role="button"
+        tabindex="0"
+      >
+        <div class="notification-icon">
+          <i class="${icon}"></i>
+        </div>
+
+        <div class="notification-content">
+          <h4 class="notification-title">${escapeHtml(notification.title || "Notification")}</h4>
+          <p class="notification-message">${escapeHtml(notification.message || "")}</p>
+          <span class="notification-time">${escapeHtml(formatTimeAgo(notification.created_at))}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function getIcon(type) {
+    const map = {
+      order_placed: "fa-solid fa-bag-shopping",
+      new_order: "fa-solid fa-receipt",
+      order_confirmed: "fa-solid fa-circle-check",
+      food_ready: "fa-solid fa-box-open",
+      rider_assigned: "fa-solid fa-motorcycle",
+      rider_assigned_owner: "fa-solid fa-motorcycle",
+      delivery_accepted: "fa-solid fa-check",
+      rider_picked_up: "fa-solid fa-bag-shopping",
+      rider_picked_up_owner: "fa-solid fa-bag-shopping",
+      rider_on_the_way: "fa-solid fa-location-arrow",
+      order_delivered: "fa-solid fa-circle-check",
+      order_delivered_owner: "fa-solid fa-circle-check",
+      delivery_completed: "fa-solid fa-money-bill-wave",
+      order_cancelled: "fa-solid fa-circle-xmark",
+    };
+
+    return map[type] || "fa-solid fa-bell";
+  }
+
+  async function markAllRead() {
+    const user = getCurrentNotificationUser();
+    if (!user.email) return;
+
+    await fetch(`${NOTIFICATION_API}?action=mark_all_read`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: user.email,
+        role: user.role,
+      }),
     });
-    return false;
+
+    await loadNotificationsFromBackend();
   }
 
-  const notifications = getNotifications();
-  notifications.unshift(newNotification);
-  saveNotifications(notifications);
+  async function markOneRead(id) {
+    if (!id) return;
 
-  if (typeof window.bindNotificationBell === "function") {
-    window.bindNotificationBell();
+    await fetch(`${NOTIFICATION_API}?action=mark_read`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: Number(id),
+      }),
+    });
+
+    await loadNotificationsFromBackend();
   }
 
-  renderNotificationDropdown();
-  return true;
-}
+  function formatTimeAgo(timestamp) {
+    if (!timestamp) return "Just now";
 
-function escapeNotificationHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
+    const time = new Date(timestamp).getTime();
+    if (Number.isNaN(time)) return "Just now";
 
-document.addEventListener("DOMContentLoaded", function () {
-  bindNotificationBell();
-  setTimeout(bindNotificationBell, 100);
-  setTimeout(bindNotificationBell, 400);
-  setTimeout(bindNotificationBell, 900);
-});
+    const diff = Math.floor((Date.now() - time) / 60000);
 
-window.addEventListener("foodExpressNotificationsUpdated", function () {
-  renderNotificationDropdown();
-});
+    if (diff < 1) return "Just now";
+    if (diff < 60) return `${diff} min${diff > 1 ? "s" : ""} ago`;
 
-window.addEventListener("foodExpressAccountSettingsUpdated", function () {
-  renderNotificationDropdown();
-});
+    const hours = Math.floor(diff / 60);
+    if (hours < 24) return `${hours} hr${hours > 1 ? "s" : ""} ago`;
 
-window.bindNotificationBell = bindNotificationBell;
-window.renderNotificationDropdown = renderNotificationDropdown;
-window.addFoodExpressNotification = addFoodExpressNotification;
-window.getNotifications = getNotifications;
-window.getVisibleNotifications = getVisibleNotifications;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days > 1 ? "s" : ""} ago`;
+  }
+
+  function readJson(key, fallback = null) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  window.bindNotificationBell = bindNotificationBell;
+  window.loadNotificationsFromBackend = loadNotificationsFromBackend;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(bindNotificationBell, 100);
+    setTimeout(bindNotificationBell, 500);
+  });
+})();

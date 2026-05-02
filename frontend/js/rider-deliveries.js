@@ -1,8 +1,9 @@
-console.log("Rider deliveries JS loaded - delivery assignment upgrade");
+console.log("[rider-deliveries.js] Loaded - backend rider delivery flow fixed");
 
 /* ================================
    STORAGE KEYS
 ================================ */
+
 const ORDER_STORAGE_KEY = "foodExpressOrders";
 const LAST_ORDER_KEY = "lastOrder";
 const ORDER_UPDATED_KEY = "foodExpressOrdersUpdatedAt";
@@ -10,10 +11,22 @@ const ACTIVE_RIDER_DELIVERY_KEY = "foodExpressActiveRiderDelivery";
 const RIDER_HISTORY_KEY = "foodexpress_rider_history";
 const RIDER_EARNINGS_KEY = "foodexpress_rider_earnings";
 
+const RIDER_AUTO_REFRESH_INTERVAL = 5000;
+
+let riderAutoRefreshTimer = null;
+let isRiderAutoRefreshing = false;
+
 /* ================================
    BACKEND
 ================================ */
+
 const ORDER_API_URL = "../../backend/controllers/OrderController.php";
+
+let backendAvailableOrders = [];
+
+/* ================================
+   MAIN INIT
+================================ */
 
 document.addEventListener("DOMContentLoaded", () => {
   const menuToggle = document.getElementById("menuToggle");
@@ -31,7 +44,44 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  let activeOrder = readJson(ACTIVE_RIDER_DELIVERY_KEY, null);
+  let activeOrder = null;
+  async function loadActiveDeliveryFromBackend() {
+  const rider = getCurrentRider();
+
+  try {
+    const response = await fetch(
+      `${ORDER_API_URL}?action=active_delivery&rider_id=${encodeURIComponent(rider.id)}`
+    );
+
+    const raw = await response.text();
+
+    let result;
+    try {
+      result = JSON.parse(raw);
+    } catch (error) {
+      console.error("[rider-deliveries.js] Active delivery non-JSON:", raw);
+      throw new Error("Backend did not return valid JSON.");
+    }
+
+    if (!result.success) {
+      throw new Error(result.message || "Could not load active delivery.");
+    }
+
+    if (result.data) {
+      activeOrder = normalizeOrderForRider(result.data);
+      writeJson(ACTIVE_RIDER_DELIVERY_KEY, activeOrder);
+    } else {
+      activeOrder = null;
+      localStorage.removeItem(ACTIVE_RIDER_DELIVERY_KEY);
+    }
+
+    return activeOrder;
+  } catch (error) {
+    console.error("[rider-deliveries.js] Failed to load active delivery:", error);
+    activeOrder = readJson(ACTIVE_RIDER_DELIVERY_KEY, null);
+    return activeOrder;
+  }
+}
   let activeFilter = "All";
 
   const activeBox = document.getElementById("activeDelivery");
@@ -59,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const raw = localStorage.getItem(key);
       return raw ? JSON.parse(raw) : fallback;
     } catch (error) {
-      console.warn(`Could not parse ${key}`, error);
+      console.warn(`[rider-deliveries.js] Could not parse ${key}`, error);
       return fallback;
     }
   }
@@ -82,9 +132,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showToast(message, type = "success") {
-    if (!toast) return;
+    if (!toast) {
+      console.log(`[toast:${type}]`, message);
+      return;
+    }
 
     const span = toast.querySelector("span");
+
     if (span) {
       span.innerText = message;
     } else {
@@ -96,55 +150,291 @@ document.addEventListener("DOMContentLoaded", () => {
     toast.classList.toggle("error", type === "error");
 
     clearTimeout(window.__riderToastTimer);
+
     window.__riderToastTimer = setTimeout(() => {
       toast.classList.remove("show", "warning", "error");
-    }, 2400);
+    }, 2600);
   }
 
-  function getAllOrders() {
-    const orders = readJson(ORDER_STORAGE_KEY, []);
-    return Array.isArray(orders) ? orders : [];
+  function safeCssEscape(value) {
+    if (window.CSS && typeof window.CSS.escape === "function") {
+      return window.CSS.escape(String(value));
+    }
+
+    return String(value).replace(/"/g, '\\"');
   }
 
-  function saveAllOrders(orders) {
-    writeJson(ORDER_STORAGE_KEY, orders);
-    localStorage.setItem(ORDER_UPDATED_KEY, String(Date.now()));
+  /* ================================
+     BACKEND ORDER LOADING
+  ================================ */
+
+  async function loadAvailableDeliveriesFromBackend() {
+    try {
+      const response = await fetch(`${ORDER_API_URL}?action=available_deliveries`);
+      const raw = await response.text();
+
+      let result;
+
+      try {
+        result = JSON.parse(raw);
+      } catch (error) {
+        console.error("[rider-deliveries.js] Non-JSON backend response:", raw);
+        throw new Error("Backend did not return valid JSON.");
+      }
+
+      if (!result.success) {
+        throw new Error(result.message || "Could not load available deliveries.");
+      }
+
+      backendAvailableOrders = Array.isArray(result.data)
+        ? result.data.map(normalizeBackendOrder)
+        : [];
+
+      console.log("[rider-deliveries.js] Backend available deliveries:", {
+        count: backendAvailableOrders.length,
+        orders: backendAvailableOrders,
+      });
+
+      return backendAvailableOrders;
+    } catch (error) {
+      console.error("[rider-deliveries.js] Failed to load deliveries:", error);
+      backendAvailableOrders = [];
+      showToast("Could not load delivery requests.", "error");
+      return [];
+    }
   }
 
-  function getCurrentRider() {
-    const storedRider =
-      readJson("foodExpressCurrentRider", null) ||
-      readJson("foodExpressCurrentUser", null) ||
-      readJson("currentUser", null) ||
-      {};
-
+  function normalizeBackendOrder(order) {
     return {
-      id: Number(storedRider.id || storedRider.rider_id || 1),
-      name:
-        storedRider.name ||
-        storedRider.fullName ||
-        localStorage.getItem("riderName") ||
-        "FoodExpress Rider",
-      email:
-        storedRider.email ||
-        localStorage.getItem("riderEmail") ||
-        "rider@foodexpress.local",
-      phone:
-        storedRider.phone ||
-        storedRider.phoneNumber ||
-        localStorage.getItem("riderPhone") ||
+      ...order,
+
+      id: order.id || order.orderId || order.order_id,
+      orderId: order.orderId || order.order_id || order.id,
+      order_id: order.order_id || order.orderId || order.id,
+
+      orderNumber:
+        order.orderNumber || order.order_number || order.orderNo || order.id,
+      order_number:
+        order.order_number || order.orderNumber || order.orderNo || order.id,
+
+      restaurantId: order.restaurantId || order.restaurant_id || "",
+      restaurant_id: order.restaurant_id || order.restaurantId || "",
+
+      restaurantName:
+        order.restaurantName ||
+        order.restaurant_name ||
+        order.restaurant ||
+        "Restaurant",
+
+      restaurant_name:
+        order.restaurant_name ||
+        order.restaurantName ||
+        order.restaurant ||
+        "Restaurant",
+
+      restaurantAddress:
+        order.restaurantAddress ||
+        order.restaurant_address ||
+        order.pickup ||
         "",
+
+      restaurant_address:
+        order.restaurant_address ||
+        order.restaurantAddress ||
+        order.pickup ||
+        "",
+
+      customerName:
+        order.customerName ||
+        order.customer_name ||
+        order.fullName ||
+        order.name ||
+        "Customer",
+
+      customer_name:
+        order.customer_name ||
+        order.customerName ||
+        order.fullName ||
+        order.name ||
+        "Customer",
+
+      customerEmail: order.customerEmail || order.customer_email || "",
+      customer_email: order.customer_email || order.customerEmail || "",
+
+      phoneNumber: order.phoneNumber || order.phone_number || order.phone || "",
+      phone_number: order.phone_number || order.phoneNumber || order.phone || "",
+
+      postalCode: order.postalCode || order.postal_code || "",
+      postal_code: order.postal_code || order.postalCode || "",
+
+      paymentMethod: order.paymentMethod || order.payment_method || "cash",
+      payment_method: order.payment_method || order.paymentMethod || "cash",
+
+      deliveryFee: order.deliveryFee || order.delivery_fee || 0,
+      delivery_fee: order.delivery_fee || order.deliveryFee || 0,
+
+      deliveryStatus:
+        order.deliveryStatus || order.delivery_status || "searching",
+
+      delivery_status:
+        order.delivery_status || order.deliveryStatus || "searching",
+
+      riderId: order.riderId || order.rider_id || null,
+      rider_id: order.rider_id || order.riderId || null,
+
+      riderName: order.riderName || order.rider_name || null,
+      rider_name: order.rider_name || order.riderName || null,
+
+      createdAt: order.createdAt || order.created_at || "",
+      created_at: order.created_at || order.createdAt || "",
+
+      updatedAt: order.updatedAt || order.updated_at || "",
+      updated_at: order.updated_at || order.updatedAt || "",
+
+      total: Number(order.total || 0),
+      subtotal: Number(order.subtotal || 0),
+      tax: Number(order.tax || 0),
+
+      items: Array.isArray(order.items) ? order.items : [],
     };
   }
 
+  function getAllOrders() {
+    const localOrders = readJson(ORDER_STORAGE_KEY, []);
+    const safeLocalOrders = Array.isArray(localOrders) ? localOrders : [];
+    const safeBackendOrders = Array.isArray(backendAvailableOrders)
+      ? backendAvailableOrders
+      : [];
+
+    const merged = [...safeBackendOrders];
+
+    safeLocalOrders.forEach((localOrder) => {
+      const exists = merged.some((backendOrder) => {
+        const backendId =
+          backendOrder.id || backendOrder.orderId || backendOrder.order_id;
+        const localId = localOrder.id || localOrder.orderId || localOrder.order_id;
+
+        const backendNumber =
+          backendOrder.orderNumber || backendOrder.order_number || "";
+        const localNumber =
+          localOrder.orderNumber || localOrder.order_number || "";
+
+        return (
+          String(backendId) === String(localId) ||
+          String(backendNumber) === String(localNumber)
+        );
+      });
+
+      if (!exists) {
+        merged.push(normalizeBackendOrder(localOrder));
+      }
+    });
+
+    return merged;
+  }
+
+  function saveAllOrders(orders) {
+    const safeOrders = Array.isArray(orders) ? orders : [];
+
+    backendAvailableOrders = safeOrders.map(normalizeBackendOrder);
+
+    writeJson(ORDER_STORAGE_KEY, backendAvailableOrders);
+    localStorage.setItem(ORDER_UPDATED_KEY, String(Date.now()));
+  }
+
+  /* ================================
+     RIDER INFO
+  ================================ */
+
+  function getCurrentRider() {
+  /*
+    Important:
+    Do NOT use foodExpressCurrentUser/currentUser here.
+    Those can be customer or restaurant owner accounts, which caused:
+    "Spicy Grill Owner is your rider..."
+
+    Rider pages should only use rider-specific localStorage/profile data.
+  */
+
+  const storedRider =
+    readJson("foodExpressCurrentRider", null) ||
+    readJson("foodExpressRiderProfile", null) ||
+    readJson("riderProfile", null) ||
+    {};
+
+  const fallbackName =
+    localStorage.getItem("riderName") ||
+    localStorage.getItem("foodExpressRiderName") ||
+    storedRider.name ||
+    storedRider.fullName ||
+    storedRider.full_name ||
+    storedRider.riderName ||
+    storedRider.rider_name ||
+    "";
+
+  const fallbackEmail =
+    localStorage.getItem("riderEmail") ||
+    localStorage.getItem("foodExpressRiderEmail") ||
+    storedRider.email ||
+    storedRider.riderEmail ||
+    storedRider.rider_email ||
+    "";
+
+  const fallbackPhone =
+    localStorage.getItem("riderPhone") ||
+    localStorage.getItem("foodExpressRiderPhone") ||
+    storedRider.phone ||
+    storedRider.phoneNumber ||
+    storedRider.phone_number ||
+    storedRider.riderPhone ||
+    storedRider.rider_phone ||
+    "";
+
+  const fallbackId =
+    storedRider.id ||
+    storedRider.rider_id ||
+    localStorage.getItem("riderUserId") ||
+    localStorage.getItem("foodExpressRiderId") ||
+    1;
+
+  const riderName = String(fallbackName || "").trim();
+  const riderEmail = String(fallbackEmail || "").trim();
+  const riderPhone = String(fallbackPhone || "").trim();
+
+  return {
+    id: Number(fallbackId || 1),
+
+    name:
+      riderName && !/owner/i.test(riderName)
+        ? riderName
+        : "FoodExpress Rider",
+
+    email:
+      riderEmail && !/owner/i.test(riderEmail)
+        ? riderEmail
+        : "rider@foodexpress.local",
+
+    phone: riderPhone,
+  };
+}
+
+  /* ================================
+     ORDER NORMALIZATION HELPERS
+  ================================ */
+
   function getOrderId(order) {
     return String(
-      order.id || order.orderId || order.order_id || order.orderNumber || ""
+      order.id ||
+        order.orderId ||
+        order.order_id ||
+        order.orderNumber ||
+        order.order_number ||
+        ""
     );
   }
 
   function getBackendOrderId(order) {
-    return order.id || order.orderId || order.order_id || "";
+    return order.orderId || order.order_id || order.id || "";
   }
 
   function getOrderNumber(order) {
@@ -222,9 +512,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function estimateEarning(order) {
     const total = Number(order.total || 0);
-    if (total <= 0) return 95;
+
+    if (total <= 0) return 75;
 
     const earning = Math.round(total * 0.08 + 70);
+
     return Math.max(75, earning);
   }
 
@@ -237,37 +529,46 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getDeliveryStatus(order) {
-    return String(
+    const raw =
       order.deliveryStatus ||
-        order.delivery_status ||
-        order.delivery_status_name ||
-        "searching"
-    ).toLowerCase();
+      order.delivery_status ||
+      order.delivery_status_name ||
+      "";
+
+    return String(raw || "searching").toLowerCase().trim();
   }
 
   function getOrderStatus(order) {
-    return String(order.status || "pending").toLowerCase();
+    return String(order.status || "pending").toLowerCase().trim();
   }
 
   function normalizeOrderForRider(order) {
-    const id = getOrderId(order);
-    const orderNumber = getOrderNumber(order);
-    const deliveryStatus = getDeliveryStatus(order);
-    const orderStatus = getOrderStatus(order);
+    const normalizedBase = normalizeBackendOrder(order);
+
+    const id = getOrderId(normalizedBase);
+    const orderNumber = getOrderNumber(normalizedBase);
+    const deliveryStatus = getDeliveryStatus(normalizedBase);
+    const orderStatus = getOrderStatus(normalizedBase);
 
     let readyLabel = "Looking for rider";
     let type = "Searching";
     let icon = "fa-magnifying-glass-location";
 
-    if (deliveryStatus === "assigned" && orderStatus !== "ready_for_pickup") {
-      readyLabel = "Assigned • waiting for restaurant";
-      type = "Assigned";
+    if (orderStatus === "ready_for_pickup" && deliveryStatus === "searching") {
+      readyLabel = "Ready for pickup";
+      type = "Ready";
+      icon = "fa-bag-shopping";
+    }
+
+    if (deliveryStatus === "assigned") {
+      readyLabel = "Accepted";
+      type = "Active";
       icon = "fa-clock";
     }
 
-    if (orderStatus === "ready_for_pickup" && deliveryStatus === "assigned") {
+    if (deliveryStatus === "assigned" && orderStatus === "ready_for_pickup") {
       readyLabel = "Ready for pickup";
-      type = "Ready";
+      type = "Active";
       icon = "fa-bag-shopping";
     }
 
@@ -283,21 +584,36 @@ document.addEventListener("DOMContentLoaded", () => {
       icon = "fa-route";
     }
 
+    if (deliveryStatus === "delivered" || orderStatus === "delivered") {
+      readyLabel = "Delivered";
+      type = "Completed";
+      icon = "fa-circle-check";
+    }
+
     return {
-      ...order,
+      ...normalizedBase,
+
       riderTaskId: id,
       id,
+      orderId: getBackendOrderId(normalizedBase),
+      order_id: getBackendOrderId(normalizedBase),
+
       orderNumber,
-      restaurant: getRestaurantName(order),
-      customer: getCustomerName(order),
-      phone: getCustomerPhone(order),
-      pickup: getPickupAddress(order),
-      dropoff: getDropoffAddress(order),
-      itemsSummary: getItemsSummary(order),
-      earning: estimateEarning(order),
-      distance: calculateDistanceLabel(order),
-      eta: calculateEtaLabel(order),
-      image: getOrderImage(order),
+      order_number: orderNumber,
+
+      restaurant: getRestaurantName(normalizedBase),
+      customer: getCustomerName(normalizedBase),
+      phone: getCustomerPhone(normalizedBase),
+
+      pickup: getPickupAddress(normalizedBase),
+      dropoff: getDropoffAddress(normalizedBase),
+
+      itemsSummary: getItemsSummary(normalizedBase),
+      earning: estimateEarning(normalizedBase),
+      distance: calculateDistanceLabel(normalizedBase),
+      eta: calculateEtaLabel(normalizedBase),
+      image: getOrderImage(normalizedBase),
+
       orderStatus,
       deliveryStatus,
       ready: readyLabel,
@@ -318,10 +634,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const orderStatus = getOrderStatus(order);
         const deliveryStatus = getDeliveryStatus(order);
 
+        const isRestaurantReady = orderStatus === "ready_for_pickup";
+
+        const isNotAssignedYet =
+          !deliveryStatus ||
+          deliveryStatus === "searching" ||
+          deliveryStatus === "unassigned" ||
+          deliveryStatus === "pending";
+
         return (
+          isRestaurantReady &&
+          isNotAssignedYet &&
           orderStatus !== "cancelled" &&
-          orderStatus !== "delivered" &&
-          deliveryStatus === "searching"
+          orderStatus !== "delivered"
         );
       })
       .map(normalizeOrderForRider);
@@ -330,19 +655,22 @@ document.addEventListener("DOMContentLoaded", () => {
   function getFilteredOrders() {
     const availableOrders = getAvailableDeliveryOrders();
 
-    if (activeOrder) {
-      return availableOrders.filter(
-        (order) => String(order.id) !== String(activeOrder.id)
-      );
-    }
+    const withoutActive = activeOrder
+      ? availableOrders.filter(
+          (order) =>
+            String(order.id) !== String(activeOrder.id) &&
+            String(order.orderNumber) !== String(activeOrder.orderNumber)
+        )
+      : availableOrders;
 
-    if (activeFilter === "All") return availableOrders;
+    if (activeFilter === "All") return withoutActive;
 
-    return availableOrders.filter((order) => order.type === activeFilter);
+    return withoutActive.filter((order) => order.type === activeFilter);
   }
 
   function updateStats() {
     const availableOrders = getFilteredOrders();
+
     const totalPotential = availableOrders.reduce(
       (sum, order) => sum + Number(order.earning || 0),
       0
@@ -350,7 +678,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (availableCount) availableCount.innerText = availableOrders.length;
     if (activeCount) activeCount.innerText = activeOrder ? "1" : "0";
-    if (potentialEarnings) potentialEarnings.innerText = formatMoney(totalPotential);
+
+    if (potentialEarnings) {
+      potentialEarnings.innerText = formatMoney(totalPotential);
+    }
   }
 
   function renderAvailable() {
@@ -364,7 +695,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div>
             <i class="fa-solid fa-magnifying-glass-location"></i>
             <h3>No rider requests right now</h3>
-            <p>Orders looking for a nearby rider will appear here after customers place orders.</p>
+            <p>Orders marked ready for pickup by restaurants will appear here.</p>
             <button class="empty-refresh-btn" id="emptyRefreshBtn">
               <i class="fa-solid fa-rotate-right"></i>
               Refresh Orders
@@ -391,7 +722,9 @@ document.addEventListener("DOMContentLoaded", () => {
                   <i class="fa-solid ${escapeHtml(order.icon)}"></i>
                 </div>
                 <h4>${escapeHtml(order.restaurant)}</h4>
-                <p>${escapeHtml(order.orderNumber)} • ${escapeHtml(order.customer)}</p>
+                <p>${escapeHtml(order.orderNumber)} • ${escapeHtml(
+                  order.customer
+                )}</p>
               </div>
 
               <strong class="pay-badge">${formatMoney(order.earning)}</strong>
@@ -403,14 +736,30 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
 
             <div class="delivery-meta">
-              <span><i class="fa-solid fa-route"></i> ${escapeHtml(order.distance)}</span>
-              <span><i class="fa-regular fa-clock"></i> ${escapeHtml(order.eta)}</span>
-              <span><i class="fa-solid fa-bag-shopping"></i> ${escapeHtml(order.itemsSummary)}</span>
+              <span>
+                <i class="fa-solid fa-route"></i>
+                ${escapeHtml(order.distance)}
+              </span>
+
+              <span>
+                <i class="fa-regular fa-clock"></i>
+                ${escapeHtml(order.eta)}
+              </span>
+
+              <span>
+                <i class="fa-solid fa-bag-shopping"></i>
+                ${escapeHtml(order.itemsSummary)}
+              </span>
             </div>
 
             <div class="delivery-actions">
-              <button class="accept-btn" data-id="${escapeHtml(order.id)}">Accept Delivery</button>
-              <button class="decline-btn" data-id="${escapeHtml(order.id)}">Decline</button>
+              <button class="accept-btn" data-id="${escapeHtml(order.id)}">
+                Accept Delivery
+              </button>
+
+              <button class="decline-btn" data-id="${escapeHtml(order.id)}">
+                Decline
+              </button>
             </div>
           </article>
         `
@@ -422,20 +771,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const order = orders.find(
           (item) => String(item.id) === String(card.dataset.id)
         );
+
         if (order) openDrawer(order);
       });
     });
 
     document.querySelectorAll(".accept-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
         acceptOrder(btn.dataset.id);
       });
     });
 
     document.querySelectorAll(".decline-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
         declineOrder(btn.dataset.id);
       });
     });
@@ -451,10 +801,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const deliveryStatus = getDeliveryStatus(order);
     const orderStatus = getOrderStatus(order);
 
-    if (deliveryStatus === "delivered") return 4;
-    if (deliveryStatus === "on_the_way") return 3;
-    if (deliveryStatus === "picked_up") return 2;
-    if (deliveryStatus === "assigned" && orderStatus === "ready_for_pickup") return 1;
+    if (deliveryStatus === "delivered" || orderStatus === "delivered") return 4;
+    if (deliveryStatus === "on_the_way" || orderStatus === "on_the_way") return 3;
+    if (deliveryStatus === "picked_up" || orderStatus === "picked_up") return 2;
+
+    if (deliveryStatus === "assigned" && orderStatus === "ready_for_pickup") {
+      return 1;
+    }
+
     if (deliveryStatus === "assigned") return 0;
 
     return 0;
@@ -496,9 +850,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const deliveryStatus = getDeliveryStatus(activeOrder);
     const orderStatus = getOrderStatus(activeOrder);
 
-    if (deliveryStatus === "delivered") return true;
+    if (deliveryStatus === "delivered" || orderStatus === "delivered") {
+      return true;
+    }
 
-    // Rider has accepted early, but food is not ready yet.
     if (deliveryStatus === "assigned" && orderStatus !== "ready_for_pickup") {
       return true;
     }
@@ -519,6 +874,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
       `;
+
       updateStats();
       return;
     }
@@ -534,7 +890,9 @@ document.addEventListener("DOMContentLoaded", () => {
         <div>
           <h3>Active Delivery</h3>
           <span class="order-pill">
-            ${escapeHtml(activeOrder.orderNumber)} • ${escapeHtml(activeOrder.restaurant)}
+            ${escapeHtml(activeOrder.orderNumber)} • ${escapeHtml(
+              activeOrder.restaurant
+            )}
           </span>
         </div>
 
@@ -577,7 +935,11 @@ document.addEventListener("DOMContentLoaded", () => {
             (step, index) => `
               <div class="trip-step ${index <= currentStep ? "done" : ""}">
                 <span>
-                  ${index <= currentStep ? `<i class="fa-solid fa-check"></i>` : ""}
+                  ${
+                    index <= currentStep
+                      ? `<i class="fa-solid fa-check"></i>`
+                      : ""
+                  }
                 </span>
                 ${escapeHtml(step.label)}
               </div>
@@ -630,7 +992,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ================================
-     BACKEND CALLS
+     BACKEND ACTIONS
   ================================ */
 
   async function assignRiderBackend(order) {
@@ -647,7 +1009,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        order_id: backendOrderId,
+        order_id: Number(backendOrderId),
         rider_id: rider.id,
         rider_name: rider.name,
         rider_email: rider.email,
@@ -658,10 +1020,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const raw = await response.text();
 
     let result;
+
     try {
       result = JSON.parse(raw);
     } catch (error) {
-      console.error("Raw assign rider response:", raw);
+      console.error("[rider-deliveries.js] Raw assign rider response:", raw);
       throw new Error("Server did not return valid JSON.");
     }
 
@@ -685,7 +1048,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        order_id: backendOrderId,
+        order_id: Number(backendOrderId),
         delivery_status: nextDeliveryStatus,
       }),
     });
@@ -693,46 +1056,58 @@ document.addEventListener("DOMContentLoaded", () => {
     const raw = await response.text();
 
     let result;
+
     try {
       result = JSON.parse(raw);
     } catch (error) {
-      console.error("Raw delivery status response:", raw);
+      console.error("[rider-deliveries.js] Raw delivery response:", raw);
       throw new Error("Server did not return valid JSON.");
     }
 
     if (!result.success) {
-      throw new Error(result.message || "Backend delivery status update failed.");
+      throw new Error(result.message || "Backend delivery update failed.");
     }
 
     return result;
   }
 
   /* ================================
-     LOCAL ORDER UPDATE
+     LOCAL SYNC
   ================================ */
 
   function updateLocalOrderDelivery(order, deliveryStatus, riderData = null) {
     const orders = getAllOrders();
     const targetId = getOrderId(order);
 
-    const index = orders.findIndex((item) => {
+    let index = orders.findIndex((item) => {
       return (
         String(item.id) === String(targetId) ||
         String(item.orderId) === String(targetId) ||
         String(item.order_id) === String(targetId) ||
-        String(item.orderNumber) === String(order.orderNumber)
+        String(item.orderNumber || item.order_number) ===
+          String(order.orderNumber || order.order_number)
       );
     });
 
     if (index === -1) {
-      throw new Error("Could not find this order in local order history.");
+      orders.push({ ...order });
+      index = orders.length - 1;
     }
 
-    const currentOrder = orders[index];
+    const currentOrder = normalizeBackendOrder(orders[index]);
 
     currentOrder.deliveryStatus = deliveryStatus;
     currentOrder.delivery_status = deliveryStatus;
     currentOrder.updatedAt = new Date().toISOString();
+    currentOrder.updated_at = currentOrder.updatedAt;
+
+    if (deliveryStatus === "picked_up") {
+      currentOrder.status = "picked_up";
+    }
+
+    if (deliveryStatus === "on_the_way") {
+      currentOrder.status = "on_the_way";
+    }
 
     if (deliveryStatus === "delivered") {
       currentOrder.status = "delivered";
@@ -764,7 +1139,6 @@ document.addEventListener("DOMContentLoaded", () => {
       currentOrder.statusHistory = [];
     }
 
-    // Keep customer track page compatible with old status flow
     if (["picked_up", "on_the_way", "delivered"].includes(deliveryStatus)) {
       currentOrder.statusHistory.push({
         status: deliveryStatus,
@@ -776,12 +1150,14 @@ document.addEventListener("DOMContentLoaded", () => {
     saveAllOrders(orders);
 
     const lastOrder = readJson(LAST_ORDER_KEY, null);
+
     if (
       lastOrder &&
       (String(lastOrder.id) === String(currentOrder.id) ||
         String(lastOrder.orderId) === String(currentOrder.orderId) ||
         String(lastOrder.order_id) === String(currentOrder.order_id) ||
-        String(lastOrder.orderNumber) === String(currentOrder.orderNumber))
+        String(lastOrder.orderNumber || lastOrder.order_number) ===
+          String(currentOrder.orderNumber || currentOrder.order_number))
     ) {
       writeJson(LAST_ORDER_KEY, currentOrder);
     }
@@ -800,7 +1176,8 @@ document.addEventListener("DOMContentLoaded", () => {
         String(item.id) === String(targetId) ||
         String(item.orderId) === String(targetId) ||
         String(item.order_id) === String(targetId) ||
-        String(item.orderNumber) === String(activeOrder.orderNumber)
+        String(item.orderNumber || item.order_number) ===
+          String(activeOrder.orderNumber || activeOrder.order_number)
       );
     });
 
@@ -826,46 +1203,49 @@ document.addEventListener("DOMContentLoaded", () => {
   ================================ */
 
   async function acceptOrder(id) {
-    if (activeOrder) {
-      showToast("Finish current delivery before accepting another.", "warning");
-      return;
-    }
+  await loadActiveDeliveryFromBackend();
 
-    const order = getFilteredOrders().find((item) => String(item.id) === String(id));
-
-    if (!order) {
-      showToast("Order is no longer available.", "warning");
-      renderAvailable();
-      return;
-    }
-
-    try {
-      showToast("Assigning rider...");
-
-      const rider = getCurrentRider();
-
-      await assignRiderBackend(order);
-
-      const updatedOrder = updateLocalOrderDelivery(order, "assigned", rider);
-
-      markActiveDelivery(updatedOrder);
-      renderActive();
-      renderAvailable();
-
-      showToast(
-        `${updatedOrder.orderNumber} accepted. Wait for restaurant to mark it ready.`
-      );
-    } catch (error) {
-      console.error("Accept delivery failed:", error);
-      showToast(error.message || "Could not accept delivery.", "error");
-    }
+  if (activeOrder) {
+    showToast("Finish current delivery before accepting another.", "warning");
+    renderActive();
+    return;
   }
+
+  const order = getFilteredOrders().find(
+    (item) => String(item.id) === String(id)
+  );
+
+  if (!order) {
+    showToast("Order is no longer available.", "warning");
+    await refreshOrders();
+    return;
+  }
+
+  try {
+    showToast("Assigning rider...");
+
+    await assignRiderBackend(order);
+
+    await loadActiveDeliveryFromBackend();
+    await loadAvailableDeliveriesFromBackend();
+
+    renderActive();
+    renderAvailable();
+    updateStats();
+
+    showToast(`${order.orderNumber} accepted successfully.`);
+  } catch (error) {
+    console.error("[rider-deliveries.js] Accept delivery failed:", error);
+    showToast(error.message || "Could not accept delivery.", "error");
+  }
+}
+
 
   function declineOrder(id) {
     showToast("Delivery task hidden for now.");
 
     const card = document.querySelector(
-      `.delivery-card[data-id="${CSS.escape(String(id))}"]`
+      `.delivery-card[data-id="${safeCssEscape(String(id))}"]`
     );
 
     if (card) card.remove();
@@ -874,50 +1254,64 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function nextStep() {
-    if (!activeOrder) return;
+  await loadActiveDeliveryFromBackend();
 
-    syncActiveOrderFromStorage();
+  if (!activeOrder) {
+    showToast("No active delivery found.", "warning");
+    renderActive();
+    return;
+  }
 
-    if (shouldDisableNextStep()) {
-      showToast("Food is not ready yet. Wait for restaurant confirmation.", "warning");
-      return;
-    }
+  if (shouldDisableNextStep()) {
+    showToast("Food is not ready yet. Wait for restaurant confirmation.", "warning");
+    return;
+  }
 
-    const nextDeliveryStatus = getNextDeliveryStatus();
+  const nextDeliveryStatus = getNextDeliveryStatus();
 
-    if (getDeliveryStatus(activeOrder) === "delivered") {
-      showToast("Delivery already completed.");
-      return;
-    }
+  if (getDeliveryStatus(activeOrder) === "delivered") {
+    showToast("Delivery already completed.");
+    return;
+  }
 
-    try {
-      showToast("Updating delivery status...");
+  try {
+    showToast("Updating delivery status...");
 
-      await updateBackendDeliveryStatus(activeOrder, nextDeliveryStatus);
+    await updateBackendDeliveryStatus(activeOrder, nextDeliveryStatus);
 
-      const updatedOrder = updateLocalOrderDelivery(activeOrder, nextDeliveryStatus);
-      markActiveDelivery(updatedOrder);
-
-      if (nextDeliveryStatus === "picked_up") {
-        showToast("Order picked up from restaurant.");
-      } else if (nextDeliveryStatus === "on_the_way") {
-        showToast("You are now on the way to the customer.");
-      } else if (nextDeliveryStatus === "delivered") {
-        saveDeliveredOrderToEarnings(updatedOrder);
-        saveDeliveredOrderToHistory(updatedOrder);
-        clearActiveDelivery();
-        showToast("Delivery completed. Earnings added.");
-      }
+    if (nextDeliveryStatus === "delivered") {
+      saveDeliveredOrderToEarnings(activeOrder);
+      saveDeliveredOrderToHistory(activeOrder);
+      clearActiveDelivery();
+      await loadAvailableDeliveriesFromBackend();
 
       renderActive();
       renderAvailable();
       updateStats();
-    } catch (error) {
-      console.error("Delivery status update failed:", error);
-      showToast(error.message || "Could not update delivery status.", "error");
-    }
-  }
 
+      showToast("Delivery completed. Earnings added.");
+      return;
+    }
+
+    await loadActiveDeliveryFromBackend();
+    await loadAvailableDeliveriesFromBackend();
+
+    renderActive();
+    renderAvailable();
+    updateStats();
+
+    if (nextDeliveryStatus === "picked_up") {
+      showToast("Order picked up from restaurant.");
+    } else if (nextDeliveryStatus === "on_the_way") {
+      showToast("You are now on the way to the customer.");
+    }
+  } catch (error) {
+    console.error("[rider-deliveries.js] Delivery update failed:", error);
+    showToast(error.message || "Could not update delivery status.", "error");
+  }
+}
+
+  
   /* ================================
      MAP + DRAWER
   ================================ */
@@ -976,7 +1370,9 @@ document.addEventListener("DOMContentLoaded", () => {
       `
     );
 
-    document.getElementById("drawerOverlay")?.addEventListener("click", closeDrawer);
+    document
+      .getElementById("drawerOverlay")
+      ?.addEventListener("click", closeDrawer);
   }
 
   function openDrawer(order) {
@@ -988,7 +1384,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const drawer = document.getElementById("orderDrawer");
     const overlay = document.getElementById("drawerOverlay");
-    const isActive = activeOrder && String(activeOrder.id) === String(order.id);
+
+    if (!drawer) return;
+
+    const isActive =
+      activeOrder &&
+      (String(activeOrder.id) === String(order.id) ||
+        String(activeOrder.orderNumber) === String(order.orderNumber));
 
     drawer.innerHTML = `
       <div class="drawer-head">
@@ -1026,6 +1428,14 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <div class="drawer-info-row">
+          <i class="fa-solid fa-phone"></i>
+          <div>
+            <span>Phone</span>
+            <strong>${escapeHtml(order.phone)}</strong>
+          </div>
+        </div>
+
+        <div class="drawer-info-row">
           <i class="fa-solid fa-bag-shopping"></i>
           <div>
             <span>Items</span>
@@ -1051,7 +1461,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <div class="drawer-stat">
-          <span>Delivery Status</span>
+          <span>Status</span>
           <strong>${escapeHtml(order.deliveryStatus)}</strong>
         </div>
       </div>
@@ -1080,7 +1490,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     overlay?.classList.add("show");
-    drawer?.classList.add("show");
+    drawer.classList.add("show");
 
     document.getElementById("drawerClose")?.addEventListener("click", closeDrawer);
 
@@ -1091,8 +1501,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("drawerNextBtn")?.addEventListener("click", async () => {
       await nextStep();
-      if (activeOrder) openDrawer(activeOrder);
-      else closeDrawer();
+
+      if (activeOrder) {
+        openDrawer(activeOrder);
+      } else {
+        closeDrawer();
+      }
     });
 
     document.getElementById("drawerNavigateBtn")?.addEventListener("click", () => {
@@ -1105,20 +1519,56 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("orderDrawer")?.classList.remove("show");
   }
 
-  function refreshOrders() {
-    syncActiveOrderFromStorage();
+async function refreshOrders() {
+  refreshBtn?.classList.add("loading");
+  showToast("Checking for rider requests...");
 
-    refreshBtn?.classList.add("loading");
-    showToast("Checking for rider requests...");
+  await loadActiveDeliveryFromBackend();
+  await loadAvailableDeliveriesFromBackend();
 
-    setTimeout(() => {
-      refreshBtn?.classList.remove("loading");
+  refreshBtn?.classList.remove("loading");
+
+  renderActive();
+  renderAvailable();
+  updateStats();
+
+  showToast("Rider requests refreshed.");
+}
+
+function startRiderAutoRefresh() {
+  stopRiderAutoRefresh();
+
+  riderAutoRefreshTimer = setInterval(async () => {
+    if (document.hidden) return;
+    if (isRiderAutoRefreshing) return;
+
+    try {
+      isRiderAutoRefreshing = true;
+
+      await loadActiveDeliveryFromBackend();
+      await loadAvailableDeliveriesFromBackend();
+
       renderActive();
       renderAvailable();
       updateStats();
-      showToast("Rider requests refreshed.");
-    }, 700);
+
+      console.log("[rider-deliveries.js] Rider auto refreshed");
+    } catch (error) {
+      console.error("[rider-deliveries.js] Rider auto refresh failed:", error);
+    } finally {
+      isRiderAutoRefreshing = false;
+    }
+  }, RIDER_AUTO_REFRESH_INTERVAL);
+
+  console.log("[rider-deliveries.js] Rider auto-refresh started");
+}
+
+function stopRiderAutoRefresh() {
+  if (riderAutoRefreshTimer) {
+    clearInterval(riderAutoRefreshTimer);
+    riderAutoRefreshTimer = null;
   }
+}
 
   /* ================================
      HISTORY + EARNINGS
@@ -1253,7 +1703,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  /* ================================
+     FIRST LOAD
+  ================================ */
+Promise.all([
+  loadActiveDeliveryFromBackend(),
+  loadAvailableDeliveriesFromBackend()
+]).then(() => {
   renderActive();
   renderAvailable();
   updateStats();
+  startRiderAutoRefresh();
+});
+
+window.addEventListener("beforeunload", () => {
+  stopRiderAutoRefresh();
+});
 });

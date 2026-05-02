@@ -1,4 +1,4 @@
-console.log("[reward.js] Loaded - premium FoodExpress rewards");
+console.log("[reward.js] Loaded - real-world FoodExpress rewards");
 
 const REWARD_TIERS = [
   {
@@ -32,6 +32,24 @@ const LEGACY_POINTS_KEY = "userPoints";
 const DASHBOARD_POINTS_KEY = "foodExpressRewardPoints";
 const ORDER_HISTORY_KEY = "foodExpressOrders";
 
+const ACTIVE_ORDER_STATUSES = [
+  "pending",
+  "confirmed",
+  "preparing",
+  "ready_for_pickup",
+];
+
+const ACTIVE_DELIVERY_STATUSES = [
+  "searching",
+  "assigned",
+  "picked_up",
+  "on_the_way",
+];
+
+/* ===============================
+   DATA MODEL
+================================ */
+
 function getDefaultRewardsData() {
   const legacyPoints =
     Number(localStorage.getItem(LEGACY_POINTS_KEY)) ||
@@ -41,10 +59,12 @@ function getDefaultRewardsData() {
   return {
     currentPoints: legacyPoints,
     lifetimePoints: legacyPoints,
+    pendingPoints: 0,
     activeCoupons: [],
     redeemedRewards: [],
     history: [],
     processedOrderIds: [],
+    cancelledOrderIds: [],
   };
 }
 
@@ -54,13 +74,22 @@ function normalizeRewardsData(data) {
   return {
     currentPoints: Number(data?.currentPoints ?? fallback.currentPoints) || 0,
     lifetimePoints: Number(data?.lifetimePoints ?? fallback.lifetimePoints) || 0,
+    pendingPoints: Number(data?.pendingPoints ?? 0) || 0,
+
     activeCoupons: Array.isArray(data?.activeCoupons) ? data.activeCoupons : [],
+
     redeemedRewards: Array.isArray(data?.redeemedRewards)
       ? data.redeemedRewards
       : [],
+
     history: Array.isArray(data?.history) ? data.history : [],
+
     processedOrderIds: Array.isArray(data?.processedOrderIds)
       ? data.processedOrderIds.map(String)
+      : [],
+
+    cancelledOrderIds: Array.isArray(data?.cancelledOrderIds)
+      ? data.cancelledOrderIds.map(String)
       : [],
   };
 }
@@ -78,6 +107,7 @@ function getRewardsData() {
     return normalizeRewardsData(JSON.parse(saved));
   } catch (error) {
     console.warn("[reward.js] Rewards data parse failed:", error);
+
     const fallback = getDefaultRewardsData();
     saveRewardsData(fallback);
     return fallback;
@@ -89,7 +119,6 @@ function saveRewardsData(data) {
 
   localStorage.setItem(REWARDS_STORAGE_KEY, JSON.stringify(cleanData));
 
-  // Keep dashboard/payment compatible
   localStorage.setItem(LEGACY_POINTS_KEY, String(cleanData.currentPoints));
   localStorage.setItem(DASHBOARD_POINTS_KEY, String(cleanData.currentPoints));
 
@@ -97,6 +126,215 @@ function saveRewardsData(data) {
 
   return cleanData;
 }
+
+/* ===============================
+   ORDER DETECTION
+================================ */
+
+function getAllKnownOrders() {
+  const orders = [];
+
+  const latestOrder = readJson("latestOrder", null);
+  const lastOrder = readJson("lastOrder", null);
+  const historyOrders = readJson(ORDER_HISTORY_KEY, []);
+
+  if (latestOrder) orders.push(latestOrder);
+  if (lastOrder) orders.push(lastOrder);
+  if (Array.isArray(historyOrders)) orders.push(...historyOrders);
+
+  const unique = [];
+  const seen = new Set();
+
+  orders.forEach((order) => {
+    const id = getOrderId(order);
+    if (!id || seen.has(id)) return;
+
+    seen.add(id);
+    unique.push(order);
+  });
+
+  return unique;
+}
+
+function getOrderId(order) {
+  return String(
+    order?.id ||
+      order?.orderId ||
+      order?.order_id ||
+      order?.orderNumber ||
+      order?.order_number ||
+      ""
+  );
+}
+
+function getOrderNumber(order) {
+  return String(
+    order?.orderNumber ||
+      order?.order_number ||
+      order?.orderId ||
+      order?.id ||
+      "order"
+  );
+}
+
+function getOrderStatus(order) {
+  return String(order?.status || "").toLowerCase().trim();
+}
+
+function getDeliveryStatus(order) {
+  return String(
+    order?.delivery_status ||
+      order?.deliveryStatus ||
+      ""
+  )
+    .toLowerCase()
+    .trim();
+}
+
+function isOrderDelivered(order) {
+  const status = getOrderStatus(order);
+  const deliveryStatus = getDeliveryStatus(order);
+
+  return status === "delivered" || deliveryStatus === "delivered";
+}
+
+function isOrderCancelled(order) {
+  const status = getOrderStatus(order);
+  const deliveryStatus = getDeliveryStatus(order);
+
+  return (
+    status === "cancelled" ||
+    status === "canceled" ||
+    deliveryStatus === "cancelled" ||
+    deliveryStatus === "canceled"
+  );
+}
+
+function isOrderActive(order) {
+  const status = getOrderStatus(order);
+  const deliveryStatus = getDeliveryStatus(order);
+
+  if (isOrderDelivered(order) || isOrderCancelled(order)) return false;
+
+  return (
+    ACTIVE_ORDER_STATUSES.includes(status) ||
+    ACTIVE_DELIVERY_STATUSES.includes(deliveryStatus)
+  );
+}
+
+function getRewardPointsForOrder(order) {
+  const total = Number(order?.total || 0);
+  return Math.max(0, Math.floor(total / 10));
+}
+
+/* ===============================
+   POINTS SYNC
+================================ */
+
+function syncOrdersIntoRewards() {
+  const data = getRewardsData();
+  const orders = getAllKnownOrders();
+
+  let changed = false;
+  let pendingPoints = 0;
+
+  orders.forEach((order) => {
+    const orderId = getOrderId(order);
+    if (!orderId) return;
+
+    const points = getRewardPointsForOrder(order);
+    if (points <= 0) return;
+
+    if (isOrderCancelled(order)) {
+      if (!data.cancelledOrderIds.includes(orderId)) {
+        data.cancelledOrderIds.push(orderId);
+
+        addRewardHistory(data, {
+          type: "cancelled",
+          title: "No points earned",
+          description: `Order ${getOrderNumber(order)} was cancelled, so no rewards were added.`,
+          points: 0,
+        });
+
+        changed = true;
+      }
+
+      return;
+    }
+
+    if (isOrderDelivered(order)) {
+      if (!data.processedOrderIds.includes(orderId)) {
+        data.currentPoints += points;
+        data.lifetimePoints += points;
+        data.processedOrderIds.push(orderId);
+
+        addRewardHistory(data, {
+          type: "earn",
+          title: "Points earned",
+          description: `Delivered order ${getOrderNumber(order)} earned ${points} points.`,
+          points,
+        });
+
+        changed = true;
+      }
+
+      return;
+    }
+
+    if (isOrderActive(order) && !data.processedOrderIds.includes(orderId)) {
+      pendingPoints += points;
+    }
+  });
+
+  if (Number(data.pendingPoints || 0) !== pendingPoints) {
+    data.pendingPoints = pendingPoints;
+    changed = true;
+  }
+
+  if (changed) {
+    saveRewardsData(data);
+  }
+
+  return data;
+}
+
+function awardPointsFromOrder(order) {
+  if (!order || !isOrderDelivered(order)) return false;
+
+  const orderId = getOrderId(order);
+  if (!orderId) return false;
+
+  const data = getRewardsData();
+
+  if (data.processedOrderIds.includes(orderId)) {
+    return false;
+  }
+
+  if (isOrderCancelled(order)) {
+    return false;
+  }
+
+  const earned = getRewardPointsForOrder(order);
+  if (earned <= 0) return false;
+
+  data.currentPoints += earned;
+  data.lifetimePoints += earned;
+  data.processedOrderIds.push(orderId);
+
+  addRewardHistory(data, {
+    type: "earn",
+    title: "Points earned",
+    description: `Delivered order ${getOrderNumber(order)} earned ${earned} points.`,
+    points: earned,
+  });
+
+  saveRewardsData(data);
+  return true;
+}
+
+/* ===============================
+   COUPONS
+================================ */
 
 function createCoupon(discount) {
   return {
@@ -107,28 +345,131 @@ function createCoupon(discount) {
   };
 }
 
-function addRewardHistory(data, item) {
-  data.history.unshift({
-    id: item.id || `history-${Date.now()}`,
-    type: item.type || "info",
-    title: item.title || "Reward update",
-    description: item.description || "",
-    points: Number(item.points || 0),
-    createdAt: item.createdAt || new Date().toISOString(),
+function redeemReward(cost, discount) {
+  const data = getRewardsData();
+
+  if (data.currentPoints < cost) {
+    showRewardToast(
+      "Not enough points",
+      `You need ${cost - data.currentPoints} more points to unlock ${discount}% OFF.`,
+      "warning"
+    );
+    return;
+  }
+
+  data.currentPoints -= cost;
+
+  const coupon = createCoupon(discount);
+  data.activeCoupons.push(coupon);
+
+  data.redeemedRewards.push({
+    discount,
+    cost,
+    couponId: coupon.id,
+    createdAt: new Date().toISOString(),
   });
 
-  data.history = data.history.slice(0, 20);
+  addRewardHistory(data, {
+    type: "redeem",
+    title: `${discount}% coupon redeemed`,
+    description: `Coupon ${coupon.id} is now available at checkout.`,
+    points: -cost,
+  });
+
+  saveRewardsData(data);
+
+  showRewardToast(
+    "Coupon unlocked",
+    `${discount}% OFF coupon is ready to use at checkout.`,
+    "success"
+  );
+
+  renderRewards();
 }
 
+function getAvailableCoupons() {
+  return getRewardsData().activeCoupons.filter((coupon) => !coupon.used);
+}
+
+function previewCouponDiscount(couponId, total) {
+  const data = getRewardsData();
+
+  const coupon = data.activeCoupons.find(
+    (item) => String(item.id) === String(couponId) && !item.used
+  );
+
+  if (!coupon) {
+    return {
+      success: false,
+      message: "This coupon is not available.",
+    };
+  }
+
+  const baseTotal = Number(total || 0);
+
+  if (baseTotal <= 0) {
+    return {
+      success: false,
+      message: "Coupon can only be applied to a valid order total.",
+    };
+  }
+
+  const discountAmount = Number(
+    ((baseTotal * Number(coupon.discount || 0)) / 100).toFixed(2)
+  );
+
+  const finalTotal = Math.max(
+    0,
+    Number((baseTotal - discountAmount).toFixed(2))
+  );
+
+  return {
+    success: true,
+    discountAmount,
+    finalTotal,
+    coupon,
+  };
+}
+
+function markCouponAsUsed(couponId) {
+  const data = getRewardsData();
+
+  const coupon = data.activeCoupons.find(
+    (item) => String(item.id) === String(couponId)
+  );
+
+  if (!coupon || coupon.used) return false;
+
+  coupon.used = true;
+  coupon.usedAt = new Date().toISOString();
+
+  addRewardHistory(data, {
+    type: "coupon-used",
+    title: `${coupon.discount}% coupon used`,
+    description: `Coupon ${coupon.id} was applied to an order.`,
+    points: 0,
+  });
+
+  saveRewardsData(data);
+  return true;
+}
+
+/* ===============================
+   RENDER
+================================ */
+
 function renderRewards() {
+  syncOrdersIntoRewards();
+
   const pointsValue = document.getElementById("pointsValue");
+
+  // reward.js is also loaded on checkout, dashboard, etc.
+  // If rewards page elements are missing, only expose global functions.
   if (!pointsValue) return;
 
-  syncDeliveredOrdersIntoRewards();
-
   const data = getRewardsData();
-  const points = data.currentPoints;
-
+  const points = Number(data.currentPoints || 0);
+  const pendingPoints = Number(data.pendingPoints || 0);
   const activeCoupons = data.activeCoupons.filter((coupon) => !coupon.used);
 
   setText("pointsValue", points);
@@ -136,10 +477,48 @@ function renderRewards() {
   setText("activeCouponCount", activeCoupons.length);
   setText("currentTierText", getCurrentTier(points));
 
+  renderPendingPointsBanner(pendingPoints);
   renderNextReward(data);
   renderRewardCards();
   renderActiveCoupons();
   renderRewardHistory();
+}
+
+function renderPendingPointsBanner(pendingPoints) {
+  const hero = document.querySelector(".rewards-hero");
+  if (!hero) return;
+
+  let banner = document.getElementById("pendingPointsBanner");
+
+  if (!pendingPoints) {
+    if (banner) banner.remove();
+    return;
+  }
+
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "pendingPointsBanner";
+    banner.style.cssText = `
+      grid-column: 1 / -1;
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    `;
+
+    hero.appendChild(banner);
+  }
+
+  banner.innerHTML = `
+    <i class="fa-solid fa-clock"></i>
+    <span>${pendingPoints} pending points will be added after your active order is delivered.</span>
+  `;
 }
 
 function renderNextReward(data) {
@@ -151,7 +530,7 @@ function renderNextReward(data) {
     setText("nextRewardTitle", "All rewards unlocked");
     setText(
       "nextRewardSubtitle",
-      "You have enough points for the highest reward tier.",
+      "You have enough points for the highest reward tier."
     );
     setText("progressNumbers", `${points} / ${highestTier.pointsRequired} points`);
     setText("pointsText", "You can redeem any available reward tier.");
@@ -170,7 +549,7 @@ function renderNextReward(data) {
   setText("nextRewardTitle", next.title);
   setText(
     "nextRewardSubtitle",
-    `You're ${remaining} points away from ${next.title}.`,
+    `You're ${remaining} points away from ${next.title}.`
   );
   setText("progressNumbers", `${points} / ${next.pointsRequired} points`);
   setText("pointsText", `${remaining} points left to unlock this coupon.`);
@@ -181,7 +560,7 @@ function renderNextReward(data) {
 
 function renderRewardCards() {
   const data = getRewardsData();
-  const points = data.currentPoints;
+  const points = Number(data.currentPoints || 0);
 
   document.querySelectorAll("[data-reward-points]").forEach((card) => {
     const cost = Number(card.dataset.rewardPoints);
@@ -213,8 +592,7 @@ function renderActiveCoupons() {
   const container = document.getElementById("activeCouponsList");
   if (!container) return;
 
-  const data = getRewardsData();
-  const coupons = data.activeCoupons.filter((coupon) => !coupon.used);
+  const coupons = getAvailableCoupons();
 
   if (!coupons.length) {
     container.innerHTML = `
@@ -235,7 +613,7 @@ function renderActiveCoupons() {
           </div>
           <div class="coupon-code">${escapeHtml(coupon.id)}</div>
         </div>
-      `,
+      `
     )
     .join("");
 }
@@ -279,185 +657,87 @@ function renderRewardHistory() {
     .join("");
 }
 
-function redeemReward(cost, discount) {
-  const data = getRewardsData();
-
-  if (data.currentPoints < cost) {
-    alert("Not enough points to redeem this reward.");
-    return;
-  }
-
-  data.currentPoints -= cost;
-
-  const coupon = createCoupon(discount);
-  data.activeCoupons.push(coupon);
-
-  data.redeemedRewards.push({
-    discount,
-    cost,
-    couponId: coupon.id,
-    createdAt: new Date().toISOString(),
-  });
-
-  addRewardHistory(data, {
-    type: "redeem",
-    title: `${discount}% coupon redeemed`,
-    description: `Coupon ${coupon.id} is now available at checkout.`,
-    points: -cost,
-  });
-
-  saveRewardsData(data);
-
-  if (typeof window.addFoodExpressNotification === "function") {
-    window.addFoodExpressNotification({
-      title: "Reward coupon unlocked",
-      message: `${discount}% OFF coupon is ready to use at checkout.`,
-      type: "success",
-      icon: "fa-ticket",
-      link: "payment.html",
-    });
-  }
-
-  alert(`${discount}% coupon unlocked! You can use it at checkout.`);
-  renderRewards();
-}
-
 /* ===============================
-   ORDER POINTS
+   TOAST / UX
 ================================ */
 
-function getRewardPointsForOrder(order) {
-  const total = Number(order?.total || 0);
-  return Math.max(0, Math.floor(total / 10));
+function ensureRewardToast() {
+  let toast = document.getElementById("rewardToast");
+
+  if (toast) return toast;
+
+  toast = document.createElement("div");
+  toast.id = "rewardToast";
+  toast.style.cssText = `
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 9999;
+    width: min(380px, calc(100vw - 32px));
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: #111827;
+    color: #ffffff;
+    box-shadow: 0 20px 60px rgba(15,23,42,0.28);
+    display: none;
+    gap: 12px;
+    align-items: flex-start;
+  `;
+
+  document.body.appendChild(toast);
+  return toast;
 }
 
-function isOrderDelivered(order) {
-  const deliveryStatus =
-    order?.delivery_status || order?.deliveryStatus || order?.status || "";
+function showRewardToast(title, message, type = "success") {
+  const toast = ensureRewardToast();
 
-  return String(deliveryStatus).toLowerCase() === "delivered";
-}
+  const icon =
+    type === "success"
+      ? "fa-circle-check"
+      : type === "warning"
+        ? "fa-triangle-exclamation"
+        : "fa-circle-info";
 
-function getOrderId(order) {
-  return String(order?.id || order?.orderId || order?.orderNumber || "");
-}
+  const bg =
+    type === "success"
+      ? "#14532d"
+      : type === "warning"
+        ? "#78350f"
+        : "#111827";
 
-function awardPointsFromOrder(order) {
-  if (!order || !isOrderDelivered(order)) return false;
+  toast.style.background = bg;
+  toast.innerHTML = `
+    <i class="fa-solid ${icon}" style="margin-top:3px;"></i>
+    <div>
+      <strong style="display:block;margin-bottom:4px;">${escapeHtml(title)}</strong>
+      <span style="opacity:.9;line-height:1.45;">${escapeHtml(message)}</span>
+    </div>
+  `;
 
-  const orderId = getOrderId(order);
-  if (!orderId) return false;
+  toast.style.display = "flex";
 
-  const data = getRewardsData();
-
-  if (data.processedOrderIds.includes(orderId)) {
-    return false;
-  }
-
-  const earned = getRewardPointsForOrder(order);
-  if (earned <= 0) return false;
-
-  data.currentPoints += earned;
-  data.lifetimePoints += earned;
-  data.processedOrderIds.push(orderId);
-
-  addRewardHistory(data, {
-    type: "earn",
-    title: "Points earned",
-    description: `Delivered order ${order.orderNumber || orderId} earned ${earned} points.`,
-    points: earned,
-  });
-
-  saveRewardsData(data);
-
-  if (typeof window.addFoodExpressNotification === "function") {
-    window.addFoodExpressNotification({
-      title: "Points added",
-      message: `You earned ${earned} reward points from your delivered order.`,
-      type: "success",
-      icon: "fa-coins",
-      link: "rewards.html",
-    });
-  }
-
-  return true;
-}
-
-function syncDeliveredOrdersIntoRewards() {
-  const latestOrder = readJson("latestOrder", null);
-  if (latestOrder) {
-    awardPointsFromOrder(latestOrder);
-  }
-
-  const lastOrder = readJson("lastOrder", null);
-  if (lastOrder) {
-    awardPointsFromOrder(lastOrder);
-  }
-
-  const orders = readJson(ORDER_HISTORY_KEY, []);
-  if (Array.isArray(orders)) {
-    orders.forEach((order) => awardPointsFromOrder(order));
-  }
-}
-
-/* ===============================
-   CHECKOUT FUNCTIONS
-================================ */
-
-function getAvailableCoupons() {
-  return getRewardsData().activeCoupons.filter((coupon) => !coupon.used);
-}
-
-function previewCouponDiscount(couponId, total) {
-  const data = getRewardsData();
-  const coupon = data.activeCoupons.find(
-    (item) => String(item.id) === String(couponId) && !item.used,
-  );
-
-  if (!coupon) {
-    return {
-      success: false,
-      message: "This coupon is not available.",
-    };
-  }
-
-  const baseTotal = Number(total || 0);
-  const discountAmount = Number(((baseTotal * coupon.discount) / 100).toFixed(2));
-  const finalTotal = Math.max(0, Number((baseTotal - discountAmount).toFixed(2)));
-
-  return {
-    success: true,
-    discountAmount,
-    finalTotal,
-    coupon,
-  };
-}
-
-function markCouponAsUsed(couponId) {
-  const data = getRewardsData();
-  const coupon = data.activeCoupons.find(
-    (item) => String(item.id) === String(couponId),
-  );
-
-  if (!coupon) return false;
-
-  coupon.used = true;
-  coupon.usedAt = new Date().toISOString();
-
-  addRewardHistory(data, {
-    type: "coupon-used",
-    title: `${coupon.discount}% coupon used`,
-    description: `Coupon ${coupon.id} was applied to an order.`,
-    points: 0,
-  });
-
-  saveRewardsData(data);
-  return true;
+  clearTimeout(window.__rewardToastTimer);
+  window.__rewardToastTimer = setTimeout(() => {
+    toast.style.display = "none";
+  }, 3600);
 }
 
 /* ===============================
    HELPERS
 ================================ */
+
+function addRewardHistory(data, item) {
+  data.history.unshift({
+    id: item.id || `history-${Date.now()}`,
+    type: item.type || "info",
+    title: item.title || "Reward update",
+    description: item.description || "",
+    points: Number(item.points || 0),
+    createdAt: item.createdAt || new Date().toISOString(),
+  });
+
+  data.history = data.history.slice(0, 30);
+}
 
 function getCurrentTier(points) {
   if (points >= 2000) return "Elite";
@@ -469,7 +749,7 @@ function getCurrentTier(points) {
 
 function getPreviousTierPoints(currentTierPoints) {
   const index = REWARD_TIERS.findIndex(
-    (tier) => tier.pointsRequired === currentTierPoints,
+    (tier) => tier.pointsRequired === currentTierPoints
   );
 
   if (index <= 0) return 0;
@@ -535,8 +815,13 @@ window.awardPointsFromOrder = awardPointsFromOrder;
 window.renderRewards = renderRewards;
 window.getRewardsData = getRewardsData;
 window.saveRewardsData = saveRewardsData;
+window.syncOrdersIntoRewards = syncOrdersIntoRewards;
 
 document.addEventListener("DOMContentLoaded", () => {
+  renderRewards();
+});
+
+window.addEventListener("foodExpressRewardsUpdated", () => {
   renderRewards();
 });
 
@@ -545,7 +830,9 @@ window.addEventListener("storage", (event) => {
     event.key === REWARDS_STORAGE_KEY ||
     event.key === LEGACY_POINTS_KEY ||
     event.key === DASHBOARD_POINTS_KEY ||
-    event.key === ORDER_HISTORY_KEY
+    event.key === ORDER_HISTORY_KEY ||
+    event.key === "latestOrder" ||
+    event.key === "lastOrder"
   ) {
     renderRewards();
   }

@@ -12,6 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
+/*
+|--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
+
+require_once __DIR__ . "/../helpers/MailHelper.php";
+
 function sendJsonResponse($data, $statusCode = 200) {
     http_response_code($statusCode);
     echo json_encode($data);
@@ -43,6 +51,12 @@ function formatPaymentMethod($method) {
     return $map[$method] ?? $method;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Queue Email + Send Immediately
+|--------------------------------------------------------------------------
+*/
+
 function queueEmail($conn, $ticketId, $toEmail, $toName, $subject, $body, $emailType = "other") {
     $stmt = $conn->prepare("
         INSERT INTO email_queue (
@@ -72,7 +86,85 @@ function queueEmail($conn, $ticketId, $toEmail, $toName, $subject, $body, $email
         $emailType
     );
 
-    return $stmt->execute();
+    if (!$stmt->execute()) {
+        $error = $stmt->error;
+        $stmt->close();
+        throw new Exception("Email queue insert failed: " . $error);
+    }
+
+    $emailId = $stmt->insert_id;
+    $stmt->close();
+
+    try {
+        if (!class_exists("MailHelper")) {
+            throw new Exception("MailHelper class not found.");
+        }
+
+        $mailResult = MailHelper::sendMail(
+            $toEmail,
+            $toName ?: $toEmail,
+            $subject,
+            $body
+        );
+
+        if (!empty($mailResult["success"])) {
+            $sentStmt = $conn->prepare("
+                UPDATE email_queue
+                SET 
+                    status = 'sent',
+                    attempts = attempts + 1,
+                    last_error = NULL,
+                    sent_at = NOW()
+                WHERE id = ?
+            ");
+
+            if ($sentStmt) {
+                $sentStmt->bind_param("i", $emailId);
+                $sentStmt->execute();
+                $sentStmt->close();
+            }
+
+            return true;
+        }
+
+        $errorMessage = $mailResult["error"] ?? "Unknown mail error";
+
+        $failedStmt = $conn->prepare("
+            UPDATE email_queue
+            SET 
+                status = 'failed',
+                attempts = attempts + 1,
+                last_error = ?
+            WHERE id = ?
+        ");
+
+        if ($failedStmt) {
+            $failedStmt->bind_param("si", $errorMessage, $emailId);
+            $failedStmt->execute();
+            $failedStmt->close();
+        }
+
+        return false;
+    } catch (Throwable $e) {
+        $errorMessage = $e->getMessage();
+
+        $failedStmt = $conn->prepare("
+            UPDATE email_queue
+            SET 
+                status = 'failed',
+                attempts = attempts + 1,
+                last_error = ?
+            WHERE id = ?
+        ");
+
+        if ($failedStmt) {
+            $failedStmt->bind_param("si", $errorMessage, $emailId);
+            $failedStmt->execute();
+            $failedStmt->close();
+        }
+
+        return false;
+    }
 }
 
 function buildOrderItemsHtml($items) {
@@ -150,9 +242,9 @@ function queueOrderConfirmationEmail($conn, $orderId, $orderNumber, $input, $res
 
                 <p>Hello {$safeCustomerName},</p>
 
-               <p style='line-height:1.6;'>
-    Thank you for ordering from FoodExpress. We have received your order, sent it to the restaurant, and started looking for a nearby rider.
-</p>
+                <p style='line-height:1.6;'>
+                    Thank you for ordering from FoodExpress. We have received your order, sent it to the restaurant, and started looking for a nearby rider.
+                </p>
 
                 <div style='background:#fff5f5; border:1px solid #fecaca; border-radius:12px; padding:16px; margin:20px 0;'>
                     <p style='margin:0;'><strong>Order Number:</strong> {$safeOrderNumber}</p>
@@ -185,9 +277,11 @@ function queueOrderConfirmationEmail($conn, $orderId, $orderNumber, $input, $res
                 </div>
 
                 <h3 style='margin-top:22px; margin-bottom:8px;'>Delivery Details</h3>
+
                 <p style='line-height:1.6; margin:0;'>
                     <strong>Address:</strong> {$safeDeliveryAddress}
                 </p>
+
                 " . ($safeDeliveryNote !== "" ? "<p style='line-height:1.6; margin:8px 0 0;'><strong>Delivery Note:</strong> {$safeDeliveryNote}</p>" : "") . "
 
                 <p style='line-height:1.6; margin-top:22px;'>
@@ -213,6 +307,7 @@ function queueOrderConfirmationEmail($conn, $orderId, $orderNumber, $input, $res
         "order_confirmation"
     );
 }
+
 function queueOrderDeliveredEmail($conn, $orderData, $orderItems) {
     $customerEmail = trim($orderData['customer_email'] ?? "");
 
@@ -226,7 +321,7 @@ function queueOrderDeliveredEmail($conn, $orderData, $orderItems) {
     }
 
     $orderNumber = $orderData['order_number'] ?? "";
-    $restaurantName = "Restaurant #" . ($orderData['restaurant_id'] ?? "");
+    $restaurantName = $orderData['restaurant_name'] ?? "Restaurant #" . ($orderData['restaurant_id'] ?? "");
     $paymentMethod = formatPaymentMethod($orderData['payment_method'] ?? "cash");
     $total = floatval($orderData['total'] ?? 0);
     $deliveredAt = date("M d, Y h:i A");
@@ -304,6 +399,113 @@ function queueOrderDeliveredEmail($conn, $orderData, $orderItems) {
         "order_delivered"
     );
 }
+
+/*
+|--------------------------------------------------------------------------
+| Bootstrap DB + Model
+|--------------------------------------------------------------------------
+*/
+function createAppNotification($notification, $data) {
+    try {
+        return $notification->create($data);
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+function createCustomerNotification($notification, $orderData, $type, $title, $message) {
+    $customerEmail = trim($orderData["customer_email"] ?? "");
+
+    if ($customerEmail === "") {
+        return false;
+    }
+
+    return createAppNotification($notification, [
+        "user_id" => $orderData["user_id"] ?? null,
+        "user_email" => $customerEmail,
+        "role" => "customer",
+        "order_id" => intval($orderData["id"] ?? 0),
+        "order_number" => $orderData["order_number"] ?? null,
+        "type" => $type,
+        "title" => $title,
+        "message" => $message
+    ]);
+}
+
+function createOwnerNotification($notification, $conn, $orderData, $type, $title, $message) {
+    $restaurantId = intval($orderData["restaurant_id"] ?? 0);
+
+    if (!$restaurantId) {
+        return false;
+    }
+
+    $stmt = $conn->prepare("
+        SELECT 
+            r.owner_user_id,
+            r.email AS restaurant_email,
+            u.email AS owner_email
+        FROM restaurants r
+        LEFT JOIN users u ON r.owner_user_id = u.id
+        WHERE r.id = ?
+        LIMIT 1
+    ");
+
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param("i", $restaurantId);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+    $restaurant = $result ? $result->fetch_assoc() : null;
+
+    $stmt->close();
+
+    if (!$restaurant) {
+        return false;
+    }
+
+    $ownerEmail = trim($restaurant["owner_email"] ?? "");
+    if ($ownerEmail === "") {
+        $ownerEmail = trim($restaurant["restaurant_email"] ?? "");
+    }
+
+    if ($ownerEmail === "") {
+        return false;
+    }
+
+    return createAppNotification($notification, [
+        "user_id" => $restaurant["owner_user_id"] ?? null,
+        "user_email" => $ownerEmail,
+        "role" => "restaurant-owner",
+        "order_id" => intval($orderData["id"] ?? 0),
+        "order_number" => $orderData["order_number"] ?? null,
+        "type" => $type,
+        "title" => $title,
+        "message" => $message
+    ]);
+}
+
+function createRiderNotification($notification, $orderData, $type, $title, $message) {
+    $riderEmail = trim($orderData["rider_email"] ?? "");
+
+    if ($riderEmail === "") {
+        return false;
+    }
+
+    return createAppNotification($notification, [
+        "user_id" => $orderData["rider_id"] ?? null,
+        "user_email" => $riderEmail,
+        "role" => "delivery-rider",
+        "order_id" => intval($orderData["id"] ?? 0),
+        "order_number" => $orderData["order_number"] ?? null,
+        "type" => $type,
+        "title" => $title,
+        "message" => $message
+    ]);
+}
+
 $basePath = __DIR__ . '/../';
 
 $dbConfigPath = $basePath . 'config/db.php';
@@ -328,12 +530,25 @@ if (!file_exists($orderModelPath)) {
 
 include $orderModelPath;
 
+$notificationModelPath = $basePath . 'models/Notification.php';
+if (!file_exists($notificationModelPath)) {
+    sendErrorResponse("Notification model file not found: " . $notificationModelPath, 500);
+}
+
+include $notificationModelPath;
+
 $order = new Order($conn);
+$notification = new Notification($conn);
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
 
-    // CREATE new order(s) - supports multi-restaurant cart
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE new order(s)
+    |--------------------------------------------------------------------------
+    */
+
     case 'create':
         $input = json_decode(file_get_contents("php://input"), true);
 
@@ -410,11 +625,30 @@ switch ($action) {
                 $subtotal += $price * $quantity;
             }
 
-            $tax = isset($input['tax_rate']) ? $subtotal * floatval($input['tax_rate']) : $subtotal * 0.10;
-            $delivery_fee = isset($input['delivery_fee']) ? floatval($input['delivery_fee']) : 5.00;
+            $tax = round($subtotal * 0.10, 2);
 
-            $discountAmount = isset($input['discount_amount']) ? floatval($input['discount_amount']) : 0;
-            $total = max(0, $subtotal + $tax + $delivery_fee - $discountAmount);
+if ($subtotal <= 0) {
+    $delivery_fee = 0.00;
+} elseif ($subtotal >= 1500) {
+    $delivery_fee = 0.00;
+} elseif ($subtotal >= 1000) {
+    $delivery_fee = 20.00;
+} elseif ($subtotal >= 500) {
+    $delivery_fee = 30.00;
+} else {
+    $delivery_fee = 50.00;
+}
+
+if (isset($input['delivery_fee'])) {
+    $incomingDeliveryFee = floatval($input['delivery_fee']);
+
+    if ($incomingDeliveryFee > 5 || $delivery_fee == 0.00) {
+        $delivery_fee = round($incomingDeliveryFee, 2);
+    }
+}
+
+$discountAmount = isset($input['discount_amount']) ? floatval($input['discount_amount']) : 0;
+$total = round(max(0, $subtotal + $tax + $delivery_fee - $discountAmount), 2);
 
             $orderData = [
                 "user_id" => $input['user_id'] ?? null,
@@ -432,7 +666,7 @@ switch ($action) {
                 "total" => $total,
                 "notes" => $input['delivery_note'] ?? $input['notes'] ?? null,
                 "status" => $input['status'] ?? 'pending',
-"delivery_status" => $input['delivery_status'] ?? 'searching'
+                "delivery_status" => $input['delivery_status'] ?? 'searching'
             ];
 
             $result = $order->create($orderData);
@@ -457,10 +691,29 @@ switch ($action) {
                             $delivery_fee,
                             $total
                         );
-                    } catch (Exception $emailException) {
+                    } catch (Throwable $emailException) {
                         $emailQueued = false;
                     }
+                    $createdOrderData = $order->getById($order_id);
 
+if ($createdOrderData) {
+    createCustomerNotification(
+        $notification,
+        $createdOrderData,
+        "order_placed",
+        "Order placed",
+        "Your order " . $result['order_number'] . " was sent to the restaurant."
+    );
+
+    createOwnerNotification(
+        $notification,
+        $conn,
+        $createdOrderData,
+        "new_order",
+        "New order received",
+        "A new order " . $result['order_number'] . " has been placed for your restaurant."
+    );
+}
                     $createdOrders[] = [
                         "order_id" => $order_id,
                         "order_number" => $result['order_number'],
@@ -471,7 +724,7 @@ switch ($action) {
                         "delivery_fee" => $delivery_fee,
                         "total" => $total,
                         "email_queued" => $emailQueued,
-"delivery_status" => $result['delivery_status'] ?? 'searching'
+                        "delivery_status" => $result['delivery_status'] ?? 'searching'
                     ];
                 } else {
                     $failedOrders[] = [
@@ -503,7 +756,12 @@ switch ($action) {
         ]);
         break;
 
-    // GET order by ID
+    /*
+    |--------------------------------------------------------------------------
+    | GET order by ID
+    |--------------------------------------------------------------------------
+    */
+
     case 'single':
         $order_id = $_GET['id'] ?? null;
 
@@ -532,7 +790,12 @@ switch ($action) {
         }
         break;
 
-    // GET order by order number
+    /*
+    |--------------------------------------------------------------------------
+    | GET order by order number
+    |--------------------------------------------------------------------------
+    */
+
     case 'by_number':
         $order_number = $_GET['order_number'] ?? null;
 
@@ -561,7 +824,12 @@ switch ($action) {
         }
         break;
 
-    // GET all orders
+    /*
+    |--------------------------------------------------------------------------
+    | GET all orders
+    |--------------------------------------------------------------------------
+    */
+
     case 'all':
         $limit = intval($_GET['limit'] ?? 50);
         $offset = intval($_GET['offset'] ?? 0);
@@ -575,7 +843,12 @@ switch ($action) {
         ]);
         break;
 
-    // GET orders by status
+    /*
+    |--------------------------------------------------------------------------
+    | GET orders by status
+    |--------------------------------------------------------------------------
+    */
+
     case 'by_status':
         $status = $_GET['status'] ?? null;
 
@@ -596,7 +869,149 @@ switch ($action) {
         ]);
         break;
 
-    // UPDATE order status
+    /*
+    |--------------------------------------------------------------------------
+    | GET available deliveries for riders
+    |--------------------------------------------------------------------------
+    */
+
+    case 'available_deliveries':
+        try {
+            $sql = "
+                SELECT
+                    o.id,
+                    o.order_number,
+                    o.restaurant_id,
+                    r.restaurant_name,
+                    r.location AS restaurant_address,
+                    r.city AS restaurant_city,
+                    o.customer_name,
+                    o.customer_email,
+                    o.phone_number,
+                    o.address,
+                    o.city,
+                    o.postal_code,
+                    o.payment_method,
+                    o.subtotal,
+                    o.tax,
+                    o.delivery_fee,
+                    o.total,
+                    o.notes,
+                    o.status,
+                    o.delivery_status,
+                    o.rider_id,
+                    o.rider_name,
+                    o.rider_email,
+                    o.rider_phone,
+                    o.created_at,
+                    o.updated_at
+                FROM orders o
+                LEFT JOIN restaurants r ON o.restaurant_id = r.id
+                WHERE 
+                    o.status = 'ready_for_pickup'
+                    AND (
+                        o.delivery_status IS NULL
+                        OR o.delivery_status = ''
+                        OR o.delivery_status = 'searching'
+                        OR o.delivery_status = 'unassigned'
+                        OR o.delivery_status = 'pending'
+                    )
+                ORDER BY o.created_at ASC
+            ";
+
+            $result = $conn->query($sql);
+
+            if (!$result) {
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Failed to load available deliveries: " . $conn->error
+                ]);
+                break;
+            }
+
+            $deliveries = [];
+
+            while ($row = $result->fetch_assoc()) {
+                $items = $order->getItems($row["id"]);
+
+                $restaurantName = $row["restaurant_name"] ?: ("Restaurant #" . $row["restaurant_id"]);
+                $restaurantAddress = trim(($row["restaurant_address"] ?? "") . ", " . ($row["restaurant_city"] ?? ""));
+                $restaurantAddress = trim($restaurantAddress, " ,");
+
+                $deliveries[] = [
+                    "id" => intval($row["id"]),
+                    "orderId" => intval($row["id"]),
+                    "order_id" => intval($row["id"]),
+
+                    "orderNumber" => $row["order_number"],
+                    "order_number" => $row["order_number"],
+
+                    "restaurantId" => intval($row["restaurant_id"]),
+                    "restaurant_id" => intval($row["restaurant_id"]),
+                    "restaurantName" => $restaurantName,
+                    "restaurant_name" => $restaurantName,
+                    "restaurantAddress" => $restaurantAddress,
+                    "restaurant_address" => $restaurantAddress,
+
+                    "customerName" => $row["customer_name"],
+                    "customer_name" => $row["customer_name"],
+                    "customerEmail" => $row["customer_email"],
+                    "customer_email" => $row["customer_email"],
+                    "phoneNumber" => $row["phone_number"],
+                    "phone_number" => $row["phone_number"],
+
+                    "address" => $row["address"],
+                    "city" => $row["city"],
+                    "postalCode" => $row["postal_code"],
+                    "postal_code" => $row["postal_code"],
+
+                    "paymentMethod" => $row["payment_method"],
+                    "payment_method" => $row["payment_method"],
+                    "subtotal" => floatval($row["subtotal"]),
+                    "tax" => floatval($row["tax"]),
+                    "deliveryFee" => floatval($row["delivery_fee"]),
+                    "delivery_fee" => floatval($row["delivery_fee"]),
+                    "total" => floatval($row["total"]),
+                    "notes" => $row["notes"],
+
+                    "status" => $row["status"],
+                    "deliveryStatus" => $row["delivery_status"] ?: "searching",
+                    "delivery_status" => $row["delivery_status"] ?: "searching",
+
+                    "riderId" => $row["rider_id"],
+                    "rider_id" => $row["rider_id"],
+                    "riderName" => $row["rider_name"],
+                    "rider_name" => $row["rider_name"],
+
+                    "createdAt" => $row["created_at"],
+                    "created_at" => $row["created_at"],
+                    "updatedAt" => $row["updated_at"],
+                    "updated_at" => $row["updated_at"],
+
+                    "items" => $items
+                ];
+            }
+
+            echo json_encode([
+                "success" => true,
+                "data" => $deliveries,
+                "count" => count($deliveries)
+            ]);
+        } catch (Throwable $e) {
+            echo json_encode([
+                "success" => false,
+                "message" => $e->getMessage()
+            ]);
+        }
+
+        break;
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE order status
+    |--------------------------------------------------------------------------
+    */
+
     case 'update_status':
     $input = json_decode(file_get_contents("php://input"), true);
 
@@ -608,64 +1023,70 @@ switch ($action) {
         break;
     }
 
-    $orderId = intval($input['order_id']);
-    $newStatus = trim($input['status']);
+        $orderId = intval($input['order_id']);
+        $newStatus = trim($input['status']);
 
-    $existingOrder = $order->getById($orderId);
+        $existingOrder = $order->getById($orderId);
 
-    if (!$existingOrder) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Order not found"
-        ]);
-        break;
-    }
+        if (!$existingOrder) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Order not found"
+            ]);
+            break;
+        }
 
-    $result = $order->updateStatus($orderId, $newStatus);
+        $result = $order->updateStatus($orderId, $newStatus);
 
-    $deliveredEmailQueued = false;
+        $deliveredEmailQueued = false;
 
-    if ($result && $newStatus === "delivered") {
-        $alreadyQueued = intval($existingOrder['delivered_email_queued'] ?? 0) === 1;
+        if ($result && $newStatus === "delivered") {
+            $alreadyQueued = intval($existingOrder['delivered_email_queued'] ?? 0) === 1;
 
-        if (!$alreadyQueued) {
-            $updatedOrder = $order->getById($orderId);
-            $orderItems = $order->getItems($orderId);
+            if (!$alreadyQueued) {
+                $updatedOrder = $order->getById($orderId);
+                $orderItems = $order->getItems($orderId);
 
-            try {
-                $deliveredEmailQueued = queueOrderDeliveredEmail(
-                    $conn,
-                    $updatedOrder,
-                    $orderItems
-                );
+                try {
+                    $deliveredEmailQueued = queueOrderDeliveredEmail(
+                        $conn,
+                        $updatedOrder,
+                        $orderItems
+                    );
 
-                if ($deliveredEmailQueued) {
-                    $markEmailStmt = $conn->prepare("
-                        UPDATE orders
-                        SET delivered_email_queued = 1
-                        WHERE id = ?
-                    ");
+                    if ($deliveredEmailQueued) {
+                        $markEmailStmt = $conn->prepare("
+                            UPDATE orders
+                            SET delivered_email_queued = 1
+                            WHERE id = ?
+                        ");
 
-                    if ($markEmailStmt) {
-                        $markEmailStmt->bind_param("i", $orderId);
-                        $markEmailStmt->execute();
+                        if ($markEmailStmt) {
+                            $markEmailStmt->bind_param("i", $orderId);
+                            $markEmailStmt->execute();
+                            $markEmailStmt->close();
+                        }
                     }
+                } catch (Throwable $emailException) {
+                    $deliveredEmailQueued = false;
                 }
-            } catch (Exception $emailException) {
-                $deliveredEmailQueued = false;
             }
         }
-    }
 
-    echo json_encode([
-        "success" => $result,
-        "message" => $result ? "Status updated" : "Failed to update status",
-        "delivered_email_queued" => $deliveredEmailQueued
-    ]);
-    break;
+        echo json_encode([
+            "success" => $result,
+            "message" => $result ? "Status updated" : "Failed to update status",
+            "delivered_email_queued" => $deliveredEmailQueued
+        ]);
+        break;
 
-    // ASSIGN rider to order
-case 'assign_rider':
+    /*
+    |--------------------------------------------------------------------------
+    | ASSIGN rider to order
+    |--------------------------------------------------------------------------
+    */
+
+    case 'assign_rider':
     $input = json_decode(file_get_contents("php://input"), true);
 
     if (!isset($input['order_id'], $input['rider_id'], $input['rider_name'])) {
@@ -682,6 +1103,16 @@ case 'assign_rider':
     $riderEmail = trim($input['rider_email'] ?? "");
     $riderPhone = trim($input['rider_phone'] ?? "");
 
+    $existingOrder = $order->getById($orderId);
+
+    if (!$existingOrder) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Order not found"
+        ]);
+        break;
+    }
+
     $result = $order->assignRider(
         $orderId,
         $riderId,
@@ -689,6 +1120,52 @@ case 'assign_rider':
         $riderEmail,
         $riderPhone
     );
+
+    if ($result) {
+        $updatedOrder = $order->getById($orderId);
+
+        if ($updatedOrder) {
+            $orderNumber = $updatedOrder["order_number"] ?? ("#" . $orderId);
+
+            $riderDisplayName = trim($updatedOrder["rider_name"] ?? $riderName ?? "FoodExpress Rider");
+$riderDisplayPhone = trim($updatedOrder["rider_phone"] ?? $riderPhone ?? "");
+
+if ($riderDisplayName === "") {
+    $riderDisplayName = "FoodExpress Rider";
+}
+
+$customerRiderMessage = $riderDisplayName . " is your rider for order " . $orderNumber . ". You can call or message your rider from tracking.";
+
+if ($riderDisplayPhone !== "") {
+    $customerRiderMessage = $riderDisplayName . " is your rider for order " . $orderNumber . ". Phone: " . $riderDisplayPhone . ". You can call or message your rider from tracking.";
+}
+
+createCustomerNotification(
+    $notification,
+    $updatedOrder,
+    "rider_assigned",
+    "Rider assigned",
+    $customerRiderMessage
+);
+
+createOwnerNotification(
+    $notification,
+    $conn,
+    $updatedOrder,
+    "rider_assigned_owner",
+    "Rider accepted pickup",
+    $riderDisplayName . " accepted pickup for order " . $orderNumber . "."
+);
+
+createRiderNotification(
+    $notification,
+    $updatedOrder,
+    "delivery_accepted",
+    "Delivery accepted",
+    "You accepted order " . $orderNumber . ". Pickup is from the restaurant."
+);
+        }
+    }
 
     echo json_encode([
         "success" => $result,
@@ -698,9 +1175,13 @@ case 'assign_rider':
     ]);
     break;
 
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE delivery status from rider side
+    |--------------------------------------------------------------------------
+    */
 
-// UPDATE delivery status from rider side
-case 'update_delivery_status':
+    case 'update_delivery_status':
     $input = json_decode(file_get_contents("php://input"), true);
 
     if (!isset($input['order_id'], $input['delivery_status'])) {
@@ -730,71 +1211,111 @@ case 'update_delivery_status':
         break;
     }
 
-    if ($deliveryStatus === "delivered") {
-        $existingOrder = $order->getById($orderId);
+    $existingOrder = $order->getById($orderId);
 
-        if (!$existingOrder) {
-            echo json_encode([
-                "success" => false,
-                "message" => "Order not found"
-            ]);
-            break;
-        }
-
-        $result = $order->markDelivered($orderId);
-
-        $deliveredEmailQueued = false;
-
-        if ($result) {
-            $alreadyQueued = intval($existingOrder['delivered_email_queued'] ?? 0) === 1;
-
-            if (!$alreadyQueued) {
-                $updatedOrder = $order->getById($orderId);
-                $orderItems = $order->getItems($orderId);
-
-                try {
-                    $deliveredEmailQueued = queueOrderDeliveredEmail(
-                        $conn,
-                        $updatedOrder,
-                        $orderItems
-                    );
-
-                    if ($deliveredEmailQueued) {
-                        $markEmailStmt = $conn->prepare("
-                            UPDATE orders
-                            SET delivered_email_queued = 1
-                            WHERE id = ?
-                        ");
-
-                        if ($markEmailStmt) {
-                            $markEmailStmt->bind_param("i", $orderId);
-                            $markEmailStmt->execute();
-                            $markEmailStmt->close();
-                        }
-                    }
-                } catch (Exception $emailException) {
-                    $deliveredEmailQueued = false;
-                }
-            }
-        }
-
+    if (!$existingOrder) {
         echo json_encode([
-            "success" => $result,
-            "message" => $result ? "Delivery completed" : "Failed to mark delivered",
-            "delivered_email_queued" => $deliveredEmailQueued
+            "success" => false,
+            "message" => "Order not found"
         ]);
         break;
     }
 
-    $result = $order->updateDeliveryStatus($orderId, $deliveryStatus);
+    $oldDeliveryStatus = $existingOrder["delivery_status"] ?? "";
+
+    if ($deliveryStatus === "delivered") {
+        $result = $order->markDelivered($orderId);
+    } else {
+        $result = $order->updateDeliveryStatus($orderId, $deliveryStatus);
+    }
+
+    if ($result && $oldDeliveryStatus !== $deliveryStatus) {
+        $updatedOrder = $order->getById($orderId);
+
+        if ($updatedOrder) {
+            $orderNumber = $updatedOrder["order_number"] ?? ("#" . $orderId);
+            $riderName = trim($updatedOrder["rider_name"] ?? "Your rider");
+
+            if ($deliveryStatus === "picked_up") {
+                createCustomerNotification(
+                    $notification,
+                    $updatedOrder,
+                    "rider_picked_up",
+                    "Order picked up",
+                    $riderName . " picked up your order " . $orderNumber . "."
+                );
+
+                createOwnerNotification(
+                    $notification,
+                    $conn,
+                    $updatedOrder,
+                    "rider_picked_up_owner",
+                    "Order picked up",
+                    $riderName . " picked up order " . $orderNumber . "."
+                );
+            }
+
+            if ($deliveryStatus === "on_the_way") {
+                createCustomerNotification(
+                    $notification,
+                    $updatedOrder,
+                    "rider_on_the_way",
+                    "Rider on the way",
+                    $riderName . " is on the way with your order " . $orderNumber . "."
+                );
+            }
+
+            if ($deliveryStatus === "delivered") {
+                createCustomerNotification(
+                    $notification,
+                    $updatedOrder,
+                    "order_delivered",
+                    "Order delivered",
+                    "Your order " . $orderNumber . " was delivered successfully."
+                );
+
+                createOwnerNotification(
+                    $notification,
+                    $conn,
+                    $updatedOrder,
+                    "order_delivered_owner",
+                    "Order delivered",
+                    "Order " . $orderNumber . " was delivered successfully."
+                );
+
+                createRiderNotification(
+                    $notification,
+                    $updatedOrder,
+                    "delivery_completed",
+                    "Delivery completed",
+                    "Delivery for order " . $orderNumber . " was completed. Earnings added."
+                );
+            }
+        }
+    }
 
     echo json_encode([
         "success" => $result,
-        "message" => $result ? "Delivery status updated" : "Failed to update delivery status"
+        "message" => $result
+            ? ($deliveryStatus === "delivered" ? "Delivery completed" : "Delivery status updated")
+            : "Failed to update delivery status"
     ]);
     break;
 
-    // GET total sales
+        $result = $order->updateDeliveryStatus($orderId, $deliveryStatus);
+
+        echo json_encode([
+            "success" => $result,
+            "message" => $result ? "Delivery status updated" : "Failed to update delivery status"
+        ]);
+        break;
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET total sales
+    |--------------------------------------------------------------------------
+    */
+
     case 'total_sales':
         $total_sales = $order->getTotalSales();
 
@@ -804,7 +1325,12 @@ case 'update_delivery_status':
         ]);
         break;
 
-    // GET orders count
+    /*
+    |--------------------------------------------------------------------------
+    | GET orders count
+    |--------------------------------------------------------------------------
+    */
+
     case 'count':
         $count = $order->getOrdersCount();
 
@@ -813,11 +1339,38 @@ case 'update_delivery_status':
             "count" => $count
         ]);
         break;
+case 'active_delivery':
+    $riderId = intval($_GET['rider_id'] ?? 0);
 
+    if (!$riderId) {
+        echo json_encode([
+            "success" => false,
+            "message" => "rider_id required"
+        ]);
+        break;
+    }
+
+    $activeOrder = $order->getActiveDeliveryByRider($riderId);
+
+    if (!$activeOrder) {
+        echo json_encode([
+            "success" => true,
+            "data" => null
+        ]);
+        break;
+    }
+
+    $activeOrder['items'] = $order->getItems($activeOrder['id']);
+
+    echo json_encode([
+        "success" => true,
+        "data" => $activeOrder
+    ]);
+    break;
     default:
         echo json_encode([
             "success" => false,
-            "message" => "Invalid action. Available actions: create, single, by_number, all, by_status, update_status, total_sales, count"
+            "message" => "Invalid action. Available actions: create, single, by_number, all, by_status, available_deliveries, update_status, assign_rider, update_delivery_status, total_sales, count"
         ]);
         break;
 }

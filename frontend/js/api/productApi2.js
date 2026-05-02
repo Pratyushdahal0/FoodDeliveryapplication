@@ -1,82 +1,154 @@
-const API_BASE = "../../backend/controllers";
-const API = {
-    products: `${API_BASE}/ProductController.php`,
-    auth:     `${API_BASE}/AuthController.php`,
-};
+(function () {
+  if (window.__FOODEXPRESS_PRODUCT_API2_LOADED__) {
+    console.warn("[productApi2.js] Already loaded, skipping duplicate script.");
+    return;
+  }
 
-// Fetch all products
-async function getAllProducts() {
+  window.__FOODEXPRESS_PRODUCT_API2_LOADED__ = true;
+
+  console.log("[productApi2.js] Loaded safely");
+
+  const PRODUCT_API_BASE_SAFE = "../../backend/controllers";
+
+  const PRODUCT_API_SAFE = {
+    products: `${PRODUCT_API_BASE_SAFE}/ProductController.php`,
+    auth: `${PRODUCT_API_BASE_SAFE}/AuthController.php`,
+  };
+
+  async function fetchProductJson(url) {
+    const response = await fetch(url);
+    const raw = await response.text();
+
     try {
-        console.log('Fetching from:', `${API.products}?action=all`);
-        const res = await fetch(`${API.products}?action=all`);
-        console.log('Response status:', res.status);
-        const data = await res.json();
-        console.log('Response data:', data);
-        return data.success ? data.data : [];
-    } catch (err) {
-        console.error("getAllProducts error:", err);
-        // Return dummy data for testing
-        return [
-            {
-                id: 1,
-                name: "Test Burger",
-                description: "Test description",
-                price: "10.99",
-                category: "burger",
-                image_url: "https://via.placeholder.com/400x300",
-                rating: "4.5",
-                delivery_time: "20 min",
-                is_popular: 1,
-                is_available: 1
-            }
-        ];
+      return JSON.parse(raw);
+    } catch (error) {
+      console.error("[productApi2.js] Non-JSON response:", raw);
+      throw new Error("Product backend returned invalid JSON.");
     }
-}
+  }
 
-// Fetch popular products only
-async function getPopularProducts() {
+  function normalizeProduct(product) {
+    return {
+      id: product.id,
+      name: product.name || "Unnamed Item",
+      description: product.description || "Freshly prepared item",
+      price: Number(product.price || 0),
+      category: product.category || "food",
+      image_url:
+        product.image_url ||
+        product.image ||
+        "https://via.placeholder.com/400x300?text=FoodExpress",
+      rating: product.rating || "4.5",
+      delivery_time: product.delivery_time || "30 min",
+      is_popular: Number(product.is_popular || 0),
+      is_available: Number(product.is_available ?? 1),
+      restaurant_id: product.restaurant_id || product.restaurantId || "",
+      restaurant_name:
+        product.restaurant_name ||
+        product.restaurantName ||
+        product.restaurant ||
+        "Unknown Restaurant",
+    };
+  }
+
+  async function getAllProducts() {
     try {
-        const res = await fetch(`${API.products}?action=popular`);
-        const data = await res.json();
-        return data.success ? data.data : [];
-    } catch (err) {
-        console.error("getPopularProducts error:", err);
+      const url = `${PRODUCT_API_SAFE.products}?action=all`;
+      console.log("[productApi2.js] Fetching products from:", url);
+
+      const data = await fetchProductJson(url);
+
+      if (!data.success) {
+        console.warn("[productApi2.js] Product API returned failure:", data);
         return [];
-    }
-}
+      }
 
-// Fetch by category
-async function getProductsByCategory(category) {
-    try {
-        const res = await fetch(`${API.products}?action=category&category=${category}`);
-        const data = await res.json();
-        return data.success ? data.data : [];
+      const products = Array.isArray(data.data) ? data.data : [];
+      return products.map(normalizeProduct);
     } catch (err) {
-        console.error("getProductsByCategory error:", err);
-        return [];
-    }
-}
+      console.error("[productApi2.js] getAllProducts error:", err);
 
-// Fetch single product
-async function getProductById(id) {
-    try {
-        const res = await fetch(`${API.products}?action=single&id=${id}`);
-        const data = await res.json();
-        return data.success ? data.data : null;
-    } catch (err) {
-        console.error("getProductById error:", err);
-        return null;
+      return [
+        {
+          id: 1,
+          name: "Test Burger",
+          description: "Temporary fallback product",
+          price: 349,
+          category: "burger",
+          image_url: "https://via.placeholder.com/400x300?text=FoodExpress",
+          rating: "4.5",
+          delivery_time: "20 min",
+          is_popular: 1,
+          is_available: 1,
+          restaurant_id: "1",
+          restaurant_name: "Spicy Grill",
+        },
+      ];
     }
-}
+  }
 
-// Search products
-async function searchProducts(keyword) {
+  async function getPopularProducts() {
     try {
-        const res = await fetch(`${API.products}?action=search&q=${encodeURIComponent(keyword)}`);
-        const data = await res.json();
-        return data.success ? data.data : [];
+      const data = await fetchProductJson(
+        `${PRODUCT_API_SAFE.products}?action=popular`
+      );
+
+      const products = data.success && Array.isArray(data.data) ? data.data : [];
+      return products.map(normalizeProduct);
     } catch (err) {
-        console.error("searchProducts error:", err);
-        return [];
+      console.error("[productApi2.js] getPopularProducts error:", err);
+      return [];
     }
-}
+  }
+
+  async function getProductsByCategory(category) {
+    try {
+      const data = await fetchProductJson(
+        `${PRODUCT_API_SAFE.products}?action=category&category=${encodeURIComponent(
+          category
+        )}`
+      );
+
+      const products = data.success && Array.isArray(data.data) ? data.data : [];
+      return products.map(normalizeProduct);
+    } catch (err) {
+      console.error("[productApi2.js] getProductsByCategory error:", err);
+      return [];
+    }
+  }
+
+  async function getProductById(id) {
+    try {
+      const data = await fetchProductJson(
+        `${PRODUCT_API_SAFE.products}?action=single&id=${encodeURIComponent(id)}`
+      );
+
+      return data.success && data.data ? normalizeProduct(data.data) : null;
+    } catch (err) {
+      console.error("[productApi2.js] getProductById error:", err);
+      return null;
+    }
+  }
+
+  async function searchProducts(keyword) {
+    try {
+      const data = await fetchProductJson(
+        `${PRODUCT_API_SAFE.products}?action=search&q=${encodeURIComponent(
+          keyword
+        )}`
+      );
+
+      const products = data.success && Array.isArray(data.data) ? data.data : [];
+      return products.map(normalizeProduct);
+    } catch (err) {
+      console.error("[productApi2.js] searchProducts error:", err);
+      return [];
+    }
+  }
+
+  window.getAllProducts = getAllProducts;
+  window.getPopularProducts = getPopularProducts;
+  window.getProductsByCategory = getProductsByCategory;
+  window.getProductById = getProductById;
+  window.searchProducts = searchProducts;
+})();

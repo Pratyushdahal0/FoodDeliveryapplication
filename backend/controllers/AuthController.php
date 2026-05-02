@@ -14,6 +14,28 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
 
 require "../config/db.php";
 require "../models/User.php";
+require_once __DIR__ . "/../helpers/MailHelper.php";
+
+/*
+|--------------------------------------------------------------------------
+| Safe Email Queue Processor Import
+|--------------------------------------------------------------------------
+| This prevents AuthController from crashing with 500 if the helper file
+| is missing, renamed, or has an issue. Registration will still queue email.
+|--------------------------------------------------------------------------
+*/
+
+$emailProcessorPath = __DIR__ . "/../helpers/EmailQueueProcessor.php";
+
+if (file_exists($emailProcessorPath)) {
+    require_once $emailProcessorPath;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
 
 function send_json($data, $status = 200) {
     http_response_code($status);
@@ -23,22 +45,57 @@ function send_json($data, $status = 200) {
 
 function get_json_input() {
     $raw = file_get_contents("php://input");
-    if (!$raw) return [];
+
+    if (!$raw) {
+        return [];
+    }
 
     $decoded = json_decode($raw, true);
     return is_array($decoded) ? $decoded : [];
 }
 
+/*
+|--------------------------------------------------------------------------
+| Base URL
+|--------------------------------------------------------------------------
+| Local:
+| http://localhost/FoodDeliveryapp
+|
+| Hosted:
+| https://yourdomain.infinityfreeapp.com
+|--------------------------------------------------------------------------
+*/
+
 function get_base_url() {
-    $protocol = (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off") ? "https" : "http";
+    $protocol = (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off")
+        ? "https"
+        : "http";
+
     $host = $_SERVER["HTTP_HOST"] ?? "localhost";
 
-    return $protocol . "://" . $host . "/FoodDeliveryapp";
+    if (
+        strpos($host, "localhost") !== false ||
+        strpos($host, "127.0.0.1") !== false
+    ) {
+        return $protocol . "://" . $host . "/FoodDeliveryapp";
+    }
+
+    return $protocol . "://" . $host;
 }
 
 function generate_otp() {
     return (string) random_int(100000, 999999);
 }
+
+/*
+|--------------------------------------------------------------------------
+| Queue Email + Optional Auto Process for Beta
+|--------------------------------------------------------------------------
+| This inserts email into email_queue. Then, if EmailQueueProcessor.php
+| is available, it tries to send a few emails automatically.
+| If sending fails, registration/resend flow still continues.
+|--------------------------------------------------------------------------
+*/
 
 function queue_email($conn, $toEmail, $toName, $subject, $body, $emailType = "email_verification") {
     $sql = "
@@ -64,25 +121,128 @@ function queue_email($conn, $toEmail, $toName, $subject, $body, $emailType = "em
     );
 
     if (!$stmt->execute()) {
-        throw new Exception("Email queue insert failed: " . $stmt->error);
+        $error = $stmt->error;
+        $stmt->close();
+
+        throw new Exception("Email queue insert failed: " . $error);
     }
 
+    $emailId = $stmt->insert_id;
     $stmt->close();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Beta immediate email send
+    |--------------------------------------------------------------------------
+    | Manual worker works, so we use the same MailHelper directly here.
+    | This sends the just-created queue email immediately.
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+        if (!class_exists("MailHelper")) {
+            throw new Exception("MailHelper class not found.");
+        }
+
+        $mailResult = MailHelper::sendMail(
+            $toEmail,
+            $toName ?: $toEmail,
+            $subject,
+            $body
+        );
+
+        if (!empty($mailResult["success"])) {
+            $sentStmt = $conn->prepare("
+                UPDATE email_queue
+                SET 
+                    status = 'sent',
+                    attempts = attempts + 1,
+                    last_error = NULL,
+                    sent_at = NOW()
+                WHERE id = ?
+            ");
+
+            if ($sentStmt) {
+                $sentStmt->bind_param("i", $emailId);
+                $sentStmt->execute();
+                $sentStmt->close();
+            }
+
+            return;
+        }
+
+        $errorMessage = $mailResult["error"] ?? "Unknown mail error";
+
+        $failedStmt = $conn->prepare("
+            UPDATE email_queue
+            SET 
+                status = 'failed',
+                attempts = attempts + 1,
+                last_error = ?
+            WHERE id = ?
+        ");
+
+        if ($failedStmt) {
+            $failedStmt->bind_param("si", $errorMessage, $emailId);
+            $failedStmt->execute();
+            $failedStmt->close();
+        }
+    } catch (Throwable $e) {
+        $errorMessage = $e->getMessage();
+
+        $failedStmt = $conn->prepare("
+            UPDATE email_queue
+            SET 
+                status = 'failed',
+                attempts = attempts + 1,
+                last_error = ?
+            WHERE id = ?
+        ");
+
+        if ($failedStmt) {
+            $failedStmt->bind_param("si", $errorMessage, $emailId);
+            $failedStmt->execute();
+            $failedStmt->close();
+        }
+
+        // Do not break signup. User can still use resend/manual worker later.
+    }
 }
+
+/*
+|--------------------------------------------------------------------------
+| Create Email OTP
+|--------------------------------------------------------------------------
+*/
 
 function create_email_otp($conn, $userId, $email, $name) {
     $otp = generate_otp();
     $otpHash = password_hash($otp, PASSWORD_DEFAULT);
     $expiresAt = date("Y-m-d H:i:s", strtotime("+10 minutes"));
 
+    /*
+    |--------------------------------------------------------------------------
+    | Mark old unused OTPs as used
+    |--------------------------------------------------------------------------
+    */
+
     $deleteOld = $conn->prepare("
         UPDATE email_verification_otps
         SET used_at = NOW()
         WHERE user_id = ? AND used_at IS NULL
     ");
-    $deleteOld->bind_param("i", $userId);
-    $deleteOld->execute();
-    $deleteOld->close();
+
+    if ($deleteOld) {
+        $deleteOld->bind_param("i", $userId);
+        $deleteOld->execute();
+        $deleteOld->close();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Insert new OTP
+    |--------------------------------------------------------------------------
+    */
 
     $stmt = $conn->prepare("
         INSERT INTO email_verification_otps
@@ -98,10 +258,19 @@ function create_email_otp($conn, $userId, $email, $name) {
     $stmt->bind_param("isss", $userId, $email, $otpHash, $expiresAt);
 
     if (!$stmt->execute()) {
-        throw new Exception("OTP insert failed: " . $stmt->error);
+        $error = $stmt->error;
+        $stmt->close();
+
+        throw new Exception("OTP insert failed: " . $error);
     }
 
     $stmt->close();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email template
+    |--------------------------------------------------------------------------
+    */
 
     $safeName = htmlspecialchars($name ?: "there", ENT_QUOTES, "UTF-8");
     $safeOtp = htmlspecialchars($otp, ENT_QUOTES, "UTF-8");
@@ -111,6 +280,7 @@ function create_email_otp($conn, $userId, $email, $name) {
     $body = "
       <div style='font-family: Arial, sans-serif; background:#f8fafc; padding:24px;'>
         <div style='max-width:600px; margin:0 auto; background:#ffffff; border-radius:18px; padding:28px; border:1px solid #e5e7eb;'>
+
           <h1 style='color:#ef3535; margin:0 0 14px;'>Verify your email</h1>
 
           <p style='font-size:16px; color:#111827;'>Hello {$safeName},</p>
@@ -131,6 +301,7 @@ function create_email_otp($conn, $userId, $email, $name) {
             Thanks,<br />
             <strong>FoodExpress Team</strong>
           </p>
+
         </div>
       </div>
     ";
@@ -140,11 +311,26 @@ function create_email_otp($conn, $userId, $email, $name) {
 
 $user = new User($conn);
 
+/*
+|--------------------------------------------------------------------------
+| POST ACTIONS
+|--------------------------------------------------------------------------
+*/
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $contentType = $_SERVER["CONTENT_TYPE"] ?? "";
-    $body = stripos($contentType, "application/json") !== false ? get_json_input() : $_POST;
+
+    $body = stripos($contentType, "application/json") !== false
+        ? get_json_input()
+        : $_POST;
 
     $action = $body["action"] ?? "";
+
+    /*
+    |--------------------------------------------------------------------------
+    | Login
+    |--------------------------------------------------------------------------
+    */
 
     if ($action === "login") {
         $email = trim($body["email"] ?? "");
@@ -155,6 +341,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 "success" => false,
                 "message" => "Email and password are required"
             ], 400);
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            send_json([
+                "success" => false,
+                "message" => "Invalid email or password"
+            ], 401);
         }
 
         $result = $user->login($email, $password);
@@ -185,6 +378,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         ]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Register
+    |--------------------------------------------------------------------------
+    */
+
     if ($action === "register") {
         $name = trim($body["name"] ?? "");
         $email = trim($body["email"] ?? "");
@@ -214,16 +413,40 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             ], 400);
         }
 
-        $allowedRoles = ["customer", "owner", "restaurant-owner", "restaurant_owner"];
+        /*
+        |--------------------------------------------------------------------------
+        | Role normalization
+        |--------------------------------------------------------------------------
+        */
+
+        $allowedRoles = [
+            "customer",
+            "owner",
+            "restaurant-owner",
+            "restaurant_owner",
+            "rider"
+        ];
+
         if (!in_array($role, $allowedRoles, true)) {
             $role = "customer";
         }
 
-        $normalizedRole = in_array($role, ["owner", "restaurant-owner", "restaurant_owner"], true)
-            ? "restaurant-owner"
-            : "customer";
+        if (in_array($role, ["owner", "restaurant-owner", "restaurant_owner"], true)) {
+            $normalizedRole = "restaurant_owner";
+        } elseif ($role === "rider") {
+            $normalizedRole = "rider";
+        } else {
+            $normalizedRole = "customer";
+        }
 
-        $result = $user->register($name, $email, $password, $phone, $address, $normalizedRole);
+        $result = $user->register(
+            $name,
+            $email,
+            $password,
+            $phone,
+            $address,
+            $normalizedRole
+        );
 
         if (strpos($result, "Registered successfully") === false) {
             send_json([
@@ -241,12 +464,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             ], 500);
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Create OTP and queue/send email
+        |--------------------------------------------------------------------------
+        */
+
         try {
             create_email_otp($conn, intval($userData["id"]), $email, $name);
         } catch (Throwable $e) {
             send_json([
                 "success" => true,
-                "message" => "Account created, but verification email could not be queued. Please resend OTP.",
+                "message" => "Account created, but verification email could not be sent automatically. Please use resend OTP.",
                 "requires_verification" => true,
                 "data" => $userData,
                 "email_error" => $e->getMessage()
@@ -261,6 +490,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         ]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Verify Email OTP
+    |--------------------------------------------------------------------------
+    */
+
     if ($action === "verify_email_otp") {
         $email = trim($body["email"] ?? "");
         $otp = trim($body["otp"] ?? "");
@@ -269,6 +504,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             send_json([
                 "success" => false,
                 "message" => "Email and OTP are required"
+            ], 400);
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            send_json([
+                "success" => false,
+                "message" => "Please enter a valid email address"
             ], 400);
         }
 
@@ -307,10 +549,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             LIMIT 1
         ");
 
+        if (!$stmt) {
+            send_json([
+                "success" => false,
+                "message" => "OTP lookup failed"
+            ], 500);
+        }
+
         $stmt->bind_param("is", $userId, $email);
         $stmt->execute();
+
         $otpResult = $stmt->get_result();
-        $otpRow = $otpResult->fetch_assoc();
+        $otpRow = $otpResult ? $otpResult->fetch_assoc() : null;
+
         $stmt->close();
 
         if (!$otpRow) {
@@ -340,16 +591,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 SET attempts = attempts + 1
                 WHERE id = ?
             ");
-            $otpId = intval($otpRow["id"]);
-            $updateAttempts->bind_param("i", $otpId);
-            $updateAttempts->execute();
-            $updateAttempts->close();
+
+            if ($updateAttempts) {
+                $otpId = intval($otpRow["id"]);
+                $updateAttempts->bind_param("i", $otpId);
+                $updateAttempts->execute();
+                $updateAttempts->close();
+            }
 
             send_json([
                 "success" => false,
                 "message" => "Incorrect OTP. Please try again."
             ], 400);
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Mark email verified
+        |--------------------------------------------------------------------------
+        */
 
         $conn->begin_transaction();
 
@@ -361,6 +621,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     verification_token_expires_at = NULL
                 WHERE id = ?
             ");
+
+            if (!$updateUser) {
+                throw new Exception("User verification update prepare failed.");
+            }
+
             $updateUser->bind_param("i", $userId);
             $updateUser->execute();
             $updateUser->close();
@@ -370,6 +635,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 SET used_at = NOW()
                 WHERE id = ?
             ");
+
+            if (!$markUsed) {
+                throw new Exception("OTP used update prepare failed.");
+            }
+
             $otpId = intval($otpRow["id"]);
             $markUsed->bind_param("i", $otpId);
             $markUsed->execute();
@@ -391,6 +661,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Resend Email OTP
+    |--------------------------------------------------------------------------
+    */
+
     if ($action === "resend_email_otp") {
         $email = trim($body["email"] ?? "");
 
@@ -398,6 +674,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             send_json([
                 "success" => false,
                 "message" => "Email is required"
+            ], 400);
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            send_json([
+                "success" => false,
+                "message" => "Please enter a valid email address"
             ], 400);
         }
 
@@ -418,7 +701,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         try {
-            create_email_otp($conn, intval($userData["id"]), $email, $userData["name"] ?? "Customer");
+            create_email_otp(
+                $conn,
+                intval($userData["id"]),
+                $email,
+                $userData["name"] ?? "Customer"
+            );
 
             send_json([
                 "success" => true,
@@ -431,6 +719,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             ], 500);
         }
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Logout
+    |--------------------------------------------------------------------------
+    */
 
     if ($action === "logout") {
         send_json([
@@ -445,11 +739,31 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     ], 400);
 }
 
+/*
+|--------------------------------------------------------------------------
+| GET ACTIONS
+|--------------------------------------------------------------------------
+*/
+
 if ($_SERVER["REQUEST_METHOD"] === "GET") {
     $action = $_GET["action"] ?? "";
 
+    /*
+    |--------------------------------------------------------------------------
+    | Profile by email
+    |--------------------------------------------------------------------------
+    */
+
     if ($action === "profile" && isset($_GET["email"])) {
         $email = trim($_GET["email"]);
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            send_json([
+                "success" => false,
+                "message" => "Please provide a valid email"
+            ], 400);
+        }
+
         $userData = $user->getByEmail($email);
 
         if (!$userData) {
@@ -465,6 +779,12 @@ if ($_SERVER["REQUEST_METHOD"] === "GET") {
         ]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Current profile lookup
+    |--------------------------------------------------------------------------
+    */
+
     if ($action === "current") {
         $email =
             trim($_GET["email"] ?? "") ?:
@@ -474,6 +794,13 @@ if ($_SERVER["REQUEST_METHOD"] === "GET") {
             send_json([
                 "success" => false,
                 "message" => "User email is required for current profile lookup"
+            ], 400);
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            send_json([
+                "success" => false,
+                "message" => "Please provide a valid email"
             ], 400);
         }
 

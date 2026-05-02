@@ -312,6 +312,37 @@ function saveLoggedInUser(user, fallbackEmail, emailVerified) {
   localStorage.setItem("foodExpressProfile", JSON.stringify(cleanUser));
   localStorage.setItem("foodExpressUserProfile", JSON.stringify(cleanUser));
 
+  if (cleanRole === "restaurant_owner") {
+  localStorage.setItem("isOwnerLoggedIn", "true");
+  localStorage.setItem("foodExpressCurrentOwner", JSON.stringify(cleanUser));
+
+  if (cleanUser.id) {
+    localStorage.setItem("ownerUserId", cleanUser.id);
+  }
+
+  localStorage.removeItem("isRiderLoggedIn");
+  localStorage.removeItem("foodExpressCurrentRider");
+}
+
+if (cleanRole === "rider") {
+  localStorage.setItem("isRiderLoggedIn", "true");
+  localStorage.setItem("foodExpressCurrentRider", JSON.stringify(cleanUser));
+
+  if (cleanUser.id) {
+    localStorage.setItem("riderUserId", cleanUser.id);
+  }
+
+  localStorage.removeItem("isOwnerLoggedIn");
+  localStorage.removeItem("foodExpressCurrentOwner");
+}
+
+if (cleanRole === "customer") {
+  localStorage.removeItem("isOwnerLoggedIn");
+  localStorage.removeItem("foodExpressCurrentOwner");
+  localStorage.removeItem("isRiderLoggedIn");
+  localStorage.removeItem("foodExpressCurrentRider");
+}
+
   window.dispatchEvent(new Event("foodExpressProfileUpdated"));
 
   return cleanUser;

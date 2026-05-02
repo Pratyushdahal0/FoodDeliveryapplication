@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkout - FoodExpress</title>
 
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/shared.css" />
@@ -594,6 +599,450 @@
           flex-direction: column;
         }
       }
+      .checkout-toast {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 9999;
+        min-width: 280px;
+        max-width: 380px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: #111827;
+        color: #fff;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.28);
+        display: none;
+        align-items: flex-start;
+        gap: 12px;
+        font-weight: 700;
+      }
+
+      .checkout-toast.show {
+        display: flex;
+        animation: checkoutToastIn 0.25s ease;
+      }
+
+      .checkout-toast.success {
+        background: #14532d;
+      }
+
+      .checkout-toast.error {
+        background: #7f1d1d;
+      }
+
+      .checkout-toast.warning {
+        background: #78350f;
+      }
+
+      .checkout-toast i {
+        margin-top: 2px;
+      }
+
+      @keyframes checkoutToastIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.98);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      .input-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12) !important;
+      }
+
+      .checkout-trust-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .checkout-trust-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 11px;
+        border-radius: 999px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        color: #4b5563;
+        font-size: 0.85rem;
+        font-weight: 800;
+      }
+      .checkout-modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        background:
+          radial-gradient(
+            circle at 20% 20%,
+            rgba(239, 68, 68, 0.16),
+            transparent 34%
+          ),
+          radial-gradient(
+            circle at 80% 80%,
+            rgba(251, 146, 60, 0.16),
+            transparent 34%
+          ),
+          rgba(15, 23, 42, 0.52);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+
+      .checkout-modal-overlay.show {
+        display: flex;
+        animation: checkoutOverlayFade 0.24s ease;
+      }
+
+      .checkout-status-modal {
+        width: min(560px, 100%);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.98) 0%,
+          rgba(255, 252, 248, 0.98) 100%
+        );
+        border-radius: 34px;
+        padding: 32px 32px 28px;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        box-shadow:
+          0 34px 100px rgba(15, 23, 42, 0.34),
+          0 12px 34px rgba(15, 23, 42, 0.12);
+        position: relative;
+        overflow: hidden;
+        transform: translateY(0);
+        animation: checkoutModalPop 0.28s ease;
+      }
+
+      .checkout-status-modal::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto;
+        height: 7px;
+        background: linear-gradient(90deg, #ef4444, #fb7185, #fdba74);
+      }
+
+      .checkout-status-modal::after {
+        content: "";
+        position: absolute;
+        top: -90px;
+        right: -90px;
+        width: 190px;
+        height: 190px;
+        border-radius: 999px;
+        background: rgba(239, 68, 68, 0.07);
+        pointer-events: none;
+      }
+
+      .checkout-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 18px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        font-size: 0.9rem;
+        font-weight: 900;
+        letter-spacing: 0.01em;
+        background: #fff1f2;
+        color: #e11d48;
+      }
+
+      .checkout-status-icon {
+        width: 96px;
+        height: 96px;
+        margin: 0 auto 20px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 38px;
+        position: relative;
+      }
+
+      .checkout-status-icon::before {
+        content: "";
+        position: absolute;
+        inset: -14px;
+        border-radius: 999px;
+        background: currentColor;
+        opacity: 0.08;
+      }
+
+      .checkout-status-icon::after {
+        content: "";
+        position: absolute;
+        inset: -26px;
+        border-radius: 999px;
+        border: 1px solid currentColor;
+        opacity: 0.14;
+      }
+
+      .checkout-status-icon.loading {
+        background: #fff7ed;
+        color: #f97316;
+      }
+
+      .checkout-status-icon.success {
+        background: #dcfce7;
+        color: #16a34a;
+      }
+
+      .checkout-status-icon.error {
+        background: #fee2e2;
+        color: #ef4444;
+      }
+
+      .checkout-status-modal h3 {
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 4vw, 2.65rem);
+        font-weight: 950;
+        line-height: 1.05;
+        color: #0f172a;
+        letter-spacing: -0.045em;
+      }
+
+      .checkout-status-modal p {
+        margin: 0 auto;
+        max-width: 450px;
+        color: #667085;
+        font-size: 1.05rem;
+        line-height: 1.62;
+        font-weight: 650;
+      }
+
+      .checkout-live-steps {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 11px;
+        margin-top: 24px;
+      }
+
+      .checkout-live-step {
+        min-height: 92px;
+        padding: 14px 12px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+      }
+
+      .checkout-live-step i {
+        width: 34px;
+        height: 34px;
+        margin: 0 auto 9px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff1f2;
+        color: #ef4444;
+      }
+
+      .checkout-live-step strong {
+        display: block;
+        color: #0f172a;
+        font-size: 0.86rem;
+        font-weight: 900;
+      }
+
+      .checkout-live-step span {
+        display: block;
+        margin-top: 4px;
+        color: #667085;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .checkout-order-summary {
+        margin-top: 24px;
+        padding: 18px;
+        border-radius: 24px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        text-align: left;
+      }
+
+      .checkout-order-summary h4 {
+        margin: 0 0 13px;
+        font-size: 0.88rem;
+        font-weight: 950;
+        color: #0f172a;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .checkout-order-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .checkout-order-item {
+        padding: 14px 16px;
+        border-radius: 17px;
+        background: #ffffff;
+        border: 1px solid #edf2f7;
+      }
+
+      .checkout-order-item span {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 0.78rem;
+        color: #667085;
+        font-weight: 800;
+      }
+
+      .checkout-order-item strong {
+        display: block;
+        font-size: 0.98rem;
+        color: #0f172a;
+        font-weight: 950;
+        line-height: 1.35;
+        word-break: break-word;
+      }
+
+      .checkout-status-steps {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .checkout-status-step {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 13px;
+        border-radius: 999px;
+        background: #fff7ed;
+        color: #9a3412;
+        font-size: 0.84rem;
+        font-weight: 900;
+      }
+
+      .checkout-status-footer {
+        margin-top: 22px;
+      }
+
+      .checkout-redirect-text {
+        font-size: 0.9rem;
+        color: #64748b;
+        font-weight: 850;
+        margin-bottom: 10px;
+      }
+
+      .checkout-redirect-track {
+        width: 100%;
+        height: 9px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        overflow: hidden;
+      }
+
+      .checkout-redirect-fill {
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #ef4444, #fb7185, #fdba74);
+      }
+
+      .checkout-redirect-fill.animate {
+        animation: checkoutRedirectFill 1.8s linear forwards;
+      }
+
+      .checkout-secure-note {
+        margin-top: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 800;
+      }
+
+      .checkout-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #fed7aa;
+        border-top-color: #f97316;
+        border-radius: 999px;
+        animation: checkoutSpin 0.82s linear infinite;
+      }
+
+      @keyframes checkoutSpin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes checkoutOverlayFade {
+        from {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes checkoutModalPop {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.97);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes checkoutRedirectFill {
+        from {
+          width: 0%;
+        }
+
+        to {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .checkout-status-modal {
+          padding: 28px 20px 22px;
+          border-radius: 26px;
+        }
+
+        .checkout-status-modal h3 {
+          font-size: 2rem;
+        }
+
+        .checkout-status-modal p {
+          font-size: 0.98rem;
+        }
+
+        .checkout-live-steps,
+        .checkout-order-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .input-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12) !important;
+      }
     </style>
   </head>
 
@@ -606,6 +1055,117 @@
     </script>
 
     <div id="navbarContainer"></div>
+    <div id="checkoutStatusModal" class="checkout-modal-overlay">
+      <div class="checkout-status-modal">
+        <div id="checkoutStatusBadge" class="checkout-status-badge">
+          <i class="fa-solid fa-lock"></i>
+          <span>Secure checkout</span>
+        </div>
+
+        <div id="checkoutStatusIcon" class="checkout-status-icon loading">
+          <div class="checkout-spinner"></div>
+        </div>
+
+        <h3 id="checkoutStatusTitle">Finalising your order</h3>
+
+        <p id="checkoutStatusMessage">
+          We’re confirming your checkout, saving your order, and sending it to
+          the restaurant.
+        </p>
+
+        <div id="checkoutLiveSteps" class="checkout-live-steps">
+          <div class="checkout-live-step">
+            <i class="fa-solid fa-receipt"></i>
+            <strong>Order saved</strong>
+            <span>Creating your order record</span>
+          </div>
+
+          <div class="checkout-live-step">
+            <i class="fa-solid fa-store"></i>
+            <strong>Restaurant</strong>
+            <span>Sending order details</span>
+          </div>
+
+          <div class="checkout-live-step">
+            <i class="fa-solid fa-location-dot"></i>
+            <strong>Tracking</strong>
+            <span>Preparing live updates</span>
+          </div>
+        </div>
+
+        <div
+          id="checkoutOrderSummary"
+          class="checkout-order-summary"
+          style="display: none"
+        >
+          <h4>Order details</h4>
+
+          <div class="checkout-order-grid">
+            <div class="checkout-order-item">
+              <span>Order Number</span>
+              <strong id="checkoutOrderNumberText">-</strong>
+            </div>
+
+            <div class="checkout-order-item">
+              <span>Estimated Delivery</span>
+              <strong id="checkoutEtaText">30–40 min</strong>
+            </div>
+
+            <div class="checkout-order-item">
+              <span>Payment Method</span>
+              <strong id="checkoutPaymentMethodText">Cash on Delivery</strong>
+            </div>
+
+            <div class="checkout-order-item">
+              <span>Total</span>
+              <strong id="checkoutTotalText">Rs. 0.00</strong>
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="checkoutStatusSteps"
+          class="checkout-status-steps"
+          style="display: none"
+        >
+          <div class="checkout-status-step">
+            <i class="fa-solid fa-circle-check"></i>
+            Sent to restaurant
+          </div>
+
+          <div class="checkout-status-step">
+            <i class="fa-solid fa-utensils"></i>
+            Preparing soon
+          </div>
+
+          <div class="checkout-status-step">
+            <i class="fa-solid fa-motorcycle"></i>
+            Rider matching
+          </div>
+        </div>
+
+        <div
+          id="checkoutStatusFooter"
+          class="checkout-status-footer"
+          style="display: none"
+        >
+          <div class="checkout-redirect-text">Opening live tracking…</div>
+          <div class="checkout-redirect-track">
+            <div id="checkoutRedirectFill" class="checkout-redirect-fill"></div>
+          </div>
+        </div>
+
+        <div class="checkout-secure-note">
+          <i class="fa-solid fa-shield-halved"></i>
+          Your order details are stored securely by FoodExpress.
+        </div>
+      </div>
+    </div>
+
+    <div id="checkoutToast" class="checkout-toast">
+      <i class="fa-solid fa-circle-info"></i>
+      <span id="checkoutToastText">Checkout update</span>
+    </div>
 
     <main class="checkout-shell">
       <div id="emptyCheckout" class="card empty-checkout">
@@ -829,17 +1389,17 @@
               <div class="summary-lines">
                 <div class="summary-line">
                   <span>Subtotal</span>
-                  <strong>$<span id="summarySubtotal">0.00</span></strong>
+                  <strong>Rs.<span id="summarySubtotal">0.00</span></strong>
                 </div>
 
                 <div class="summary-line">
                   <span>Delivery fee</span>
-                  <strong>$<span id="summaryDelivery">5.00</span></strong>
+                  <strong>Rs.<span id="summaryDelivery">5.00</span></strong>
                 </div>
 
                 <div class="summary-line">
                   <span>Tax</span>
-                  <strong>$<span id="summaryTax">0.00</span></strong>
+                  <strong>Rs.<span id="summaryTax">0.00</span></strong>
                 </div>
 
                 <div
@@ -848,14 +1408,14 @@
                   style="display: none"
                 >
                   <span>Discount</span>
-                  <strong>-$<span id="summaryDiscount">0.00</span></strong>
+                  <strong>Rs.<span id="summaryDiscount">0.00</span></strong>
                 </div>
 
                 <div class="summary-divider"></div>
 
                 <div class="summary-total">
                   <span>Total</span>
-                  <span>$<span id="summaryTotal">0.00</span></span>
+                  <span>Rs.<span id="summaryTotal">0.00</span></span>
                 </div>
               </div>
 
@@ -863,6 +1423,22 @@
                 Your order will be sent to the restaurant as soon as you confirm
                 payment. You can track the latest status from pending to
                 delivered after checkout.
+              </div>
+              <div class="checkout-trust-row">
+                <span class="checkout-trust-badge">
+                  <i class="fa-solid fa-shield-halved"></i>
+                  Secure checkout
+                </span>
+
+                <span class="checkout-trust-badge">
+                  <i class="fa-solid fa-bell"></i>
+                  Live updates
+                </span>
+
+                <span class="checkout-trust-badge">
+                  <i class="fa-solid fa-motorcycle"></i>
+                  Rider tracking
+                </span>
               </div>
             </div>
 
@@ -898,35 +1474,60 @@
       </div>
     </main>
 
-    <footer>
-      <div class="footer-grid">
-        <div>
-          <div class="footer-logo">FoodExpress</div>
-          <p class="footer-desc">
-            Delivering happiness to your doorstep, one meal at a time.
-          </p>
-        </div>
-      </div>
-      <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
-    </footer>
+    <footer class="footer" id="footer"></footer>
 
-    <script src="../js/profile.js"></script>
-    <script src="../js/shared.js"></script>
-    <script src="../js/modules/cart.js"></script>
-    <script src="../js/components/notifications.js"></script>
-    <script src="../js/components/navbar.js"></script>
-    <script src="../js/reward.js"></script>
+    <script src="../js/profile.js?v=profile1"></script>
+    <script src="../js/shared.js?v=shared1"></script>
+    <script src="../js/modules/cart.js?v=cartstable1"></script>
+    <script src="../js/components/notifications.js?v=routefix4"></script>
+    <script src="../js/components/navbar.js?v=paymentnav1"></script>
+    <script src="../js/reward.js?v=reward1"></script>
+    <script src="../js/components/footer.js"></script>
 
     <script>
-      function initNavbar() {
+      function initPaymentNavbar(attempt = 0) {
+        const container = document.getElementById("navbarContainer");
+        if (!container) return;
+
         if (typeof window.renderNavbar === "function") {
           window.renderNavbar("payment");
-        } else {
-          setTimeout(initNavbar, 100);
+        } else if (typeof window.getLoggedInNavbar === "function") {
+          container.innerHTML = window.getLoggedInNavbar("payment");
+        }
+
+        if (!container.innerHTML.trim() && attempt < 15) {
+          setTimeout(function () {
+            initPaymentNavbar(attempt + 1);
+          }, 100);
+          return;
+        }
+
+        if (typeof window.initializeCartCount === "function") {
+          window.initializeCartCount();
+        }
+
+        if (typeof window.bindNotificationBell === "function") {
+          window.bindNotificationBell();
         }
       }
 
-      document.addEventListener("DOMContentLoaded", initNavbar);
+      function initPaymentFooter(attempt = 0) {
+        if (typeof window.renderFooter === "function") {
+          window.renderFooter("app");
+          return;
+        }
+
+        if (attempt < 10) {
+          setTimeout(function () {
+            initPaymentFooter(attempt + 1);
+          }, 100);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initPaymentNavbar();
+        initPaymentFooter();
+      });
     </script>
 
     <script>
@@ -937,7 +1538,7 @@
       let checkoutItems = [];
       let checkoutSummary = {
         subtotal: 0,
-        deliveryFee: 5,
+        deliveryFee: 0,
         tax: 0,
         discount: 0,
         total: 0,
@@ -952,6 +1553,7 @@
       let appliedCouponData = null;
 
       document.addEventListener("DOMContentLoaded", function () {
+        normalizeCheckoutCurrencyLabels();
         initializeCheckout();
         initializePaymentMethods();
         initializeCardFormatting();
@@ -973,8 +1575,51 @@
       });
 
       /* ===============================
-         ACCOUNT SETTINGS INTEGRATION
-      ================================ */
+     REALISTIC NEPAL DELIVERY FEE
+  ================================ */
+
+      function calculateFoodExpressDeliveryFee(subtotal) {
+        const amount = Number(subtotal || 0);
+
+        if (amount <= 0) return 0;
+        if (amount >= 1500) return 0;
+        if (amount >= 1000) return 20;
+        if (amount >= 500) return 30;
+
+        return 50;
+      }
+
+      function calculateFoodExpressTax(subtotal) {
+        return Number(subtotal || 0) * 0.1;
+      }
+
+      function formatMoney(amount) {
+        return Number(amount || 0).toFixed(2);
+      }
+
+      function normalizeCheckoutCurrencyLabels() {
+        const moneyIds = [
+          "summarySubtotal",
+          "summaryDelivery",
+          "summaryTax",
+          "summaryDiscount",
+          "summaryTotal",
+        ];
+
+        moneyIds.forEach(function (id) {
+          const span = document.getElementById(id);
+          if (!span || !span.parentElement) return;
+
+          const isDiscount = id === "summaryDiscount";
+          span.parentElement.innerHTML = `${
+            isDiscount ? "-Rs. " : "Rs. "
+          }<span id="${id}">${span.textContent || "0.00"}</span>`;
+        });
+      }
+
+      /* ===============================
+     ACCOUNT SETTINGS INTEGRATION
+  ================================ */
 
       function getAccountSettings() {
         try {
@@ -1073,14 +1718,10 @@
         const notes = [];
 
         if (existingNote) notes.push(existingNote);
-
-        if (settings.defaultDeliveryNote) {
+        if (settings.defaultDeliveryNote)
           notes.push(settings.defaultDeliveryNote);
-        }
-
-        if (settings.contactlessDelivery) {
+        if (settings.contactlessDelivery)
           notes.push("Contactless delivery enabled");
-        }
 
         const uniqueNotes = [
           ...new Set(notes.map((note) => note.trim()).filter(Boolean)),
@@ -1128,8 +1769,8 @@
       }
 
       /* ===============================
-         CHECKOUT INIT
-      ================================ */
+     CHECKOUT INIT
+  ================================ */
 
       function initializeCheckout() {
         const preparedItems = readJson("checkoutItems", []);
@@ -1166,6 +1807,10 @@
           localStorage.getItem("checkoutSubtotal") || "0",
         );
 
+        const deliveryFeeFromStorage = parseFloat(
+          localStorage.getItem("checkoutDeliveryFee") || "0",
+        );
+
         const taxFromStorage = parseFloat(
           localStorage.getItem("checkoutTax") || "0",
         );
@@ -1177,8 +1822,15 @@
         const subtotal =
           subtotalFromStorage > 0 ? subtotalFromStorage : calculatedSubtotal;
 
-        const deliveryFee = checkoutItems.length ? 5 : 0;
-        const tax = taxFromStorage > 0 ? taxFromStorage : subtotal * 0.1;
+        const deliveryFee =
+          deliveryFeeFromStorage > 0
+            ? deliveryFeeFromStorage
+            : calculateFoodExpressDeliveryFee(subtotal);
+
+        const tax =
+          taxFromStorage > 0
+            ? taxFromStorage
+            : calculateFoodExpressTax(subtotal);
         const total = subtotal + deliveryFee + tax;
 
         checkoutSummary = {
@@ -1296,7 +1948,9 @@
         setText("restaurantName", checkoutRestaurant.name);
         setText(
           "restaurantMeta",
-          `${itemCount} item${itemCount !== 1 ? "s" : ""} • Fresh prep • Reliable delivery through FoodExpress`,
+          `${itemCount} item${
+            itemCount !== 1 ? "s" : ""
+          } • Fresh prep • Reliable delivery through FoodExpress`,
         );
         setText("estimatedEta", eta);
         setText("checkoutRestaurantPill", checkoutRestaurant.name);
@@ -1317,27 +1971,31 @@
             const lineTotal = unitPrice * quantity;
 
             return `
-              <div class="order-item">
-                <img
-                  src="${image}"
-                  alt="${name}"
-                  onerror="this.src='${PAYMENT_DEFAULT_IMAGE}'"
-                />
+          <div class="order-item">
+            <img
+              src="${image}"
+              alt="${name}"
+              onerror="this.src='${PAYMENT_DEFAULT_IMAGE}'"
+            />
 
-                <div class="item-info">
-                  <h4>${name}</h4>
-                  <div class="item-meta">
-                    <span>${escapeHtml(item.restaurant_name || item.restaurantName || checkoutRestaurant.name)}</span>
-                    <span>$${unitPrice.toFixed(2)} each</span>
-                  </div>
-                </div>
-
-                <div class="item-total">
-                  <span class="qty">Qty ${quantity}</span>
-                  <span class="price">$${lineTotal.toFixed(2)}</span>
-                </div>
+            <div class="item-info">
+              <h4>${name}</h4>
+              <div class="item-meta">
+                <span>${escapeHtml(
+                  item.restaurant_name ||
+                    item.restaurantName ||
+                    checkoutRestaurant.name,
+                )}</span>
+                <span>Rs. ${formatMoney(unitPrice)} each</span>
               </div>
-            `;
+            </div>
+
+            <div class="item-total">
+              <span class="qty">Qty ${quantity}</span>
+              <span class="price">Rs. ${formatMoney(lineTotal)}</span>
+            </div>
+          </div>
+        `;
           })
           .join("");
       }
@@ -1361,16 +2019,16 @@
           `${itemCount} item${itemCount !== 1 ? "s" : ""}`,
         );
 
-        setText("summarySubtotal", checkoutSummary.subtotal.toFixed(2));
-        setText("summaryDelivery", checkoutSummary.deliveryFee.toFixed(2));
-        setText("summaryTax", checkoutSummary.tax.toFixed(2));
-        setText("summaryTotal", checkoutSummary.total.toFixed(2));
+        setText("summarySubtotal", formatMoney(checkoutSummary.subtotal));
+        setText("summaryDelivery", formatMoney(checkoutSummary.deliveryFee));
+        setText("summaryTax", formatMoney(checkoutSummary.tax));
+        setText("summaryTotal", formatMoney(checkoutSummary.total));
 
         const discountRow = document.getElementById("discountRow");
 
         if (checkoutSummary.discount > 0) {
           if (discountRow) discountRow.style.display = "flex";
-          setText("summaryDiscount", checkoutSummary.discount.toFixed(2));
+          setText("summaryDiscount", formatMoney(checkoutSummary.discount));
         } else {
           if (discountRow) discountRow.style.display = "none";
           setText("summaryDiscount", "0.00");
@@ -1547,8 +2205,185 @@
       }
 
       /* ===============================
-         PLACE ORDER
-      ================================ */
+     PLACE ORDER
+  ================================ */
+      function showCheckoutStatusModal(type, title, message, options = {}) {
+        const modal = document.getElementById("checkoutStatusModal");
+        const badge = document.getElementById("checkoutStatusBadge");
+        const icon = document.getElementById("checkoutStatusIcon");
+        const titleEl = document.getElementById("checkoutStatusTitle");
+        const messageEl = document.getElementById("checkoutStatusMessage");
+
+        const liveSteps = document.getElementById("checkoutLiveSteps");
+        const summary = document.getElementById("checkoutOrderSummary");
+        const steps = document.getElementById("checkoutStatusSteps");
+        const footer = document.getElementById("checkoutStatusFooter");
+        const redirectFill = document.getElementById("checkoutRedirectFill");
+
+        const orderNumberText = document.getElementById(
+          "checkoutOrderNumberText",
+        );
+        const etaText = document.getElementById("checkoutEtaText");
+        const paymentMethodText = document.getElementById(
+          "checkoutPaymentMethodText",
+        );
+        const totalText = document.getElementById("checkoutTotalText");
+
+        if (
+          !modal ||
+          !badge ||
+          !icon ||
+          !titleEl ||
+          !messageEl ||
+          !liveSteps ||
+          !summary ||
+          !steps ||
+          !footer ||
+          !redirectFill
+        ) {
+          return;
+        }
+
+        modal.classList.add("show");
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        liveSteps.style.display = "grid";
+        summary.style.display = "none";
+        steps.style.display = "none";
+        footer.style.display = "none";
+
+        redirectFill.classList.remove("animate");
+        icon.className = `checkout-status-icon ${type}`;
+
+        if (type === "loading") {
+          badge.innerHTML = `
+      <i class="fa-solid fa-lock"></i>
+      <span>Secure checkout</span>
+    `;
+
+          icon.innerHTML = `<div class="checkout-spinner"></div>`;
+        } else if (type === "success") {
+          badge.innerHTML = `
+      <i class="fa-solid fa-circle-check"></i>
+      <span>Order confirmed</span>
+    `;
+
+          icon.innerHTML = `<i class="fa-solid fa-check"></i>`;
+
+          liveSteps.style.display = "none";
+          summary.style.display = "block";
+          steps.style.display = "flex";
+          footer.style.display = "block";
+
+          if (orderNumberText) {
+            orderNumberText.textContent = options.orderNumber || "-";
+          }
+
+          if (etaText) {
+            etaText.textContent = options.eta || "30–40 min";
+          }
+
+          if (paymentMethodText) {
+            paymentMethodText.textContent =
+              options.paymentMethod || "Cash on Delivery";
+          }
+
+          if (totalText) {
+            totalText.textContent = options.totalText || "Rs. 0.00";
+          }
+
+          setTimeout(() => {
+            redirectFill.classList.add("animate");
+          }, 80);
+        } else {
+          badge.innerHTML = `
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>Checkout issue</span>
+    `;
+
+          icon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+
+          liveSteps.style.display = "none";
+        }
+      }
+
+      function hideCheckoutStatusModal() {
+        const modal = document.getElementById("checkoutStatusModal");
+        const redirectFill = document.getElementById("checkoutRedirectFill");
+
+        if (redirectFill) {
+          redirectFill.classList.remove("animate");
+        }
+
+        if (modal) {
+          modal.classList.remove("show");
+        }
+      }
+
+      function clearCheckoutErrors() {
+        [
+          "fullName",
+          "customerEmail",
+          "phoneNumber",
+          "address",
+          "city",
+          "postalCode",
+          "cardNumber",
+          "cardExpiry",
+          "cardCVV",
+        ].forEach(function (id) {
+          const input = document.getElementById(id);
+          if (input) input.classList.remove("input-error");
+        });
+      }
+
+      function markCheckoutError(id) {
+        const input = document.getElementById(id);
+        if (!input) return;
+
+        input.classList.add("input-error");
+
+        input.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+
+        setTimeout(function () {
+          input.focus();
+        }, 250);
+      }
+
+      function showCheckoutToast(message, type = "success") {
+        const toast = document.getElementById("checkoutToast");
+        const text = document.getElementById("checkoutToastText");
+
+        if (!toast || !text) {
+          console.log(`[checkout:${type}]`, message);
+          return;
+        }
+
+        text.textContent = message;
+        toast.className = `checkout-toast show ${type}`;
+
+        clearTimeout(window.__checkoutToastTimer);
+        window.__checkoutToastTimer = setTimeout(function () {
+          toast.classList.remove("show");
+        }, 3600);
+      }
+
+      function formatPaymentMethodLabel(value) {
+        const method = String(value || "cash").toLowerCase();
+
+        const labels = {
+          cash: "Cash on Delivery",
+          card: "Credit / Debit Card",
+          digital: "Digital Wallet",
+        };
+
+        return labels[method] || "Cash on Delivery";
+      }
 
       async function placeOrder() {
         const fullName = document.getElementById("fullName").value.trim();
@@ -1569,20 +2404,47 @@
 
         const paymentMethod = selectedPayment ? selectedPayment.value : "cash";
 
-        if (
-          !fullName ||
-          !customerEmail ||
-          !phoneNumber ||
-          !address ||
-          !city ||
-          !postalCode
-        ) {
-          alert("Please fill in all required delivery details.");
+        clearCheckoutErrors();
+
+        if (!fullName) {
+          markCheckoutError("fullName");
+          showCheckoutToast("Please enter your full name.", "warning");
+          return;
+        }
+
+        if (!customerEmail) {
+          markCheckoutError("customerEmail");
+          showCheckoutToast("Please enter your email address.", "warning");
+          return;
+        }
+
+        if (!phoneNumber) {
+          markCheckoutError("phoneNumber");
+          showCheckoutToast("Please enter your phone number.", "warning");
+          return;
+        }
+
+        if (!address) {
+          markCheckoutError("address");
+          showCheckoutToast("Please enter your delivery address.", "warning");
+          return;
+        }
+
+        if (!city) {
+          markCheckoutError("city");
+          showCheckoutToast("Please enter your city.", "warning");
+          return;
+        }
+
+        if (!postalCode) {
+          markCheckoutError("postalCode");
+          showCheckoutToast("Please enter your postal code.", "warning");
           return;
         }
 
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
-          alert("Please enter a valid email address.");
+          markCheckoutError("customerEmail");
+          showCheckoutToast("Please enter a valid email address.", "warning");
           return;
         }
 
@@ -1591,16 +2453,49 @@
           const cardExpiry = document.getElementById("cardExpiry").value.trim();
           const cardCVV = document.getElementById("cardCVV").value.trim();
 
-          if (!cardNumber || !cardExpiry || !cardCVV) {
-            alert("Please complete your card details.");
+          if (!cardNumber) {
+            markCheckoutError("cardNumber");
+            showCheckoutToast("Please enter your card number.", "warning");
+            return;
+          }
+
+          if (!cardExpiry) {
+            markCheckoutError("cardExpiry");
+            showCheckoutToast("Please enter the card expiry date.", "warning");
+            return;
+          }
+
+          if (!cardCVV) {
+            markCheckoutError("cardCVV");
+            showCheckoutToast("Please enter the card CVV.", "warning");
             return;
           }
         }
 
         if (!checkoutItems.length) {
-          alert("Your checkout is empty.");
+          showCheckoutToast(
+            "Your checkout is empty. Please add items first.",
+            "warning",
+          );
           return;
         }
+
+        checkoutSummary.deliveryFee = calculateFoodExpressDeliveryFee(
+          checkoutSummary.subtotal,
+        );
+        checkoutSummary.tax = calculateFoodExpressTax(checkoutSummary.subtotal);
+
+        const baseTotal =
+          Number(checkoutSummary.subtotal) +
+          Number(checkoutSummary.deliveryFee) +
+          Number(checkoutSummary.tax);
+
+        checkoutSummary.total = Math.max(
+          0,
+          baseTotal - Number(checkoutSummary.discount || 0),
+        );
+
+        renderSummary();
 
         const btn = document.getElementById("placeOrderBtn");
         const originalText = btn ? btn.textContent : "Place Order";
@@ -1609,6 +2504,12 @@
           btn.disabled = true;
           btn.textContent = "Placing Order...";
         }
+
+        showCheckoutStatusModal(
+          "loading",
+          "Finalising your order",
+          "We’re confirming your checkout, saving your order, and sending it to the restaurant.",
+        );
 
         const orderData = {
           customer_name: fullName,
@@ -1651,6 +2552,7 @@
           try {
             result = JSON.parse(raw);
           } catch (parseError) {
+            console.error("Raw create order response:", raw);
             throw new Error("Invalid server response while creating order.");
           }
 
@@ -1724,17 +2626,6 @@
 
           saveOrderHistory(newOrder);
 
-          if (typeof window.addFoodExpressNotification === "function") {
-            window.addFoodExpressNotification({
-              title: "Order placed",
-              message: `Your order ${newOrder.orderNumber} was sent to ${newOrder.restaurantName}.`,
-              type: "order",
-              category: "order",
-              icon: "fa-bag-shopping",
-              link: "track-order.html",
-            });
-          }
-
           if (
             appliedCouponId &&
             typeof window.markCouponAsUsed === "function"
@@ -1754,14 +2645,29 @@
 
           clearCheckoutState();
 
-          alert(
-            `✅ Order placed successfully!\n\nOrder Number: ${newOrder.orderNumber}`,
+          showCheckoutStatusModal(
+            "success",
+            "Order placed successfully",
+            `${checkoutRestaurant.name} has received your order. Opening live tracking now.`,
+            {
+              orderNumber: newOrder.orderNumber || "-",
+              eta: newOrder.estimatedDelivery || "30–40 min",
+              paymentMethod: formatPaymentMethodLabel(
+                newOrder.paymentMethod || "cash",
+              ),
+              totalText: `Rs. ${Number(newOrder.total || 0).toFixed(2)}`,
+            },
           );
 
-          window.location.href = "track-order.html";
+          setTimeout(() => {
+            window.location.href = `track-order.html?order=${encodeURIComponent(
+              newOrder.orderNumber,
+            )}`;
+          }, 2500);
         } catch (error) {
           console.error("Order placement failed:", error);
-          alert(`Failed to place order: ${error.message}`);
+          hideCheckoutStatusModal();
+          showCheckoutToast(`Failed to place order: ${error.message}`, "error");
         } finally {
           if (btn) {
             btn.disabled = false;
@@ -1854,6 +2760,7 @@
         localStorage.removeItem("checkoutRestaurantName");
         localStorage.removeItem("checkoutTotal");
         localStorage.removeItem("checkoutSubtotal");
+        localStorage.removeItem("checkoutDeliveryFee");
         localStorage.removeItem("checkoutTax");
 
         if (typeof window.updateCartCount === "function") {
@@ -1862,8 +2769,8 @@
       }
 
       /* ===============================
-         HELPERS
-      ================================ */
+     HELPERS
+  ================================ */
 
       function generateEstimatedEta(itemCount) {
         const baseMin = 25 + itemCount * 2;

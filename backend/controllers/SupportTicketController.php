@@ -5,21 +5,40 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 
+ini_set("display_errors", 0);
+error_reporting(E_ALL);
+
 if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
-    exit;
+    http_response_code(200);
+    exit();
 }
 
 require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../helpers/MailHelper.php";
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     echo json_encode([
         "success" => false,
         "message" => "Only POST request is allowed."
     ]);
-    exit;
+    exit();
 }
 
 $data = json_decode(file_get_contents("php://input"), true);
+
+if (!is_array($data)) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Invalid request data."
+    ]);
+    exit();
+}
+
+/*
+|--------------------------------------------------------------------------
+| Request Data
+|--------------------------------------------------------------------------
+*/
 
 $userType = trim($data["user_type"] ?? "guest");
 $userId = trim($data["user_id"] ?? "");
@@ -40,16 +59,22 @@ $sourcePage = trim($data["source_page"] ?? "help_center");
 
 $allowedUserTypes = ["guest", "customer", "restaurant_owner", "rider"];
 
-if (!in_array($userType, $allowedUserTypes)) {
+if (!in_array($userType, $allowedUserTypes, true)) {
     $userType = "guest";
 }
 
-if ($firstName === "" || $email === "" || $issueType === "" || $issueTitle === "" || $message === "") {
+if (
+    $firstName === "" ||
+    $email === "" ||
+    $issueType === "" ||
+    $issueTitle === "" ||
+    $message === ""
+) {
     echo json_encode([
         "success" => false,
         "message" => "Please fill in all required fields."
     ]);
-    exit;
+    exit();
 }
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -57,19 +82,25 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         "success" => false,
         "message" => "Please enter a valid email address."
     ]);
-    exit;
+    exit();
 }
+
+/*
+|--------------------------------------------------------------------------
+| Helper Functions
+|--------------------------------------------------------------------------
+*/
 
 function detectPriority($issueType)
 {
     $urgentIssues = ["safety_issue", "accident", "fraud", "security"];
     $highIssues = ["refund", "payment_refund", "payout_issue", "missing_item", "wrong_order"];
 
-    if (in_array($issueType, $urgentIssues)) {
+    if (in_array($issueType, $urgentIssues, true)) {
         return "urgent";
     }
 
-    if (in_array($issueType, $highIssues)) {
+    if (in_array($issueType, $highIssues, true)) {
         return "high";
     }
 
@@ -85,6 +116,16 @@ function cleanText($value)
 {
     return htmlspecialchars($value ?? "", ENT_QUOTES, "UTF-8");
 }
+
+/*
+|--------------------------------------------------------------------------
+| Insert Email Queue + Send Immediately
+|--------------------------------------------------------------------------
+| Saves email to email_queue first.
+| Then sends immediately using MailHelper.
+| If send fails, status becomes failed and manual worker can retry later.
+|--------------------------------------------------------------------------
+*/
 
 function insertEmailQueue($conn, $ticketId, $toEmail, $toName, $subject, $body, $emailType)
 {
@@ -116,8 +157,119 @@ function insertEmailQueue($conn, $ticketId, $toEmail, $toName, $subject, $body, 
         $emailType
     );
 
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        $error = $stmt->error;
+        $stmt->close();
+
+        throw new Exception("Email queue insert failed: " . $error);
+    }
+
+    $emailId = $stmt->insert_id;
+    $stmt->close();
+
+    try {
+        if (!class_exists("MailHelper")) {
+            throw new Exception("MailHelper class not found.");
+        }
+
+        $mailResult = MailHelper::sendMail(
+            $toEmail,
+            $toName ?: $toEmail,
+            $subject,
+            $body
+        );
+
+        if (!empty($mailResult["success"])) {
+            $sentStmt = $conn->prepare("
+                UPDATE email_queue
+                SET 
+                    status = 'sent',
+                    attempts = attempts + 1,
+                    last_error = NULL,
+                    sent_at = NOW()
+                WHERE id = ?
+            ");
+
+            if ($sentStmt) {
+                $sentStmt->bind_param("i", $emailId);
+                $sentStmt->execute();
+                $sentStmt->close();
+            }
+
+            return true;
+        }
+
+        $errorMessage = $mailResult["error"] ?? "Unknown mail error";
+
+        $failedStmt = $conn->prepare("
+            UPDATE email_queue
+            SET 
+                status = 'failed',
+                attempts = attempts + 1,
+                last_error = ?
+            WHERE id = ?
+        ");
+
+        if ($failedStmt) {
+            $failedStmt->bind_param("si", $errorMessage, $emailId);
+            $failedStmt->execute();
+            $failedStmt->close();
+        }
+
+        return false;
+    } catch (Throwable $e) {
+        $errorMessage = $e->getMessage();
+
+        $failedStmt = $conn->prepare("
+            UPDATE email_queue
+            SET 
+                status = 'failed',
+                attempts = attempts + 1,
+                last_error = ?
+            WHERE id = ?
+        ");
+
+        if ($failedStmt) {
+            $failedStmt->bind_param("si", $errorMessage, $emailId);
+            $failedStmt->execute();
+            $failedStmt->close();
+        }
+
+        return false;
+    }
 }
+
+/*
+|--------------------------------------------------------------------------
+| Update Support Ticket Email Status
+|--------------------------------------------------------------------------
+*/
+
+function updateSupportTicketEmailStatus($conn, $ticketId, $adminEmailSent, $customerEmailSent)
+{
+    $emailSentValue = $adminEmailSent ? 1 : 0;
+    $customerEmailSentValue = $customerEmailSent ? 1 : 0;
+
+    $stmt = $conn->prepare("
+        UPDATE support_tickets
+        SET 
+            email_sent = ?,
+            customer_email_sent = ?
+        WHERE id = ?
+    ");
+
+    if ($stmt) {
+        $stmt->bind_param("iii", $emailSentValue, $customerEmailSentValue, $ticketId);
+        $stmt->execute();
+        $stmt->close();
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Main Flow
+|--------------------------------------------------------------------------
+*/
 
 $priority = detectPriority($issueType);
 $ticketNumber = generateTicketNumber();
@@ -127,7 +279,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | 1. Save support ticket first
+    | 1. Save Support Ticket First
     |--------------------------------------------------------------------------
     */
 
@@ -175,12 +327,19 @@ try {
         $sourcePage
     );
 
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        $error = $stmt->error;
+        $stmt->close();
+
+        throw new Exception("Support ticket insert failed: " . $error);
+    }
+
     $ticketId = $conn->insert_id;
+    $stmt->close();
 
     /*
     |--------------------------------------------------------------------------
-    | 2. Prepare safe email values
+    | 2. Prepare Safe Email Values
     |--------------------------------------------------------------------------
     */
 
@@ -208,7 +367,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | 3. Create admin notification email job
+    | 3. Admin Notification Email
     |--------------------------------------------------------------------------
     */
 
@@ -232,16 +391,16 @@ try {
                 <h3 style='margin-bottom:8px;'>User Details</h3>
                 <p><strong>Name:</strong> {$safeFirstName} {$safeLastName}</p>
                 <p><strong>Email:</strong> {$safeEmail}</p>
-                <p><strong>Phone:</strong> {$safePhone}</p>
+                <p><strong>Phone:</strong> " . ($safePhone ?: "Not provided") . "</p>
 
                 <hr style='border:none; border-top:1px solid #eee; margin:20px 0;'>
 
                 <h3 style='margin-bottom:8px;'>Issue Details</h3>
                 <p><strong>Issue Type:</strong> {$safeIssueType}</p>
                 <p><strong>Issue Title:</strong> {$safeIssueTitle}</p>
-                <p><strong>Related Order ID:</strong> {$safeRelatedOrderId}</p>
-                <p><strong>Related Restaurant ID:</strong> {$safeRelatedRestaurantId}</p>
-                <p><strong>Related Rider ID:</strong> {$safeRelatedRiderId}</p>
+                <p><strong>Related Order ID:</strong> " . ($safeRelatedOrderId ?: "Not provided") . "</p>
+                <p><strong>Related Restaurant ID:</strong> " . ($safeRelatedRestaurantId ?: "Not provided") . "</p>
+                <p><strong>Related Rider ID:</strong> " . ($safeRelatedRiderId ?: "Not provided") . "</p>
 
                 <hr style='border:none; border-top:1px solid #eee; margin:20px 0;'>
 
@@ -251,19 +410,9 @@ try {
         </div>
     ";
 
-    insertEmailQueue(
-        $conn,
-        $ticketId,
-        $adminEmail,
-        $adminName,
-        $adminSubject,
-        $adminEmailBody,
-        "admin_notification"
-    );
-
     /*
     |--------------------------------------------------------------------------
-    | 4. Create user confirmation email job
+    | 4. Customer Confirmation Email
     |--------------------------------------------------------------------------
     */
 
@@ -312,7 +461,33 @@ try {
         </div>
     ";
 
-    insertEmailQueue(
+    /*
+    |--------------------------------------------------------------------------
+    | 5. Commit Ticket Before Sending Emails
+    |--------------------------------------------------------------------------
+    */
+
+    $conn->commit();
+
+    /*
+    |--------------------------------------------------------------------------
+    | 6. Send Emails Immediately
+    |--------------------------------------------------------------------------
+    | Done after commit so ticket is saved even if email fails.
+    |--------------------------------------------------------------------------
+    */
+
+    $adminEmailSent = insertEmailQueue(
+        $conn,
+        $ticketId,
+        $adminEmail,
+        $adminName,
+        $adminSubject,
+        $adminEmailBody,
+        "admin_notification"
+    );
+
+    $customerEmailSent = insertEmailQueue(
         $conn,
         $ticketId,
         $email,
@@ -322,23 +497,33 @@ try {
         "user_confirmation"
     );
 
-    /*
-    |--------------------------------------------------------------------------
-    | 5. Commit and return response fast
-    |--------------------------------------------------------------------------
-    */
-
-    $conn->commit();
+    updateSupportTicketEmailStatus(
+        $conn,
+        $ticketId,
+        $adminEmailSent,
+        $customerEmailSent
+    );
 
     echo json_encode([
         "success" => true,
         "message" => "Your message has been submitted successfully.",
         "ticket_number" => $ticketNumber,
         "priority" => $priority,
-        "email_status" => "queued"
+        "email_status" => [
+            "admin_notification" => $adminEmailSent ? "sent" : "failed",
+            "user_confirmation" => $customerEmailSent ? "sent" : "failed"
+        ]
     ]);
-} catch (Exception $e) {
-    $conn->rollback();
+} catch (Throwable $e) {
+    if ($conn && $conn->errno === 0) {
+        // no-op; prevents accidental rollback error after commit
+    }
+
+    try {
+        $conn->rollback();
+    } catch (Throwable $rollbackError) {
+        // Ignore rollback errors if transaction already committed.
+    }
 
     echo json_encode([
         "success" => false,
@@ -346,3 +531,4 @@ try {
         "error" => $e->getMessage()
     ]);
 }
+?>

@@ -613,3 +613,16 @@ body:has(.orders-main-header) .fab {
     width: 100%;
   }
 }
+.owner-order-icon {
+  width: 140px;
+  min-width: 140px;
+  height: 140px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fff1ec, #f5f7fb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ef3b36;
+  font-size: 34px;
+  border: 1px solid rgba(239, 59, 54, 0.12);
+}

@@ -1,21 +1,37 @@
 // ══════════════════════════
 // shop.js
-// Final stable version - no recursive favorite bug
+// FoodExpress Nepal currency version
 // ══════════════════════════
 
-console.log("NEW SHOP JS LOADED - STABLE VERSION");
+console.log("[shop.js] Loaded - Nepal Rs currency version");
 
 let allProducts = [];
-const SHOP_FAVORITES_KEY = 'foodDeliveryFavorites';
-const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80';
+const SHOP_FAVORITES_KEY = "foodDeliveryFavorites";
+const DEFAULT_IMAGE =
+  "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80";
 
-// ---------- FAVORITES ----------
+/* ===============================
+   MONEY FORMAT
+================================ */
+
+function formatNpr(amount) {
+  const value = Number(amount || 0);
+
+  return `Rs. ${value.toLocaleString("en-NP", {
+    maximumFractionDigits: 0,
+  })}`;
+}
+
+/* ===============================
+   FAVORITES
+================================ */
+
 function shopGetFavoriteIds() {
   try {
-    const stored = JSON.parse(localStorage.getItem(SHOP_FAVORITES_KEY) || '[]');
+    const stored = JSON.parse(localStorage.getItem(SHOP_FAVORITES_KEY) || "[]");
     return Array.isArray(stored) ? stored.map(String) : [];
   } catch (error) {
-    console.error('Failed to parse favorites:', error);
+    console.error("Failed to parse favorites:", error);
     return [];
   }
 }
@@ -26,14 +42,18 @@ function shopSaveFavoriteIds(ids) {
 }
 
 function shopIsFavorite(productId) {
-  return shopGetFavoriteIds().includes(String(productId || ''));
+  return shopGetFavoriteIds().includes(String(productId || ""));
 }
 
 function shopRenderFavoriteButton(btn, isActive) {
   if (!btn) return;
-  btn.textContent = isActive ? '♥' : '♡';
-  btn.classList.toggle('liked', isActive);
-  btn.style.color = isActive ? '#e53935' : '';
+
+  btn.innerHTML = isActive
+    ? `<i class="fa-solid fa-heart"></i>`
+    : `<i class="fa-regular fa-heart"></i>`;
+
+  btn.classList.toggle("liked", isActive);
+  btn.style.color = isActive ? "#e53935" : "";
 }
 
 function shopToggleFavorite(productId, btn) {
@@ -54,45 +74,52 @@ function shopToggleFavorite(productId, btn) {
   shopRenderFavoriteButton(btn, willBeActive);
 }
 
-// ---------- INIT ----------
-document.addEventListener('DOMContentLoaded', async () => {
+/* ===============================
+   INIT
+================================ */
+
+document.addEventListener("DOMContentLoaded", async () => {
   await loadProducts();
 
-  const filterBtns = document.querySelectorAll('.filter-btn');
+  const filterBtns = document.querySelectorAll(".filter-btn");
 
   filterBtns.forEach((btn) => {
-    btn.addEventListener('click', function () {
-      filterBtns.forEach((b) => b.classList.remove('active'));
-      this.classList.add('active');
+    btn.addEventListener("click", function () {
+      filterBtns.forEach((b) => b.classList.remove("active"));
+      this.classList.add("active");
 
       const filter = this.textContent.trim().toLowerCase();
       filterProducts(filter);
     });
   });
 
-  document.addEventListener('click', function (e) {
-    if (e.target.classList.contains('add-to-cart')) {
+  document.addEventListener("click", function (e) {
+    const addButton = e.target.closest(".add-to-cart");
+    if (addButton) {
       e.stopPropagation();
-      handleAddToCart(e.target);
+      handleAddToCart(addButton);
     }
   });
 
-  const contactBtn = document.querySelector('.btn-contact');
+  const contactBtn = document.querySelector(".btn-contact");
   if (contactBtn) {
-    contactBtn.addEventListener('click', () => {
-      alert('📩 Opening contact form...');
+    contactBtn.addEventListener("click", () => {
+      alert("Opening contact form...");
     });
   }
 });
 
-// ---------- LOAD ----------
+/* ===============================
+   LOAD PRODUCTS
+================================ */
+
 async function loadProducts() {
-  const countEl = document.querySelector('.products-count');
+  const countEl = document.querySelector(".products-count");
 
   try {
-    console.log('Loading products...');
+    console.log("[shop.js] Loading products...");
     allProducts = await getAllProducts();
-    console.log('Loaded products:', allProducts);
+    console.log("[shop.js] Loaded products:", allProducts);
 
     if (!Array.isArray(allProducts)) {
       allProducts = [];
@@ -100,32 +127,46 @@ async function loadProducts() {
 
     renderProducts(allProducts);
   } catch (error) {
-    console.error('Error loading products:', error);
+    console.error("[shop.js] Error loading products:", error);
     allProducts = [];
 
-    const grid = document.getElementById('productsGrid');
+    const grid = document.getElementById("productsGrid");
     if (grid) {
-      grid.innerHTML = '<p>Failed to load products.</p>';
+      grid.innerHTML = `
+        <div class="shop-empty-state">
+          <h3>Failed to load products</h3>
+          <p>Please refresh the page or check the product backend.</p>
+        </div>
+      `;
     }
 
     if (countEl) {
-      countEl.textContent = 'Error loading products';
+      countEl.textContent = "Error loading products";
     }
   }
 }
 
-// ---------- RENDER ----------
+/* ===============================
+   RENDER PRODUCTS
+================================ */
+
 function renderProducts(products) {
-  const grid = document.getElementById('productsGrid');
-  const countEl = document.querySelector('.products-count');
+  const grid = document.getElementById("productsGrid");
+  const countEl = document.querySelector(".products-count");
 
   if (!grid) return;
 
-  grid.innerHTML = '';
+  grid.innerHTML = "";
 
   if (!Array.isArray(products) || products.length === 0) {
-    grid.innerHTML = '<p>No products found.</p>';
-    if (countEl) countEl.textContent = 'No items';
+    grid.innerHTML = `
+      <div class="shop-empty-state">
+        <h3>No products found</h3>
+        <p>Try another filter or check if products are available.</p>
+      </div>
+    `;
+
+    if (countEl) countEl.textContent = "No items";
     return;
   }
 
@@ -136,73 +177,89 @@ function renderProducts(products) {
 
   if (countEl) {
     countEl.textContent = `Showing ${products.length} item${
-      products.length !== 1 ? 's' : ''
+      products.length !== 1 ? "s" : ""
     }`;
   }
 
   attachWishlistListeners();
 }
 
-// ---------- CARD ----------
-function createProductCard(product) {
-  const card = document.createElement('div');
-  card.className = 'product-card';
+/* ===============================
+   PRODUCT CARD
+================================ */
 
-  const productId = String(product.id || '');
-  const productName = product.name || 'Unnamed Product';
+function createProductCard(product) {
+  const card = document.createElement("div");
+  card.className = "product-card";
+
+  const productId = String(product.id || "");
+  const productName = product.name || "Unnamed Product";
   const productPrice = Number(product.price || 0);
   const productImage = product.image_url || DEFAULT_IMAGE;
-  const restaurantId = String(product.restaurant_id || '');
+  const restaurantId = String(product.restaurant_id || "");
   const restaurantName =
     product.restaurant_name ||
     product.restaurant ||
     product.restaurant_title ||
-    'Unknown Restaurant';
+    "Unknown Restaurant";
 
   const popularBadge =
     Number(product.is_popular) === 1
-      ? '<span class="popular-badge">Popular</span>'
-      : '';
+      ? `<span class="popular-badge">Popular</span>`
+      : "";
 
   const favoriteActive = shopIsFavorite(productId);
-  const favoriteClass = favoriteActive ? 'liked' : '';
-  const favoriteIcon = favoriteActive ? '♥' : '♡';
+  const favoriteClass = favoriteActive ? "liked" : "";
+  const favoriteIcon = favoriteActive
+    ? `<i class="fa-solid fa-heart"></i>`
+    : `<i class="fa-regular fa-heart"></i>`;
 
   card.innerHTML = `
     <div class="product-img">
       <img
-        src="${productImage}"
+        src="${escapeHtml(productImage)}"
         alt="${escapeHtml(productName)}"
         onerror="this.src='${DEFAULT_IMAGE}'"
       />
       ${popularBadge}
-      <button class="wishlist-btn ${favoriteClass}" data-product-id="${productId}">
+      <button
+        class="wishlist-btn ${favoriteClass}"
+        data-product-id="${escapeHtml(productId)}"
+        type="button"
+        aria-label="Save item"
+      >
         ${favoriteIcon}
       </button>
     </div>
+
     <div class="product-info">
       <div class="product-name">${escapeHtml(productName)}</div>
+
       <div class="product-restaurant" style="font-size:0.95rem;color:#777;margin:6px 0 10px;">
         from ${escapeHtml(restaurantName)}
       </div>
+
       <div class="product-rating">
-        <span class="star">★</span> ${product.rating || 0}
-        <span>(${product.delivery_time || 'N/A'})</span>
+        <span class="star">★</span> ${escapeHtml(product.rating || 0)}
+        <span>(${escapeHtml(product.delivery_time || "N/A")})</span>
       </div>
+
       <div class="product-footer">
-        <span class="product-price">$${productPrice.toFixed(2)}</span>
+        <span class="product-price">${formatNpr(productPrice)}</span>
+
         <button
           class="add-to-cart"
-          data-product-id="${productId}"
+          data-product-id="${escapeHtml(productId)}"
           data-product-name="${escapeHtml(productName)}"
-          data-product-price="${productPrice}"
-          data-product-image="${productImage}"
-          data-restaurant-id="${restaurantId}"
+          data-product-price="${escapeHtml(productPrice)}"
+          data-product-image="${escapeHtml(productImage)}"
+          data-restaurant-id="${escapeHtml(restaurantId)}"
           data-restaurant-name="${escapeHtml(restaurantName)}"
           title="Add to cart"
           type="button"
         >
-          +
+          <i class="fa-solid fa-cart-shopping"></i>
+          Add
         </button>
       </div>
     </div>
@@ -211,27 +268,33 @@ function createProductCard(product) {
   return card;
 }
 
-// ---------- FILTER ----------
+/* ===============================
+   FILTER
+================================ */
+
 function filterProducts(filter) {
   let filtered = [];
 
-  if (filter === 'all items') {
+  if (filter === "all items") {
     filtered = allProducts;
-  } else if (filter === 'popular') {
+  } else if (filter === "popular") {
     filtered = allProducts.filter((p) => Number(p.is_popular) === 1);
   } else {
     filtered = allProducts.filter(
-      (p) => String(p.category || '').toLowerCase() === filter
+      (p) => String(p.category || "").toLowerCase() === filter
     );
   }
 
   renderProducts(filtered);
 }
 
-// ---------- WISHLIST ----------
+/* ===============================
+   WISHLIST
+================================ */
+
 function attachWishlistListeners() {
-  document.querySelectorAll('.wishlist-btn').forEach((btn) => {
-    btn.addEventListener('click', function (e) {
+  document.querySelectorAll(".wishlist-btn").forEach((btn) => {
+    btn.addEventListener("click", function (e) {
       e.stopPropagation();
 
       const productId = this.dataset.productId;
@@ -242,9 +305,12 @@ function attachWishlistListeners() {
   });
 }
 
-// ---------- CART ----------
+/* ===============================
+   CART
+================================ */
+
 function handleAddToCart(btn) {
-  if (!btn || btn.classList.contains('adding')) return;
+  if (!btn || btn.classList.contains("adding")) return;
 
   const product = {
     id: btn.dataset.productId,
@@ -253,57 +319,60 @@ function handleAddToCart(btn) {
     image_url: btn.dataset.productImage || DEFAULT_IMAGE,
     quantity: 1,
     restaurant_id: btn.dataset.restaurantId,
-    restaurant_name: btn.dataset.restaurantName || 'Unknown Restaurant'
+    restaurant_name: btn.dataset.restaurantName || "Unknown Restaurant",
   };
 
   if (!product.id) {
-    alert('Product ID is missing.');
-    console.error('Missing product id:', product);
+    alert("Product ID is missing.");
+    console.error("Missing product id:", product);
     return;
   }
 
   if (!product.restaurant_id) {
-    alert('This item cannot be added because restaurant information is missing.');
-    console.error('Missing restaurant_id for product:', product);
+    alert("This item cannot be added because restaurant information is missing.");
+    console.error("Missing restaurant_id for product:", product);
     return;
   }
 
-  btn.classList.add('adding');
-  const originalText = btn.textContent;
+  btn.classList.add("adding");
+  const originalHTML = btn.innerHTML;
 
-  btn.textContent = '✓';
-  btn.style.background = '#22c55e';
-  btn.style.transform = 'scale(1.15)';
+  btn.innerHTML = `<i class="fa-solid fa-check"></i> Added`;
+  btn.style.background = "#22c55e";
+  btn.style.transform = "scale(1.05)";
 
   try {
-    if (typeof addItemToCart === 'function') {
+    if (typeof addItemToCart === "function") {
       const added = addItemToCart(product);
 
       if (!added) {
-        throw new Error('addItemToCart returned false');
+        throw new Error("addItemToCart returned false");
       }
     } else {
-      throw new Error('addItemToCart is not available');
+      throw new Error("addItemToCart is not available");
     }
   } catch (error) {
-    console.error('Failed to add item to cart:', error);
-    alert('Failed to add item to cart.');
+    console.error("Failed to add item to cart:", error);
+    alert("Failed to add item to cart.");
   }
 
   setTimeout(() => {
-    btn.textContent = originalText;
-    btn.style.background = '';
-    btn.style.transform = '';
-    btn.classList.remove('adding');
-  }, 1000);
+    btn.innerHTML = originalHTML;
+    btn.style.background = "";
+    btn.style.transform = "";
+    btn.classList.remove("adding");
+  }, 900);
 }
 
-// ---------- UTILS ----------
+/* ===============================
+   UTILS
+================================ */
+
 function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }

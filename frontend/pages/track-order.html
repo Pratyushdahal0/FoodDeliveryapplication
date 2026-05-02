@@ -5,14 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Track Order - FoodExpress</title>
 
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/track-order.css" />
+    <style>
+      .track-action-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 22px;
+        background: rgba(15, 23, 42, 0.48);
+        backdrop-filter: blur(10px);
+      }
+
+      .track-action-modal.show {
+        display: flex;
+        animation: trackModalFade 0.22s ease;
+      }
+
+      .track-action-box {
+        width: min(420px, 100%);
+        border-radius: 28px;
+        background: #fff;
+        padding: 30px;
+        text-align: center;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+      }
+
+      .track-action-icon {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 18px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #dcfce7;
+        color: #16a34a;
+        font-size: 30px;
+      }
+
+      .track-action-icon.warning {
+        background: #fff7ed;
+        color: #f97316;
+      }
+
+      .track-action-box h3 {
+        margin: 0 0 10px;
+        color: #111827;
+        font-size: 1.45rem;
+        font-weight: 900;
+      }
+
+      .track-action-box p {
+        margin: 0;
+        color: #6b7280;
+        line-height: 1.55;
+        font-weight: 600;
+      }
+
+      @keyframes trackModalFade {
+        from {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 1;
+        }
+      }
+    </style>
   </head>
 
   <body>
     <div id="navbarContainer"></div>
+    <div id="trackActionModal" class="track-action-modal">
+      <div class="track-action-box">
+        <div id="trackActionIcon" class="track-action-icon">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h3 id="trackActionTitle">Done</h3>
+        <p id="trackActionMessage">Action completed successfully.</p>
+      </div>
+    </div>
 
     <main class="track-shell">
       <section id="emptyOrderState" class="empty-order">
@@ -294,24 +377,58 @@
 
     <footer class="footer" id="footer"></footer>
 
-    <script src="../js/profile.js"></script>
-    <script src="../js/shared.js"></script>
-    <script src="../js/modules/cart.js"></script>
-    <script src="../js/components/notifications.js"></script>
-    <script src="../js/components/navbar.js"></script>
-    <script src="../js/reward.js"></script>
-    <script src="../js/track-order.js"></script>
+    <script src="../js/profile.js?v=profile1"></script>
+    <script src="../js/shared.js?v=shared1"></script>
+    <script src="../js/modules/cart.js?v=cartstable1"></script>
+    <script src="../js/components/notifications.js?v=routefix3"></script>
+    <script src="../js/components/navbar.js?v=navtrack2"></script>
+    <script src="../js/reward.js?v=reward1"></script>
+    <script src="../js/track-order.js?v=trackmodal1"></script>
     <script src="../js/components/footer.js"></script>
 
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
+      function initTrackNavbar(attempt = 0) {
+        const container = document.getElementById("navbarContainer");
+        if (!container) return;
+
         if (typeof window.renderNavbar === "function") {
           window.renderNavbar("track");
+        } else if (typeof window.getLoggedInNavbar === "function") {
+          container.innerHTML = window.getLoggedInNavbar("track");
         }
 
+        if (!container.innerHTML.trim() && attempt < 15) {
+          setTimeout(function () {
+            initTrackNavbar(attempt + 1);
+          }, 100);
+          return;
+        }
+
+        if (typeof window.initializeCartCount === "function") {
+          window.initializeCartCount();
+        }
+
+        if (typeof window.bindNotificationBell === "function") {
+          window.bindNotificationBell();
+        }
+      }
+
+      function initTrackFooter(attempt = 0) {
         if (typeof window.renderFooter === "function") {
           window.renderFooter("none");
+          return;
         }
+
+        if (attempt < 10) {
+          setTimeout(function () {
+            initTrackFooter(attempt + 1);
+          }, 100);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initTrackNavbar();
+        initTrackFooter();
       });
     </script>
   </body>

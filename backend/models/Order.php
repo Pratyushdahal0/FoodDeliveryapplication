@@ -9,6 +9,112 @@ class Order {
         $this->conn = $db;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Realistic FoodExpress pricing helpers
+    |--------------------------------------------------------------------------
+    | Beta rule for Nepal market:
+    | Subtotal under Rs. 500   => Rs. 50 delivery
+    | Subtotal Rs. 500-999     => Rs. 30 delivery
+    | Subtotal Rs. 1000-1499   => Rs. 20 delivery
+    | Subtotal Rs. 1500+       => Free delivery
+    */
+
+    private function calculateDeliveryFee($subtotal) {
+        $amount = floatval($subtotal);
+
+        if ($amount <= 0) {
+            return 0.00;
+        }
+
+        if ($amount >= 1500) {
+            return 0.00;
+        }
+
+        if ($amount >= 1000) {
+            return 20.00;
+        }
+
+        if ($amount >= 500) {
+            return 30.00;
+        }
+
+        return 50.00;
+    }
+
+    private function calculateTax($subtotal) {
+        return round(floatval($subtotal) * 0.10, 2);
+    }
+
+    private function normalizeDeliveryFee($subtotal, $providedDeliveryFee = null) {
+        $calculatedDeliveryFee = $this->calculateDeliveryFee($subtotal);
+
+        if ($providedDeliveryFee === null || $providedDeliveryFee === '') {
+            return $calculatedDeliveryFee;
+        }
+
+        $providedDeliveryFee = floatval($providedDeliveryFee);
+
+        /*
+          Protect backend from old demo frontend values.
+          If old frontend sends Rs. 5.00 or Rs. 0.00 for an order that should
+          have a real delivery fee, backend recalculates it.
+        */
+        if ($calculatedDeliveryFee > 0 && $providedDeliveryFee <= 5) {
+            return $calculatedDeliveryFee;
+        }
+
+        if ($providedDeliveryFee < 0) {
+            return $calculatedDeliveryFee;
+        }
+
+        return round($providedDeliveryFee, 2);
+    }
+
+    private function normalizeTax($subtotal, $providedTax = null) {
+        if ($providedTax === null || $providedTax === '') {
+            return $this->calculateTax($subtotal);
+        }
+
+        $providedTax = floatval($providedTax);
+
+        if ($providedTax <= 0 && floatval($subtotal) > 0) {
+            return $this->calculateTax($subtotal);
+        }
+
+        return round($providedTax, 2);
+    }
+
+    private function calculateFinalTotal($subtotal, $tax, $deliveryFee, $discountAmount = 0) {
+        $total = floatval($subtotal) + floatval($tax) + floatval($deliveryFee) - floatval($discountAmount);
+        return round(max(0, $total), 2);
+    }
+
+    // Get rider's current active delivery
+    public function getActiveDeliveryByRider($rider_id) {
+        $query = "SELECT *
+                  FROM " . $this->table . "
+                  WHERE rider_id = ?
+                  AND delivery_status IN ('assigned', 'picked_up', 'on_the_way')
+                  AND status != 'delivered'
+                  ORDER BY updated_at DESC, created_at DESC
+                  LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+
+        if (!$stmt) return null;
+
+        $stmt->bind_param("i", $rider_id);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        $order = $result ? $result->fetch_assoc() : null;
+
+        $stmt->close();
+
+        return $order ?: null;
+    }
+
     // Create a new order
     public function create($data) {
         try {
@@ -22,23 +128,73 @@ class Order {
                 ? intval($data['restaurant_id'])
                 : 0;
 
-            // Restaurant/kitchen status
             $status = isset($data['status']) && $data['status'] !== ''
                 ? $data['status']
                 : 'pending';
 
-            // Rider/delivery status starts immediately after customer places order
             $delivery_status = isset($data['delivery_status']) && $data['delivery_status'] !== ''
                 ? $data['delivery_status']
                 : 'searching';
 
-            $notes = isset($data['notes']) ? $data['notes'] : null;
-            $subtotal = isset($data['subtotal']) ? floatval($data['subtotal']) : 0;
-            $tax = isset($data['tax']) ? floatval($data['tax']) : 0;
-            $delivery_fee = isset($data['delivery_fee']) ? floatval($data['delivery_fee']) : 5.00;
-            $total = isset($data['total']) ? floatval($data['total']) : 0;
+            $notes = isset($data['notes'])
+                ? $data['notes']
+                : (isset($data['delivery_note']) ? $data['delivery_note'] : null);
 
-            $customer_email = isset($data['customer_email']) ? trim($data['customer_email']) : null;
+            $subtotal = isset($data['subtotal']) ? round(floatval($data['subtotal']), 2) : 0.00;
+
+            $tax = $this->normalizeTax(
+                $subtotal,
+                isset($data['tax']) ? $data['tax'] : null
+            );
+
+            $delivery_fee = $this->normalizeDeliveryFee(
+                $subtotal,
+                isset($data['delivery_fee']) ? $data['delivery_fee'] : null
+            );
+
+            $discount_amount = isset($data['discount_amount'])
+                ? floatval($data['discount_amount'])
+                : 0.00;
+
+            /*
+              Backend becomes the final source of truth for totals.
+              This prevents old frontend values like Rs. 5 delivery fee from
+              being saved accidentally.
+            */
+            $total = $this->calculateFinalTotal(
+                $subtotal,
+                $tax,
+                $delivery_fee,
+                $discount_amount
+            );
+
+            $customer_email = isset($data['customer_email'])
+                ? trim($data['customer_email'])
+                : null;
+
+            $customer_name = isset($data['customer_name'])
+                ? trim($data['customer_name'])
+                : 'Guest User';
+
+            $phone_number = isset($data['phone_number'])
+                ? trim($data['phone_number'])
+                : '';
+
+            $address = isset($data['address'])
+                ? trim($data['address'])
+                : '';
+
+            $city = isset($data['city'])
+                ? trim($data['city'])
+                : '';
+
+            $postal_code = isset($data['postal_code'])
+                ? trim($data['postal_code'])
+                : '';
+
+            $payment_method = isset($data['payment_method'])
+                ? trim($data['payment_method'])
+                : 'cash';
 
             $query = "INSERT INTO " . $this->table . "
                       (
@@ -77,13 +233,13 @@ class Order {
                 $order_number,
                 $user_id,
                 $restaurant_id,
-                $data['customer_name'],
+                $customer_name,
                 $customer_email,
-                $data['phone_number'],
-                $data['address'],
-                $data['city'],
-                $data['postal_code'],
-                $data['payment_method'],
+                $phone_number,
+                $address,
+                $city,
+                $postal_code,
+                $payment_method,
                 $subtotal,
                 $tax,
                 $delivery_fee,
@@ -103,6 +259,10 @@ class Order {
                     'order_number' => $order_number,
                     'status' => $status,
                     'delivery_status' => $delivery_status,
+                    'subtotal' => $subtotal,
+                    'tax' => $tax,
+                    'delivery_fee' => $delivery_fee,
+                    'total' => $total,
                     'message' => 'Order created successfully'
                 ];
             }
@@ -137,10 +297,13 @@ class Order {
 
         foreach ($items as $item) {
             $product_id = isset($item['id']) ? intval($item['id']) : 0;
-            $product_name = isset($item['name']) ? strval($item['name']) : '';
+            $product_name = isset($item['name'])
+                ? strval($item['name'])
+                : (isset($item['product_name']) ? strval($item['product_name']) : 'Food Item');
+
             $quantity = isset($item['quantity']) ? intval($item['quantity']) : 1;
             $price = isset($item['price']) ? floatval($item['price']) : 0;
-            $subtotal = $price * $quantity;
+            $subtotal = round($price * $quantity, 2);
 
             $stmt->bind_param(
                 "iisidd",
@@ -244,7 +407,10 @@ class Order {
 
     // Update restaurant/kitchen order status
     public function updateStatus($order_id, $status) {
-        $query = "UPDATE " . $this->table . " SET status = ? WHERE id = ?";
+        $query = "UPDATE " . $this->table . "
+                  SET status = ?, updated_at = NOW()
+                  WHERE id = ?";
+
         $stmt = $this->conn->prepare($query);
 
         if (!$stmt) return false;
@@ -259,35 +425,64 @@ class Order {
 
     // Update rider/delivery status
     public function updateDeliveryStatus($order_id, $delivery_status) {
+        $allowed = ['searching', 'assigned', 'picked_up', 'on_the_way', 'delivered'];
+
+        if (!in_array($delivery_status, $allowed, true)) {
+            return false;
+        }
+
         $timestampColumn = null;
+        $mainStatus = null;
 
         if ($delivery_status === 'assigned') {
             $timestampColumn = 'rider_assigned_at';
         } elseif ($delivery_status === 'picked_up') {
             $timestampColumn = 'picked_up_at';
+            $mainStatus = 'picked_up';
         } elseif ($delivery_status === 'on_the_way') {
             $timestampColumn = 'on_the_way_at';
+            $mainStatus = 'on_the_way';
         } elseif ($delivery_status === 'delivered') {
             $timestampColumn = 'delivered_at';
+            $mainStatus = 'delivered';
         }
 
-        if ($timestampColumn) {
+        if ($mainStatus && $timestampColumn) {
             $query = "UPDATE " . $this->table . "
-                      SET delivery_status = ?, $timestampColumn = NOW()
+                      SET 
+                        delivery_status = ?,
+                        status = ?,
+                        $timestampColumn = NOW(),
+                        updated_at = NOW()
+                      WHERE id = ?";
+        } elseif ($timestampColumn) {
+            $query = "UPDATE " . $this->table . "
+                      SET 
+                        delivery_status = ?,
+                        $timestampColumn = NOW(),
+                        updated_at = NOW()
                       WHERE id = ?";
         } else {
             $query = "UPDATE " . $this->table . "
-                      SET delivery_status = ?
+                      SET 
+                        delivery_status = ?,
+                        updated_at = NOW()
                       WHERE id = ?";
         }
 
         $stmt = $this->conn->prepare($query);
 
-        if (!$stmt) return false;
+        if (!$stmt) {
+            return false;
+        }
 
-        $stmt->bind_param("si", $delivery_status, $order_id);
+        if ($mainStatus && $timestampColumn) {
+            $stmt->bind_param("ssi", $delivery_status, $mainStatus, $order_id);
+        } else {
+            $stmt->bind_param("si", $delivery_status, $order_id);
+        }
+
         $success = $stmt->execute();
-
         $stmt->close();
 
         return $success;
@@ -304,7 +499,8 @@ class Order {
                     rider_name = ?,
                     rider_email = ?,
                     rider_phone = ?,
-                    rider_assigned_at = NOW()
+                    rider_assigned_at = NOW(),
+                    updated_at = NOW()
                   WHERE id = ?
                   AND delivery_status IN ('searching', 'assigned')";
 
@@ -336,12 +532,15 @@ class Order {
                   SET
                     status = 'delivered',
                     delivery_status = 'delivered',
-                    delivered_at = NOW()
+                    delivered_at = NOW(),
+                    updated_at = NOW()
                   WHERE id = ?";
 
         $stmt = $this->conn->prepare($query);
 
-        if (!$stmt) return false;
+        if (!$stmt) {
+            return false;
+        }
 
         $stmt->bind_param("i", $order_id);
         $success = $stmt->execute();
@@ -376,9 +575,13 @@ class Order {
     // Get available deliveries for rider
     public function getAvailableDeliveries($limit = 50) {
         /*
-          Real-world flow:
-          Rider can accept early once order exists and delivery_status is searching.
-          Restaurant still controls when food is ready for pickup.
+          Current beta flow:
+          Rider can see orders that are still searching for a rider,
+          as long as the order is not cancelled or delivered.
+
+          Later real-world upgrade:
+          We can decide whether riders should see orders only after
+          ready_for_pickup or earlier while the restaurant is preparing.
         */
         $query = "SELECT *
                   FROM " . $this->table . "
@@ -437,7 +640,10 @@ class Order {
 
     // Get total sales
     public function getTotalSales() {
-        $query = "SELECT SUM(total) as total_sales FROM " . $this->table . " WHERE status != 'cancelled'";
+        $query = "SELECT SUM(total) as total_sales
+                  FROM " . $this->table . "
+                  WHERE status != 'cancelled'";
+
         $stmt = $this->conn->prepare($query);
 
         if (!$stmt) return 0;
@@ -475,6 +681,7 @@ class Order {
         $query = "SELECT COUNT(*) as total_orders
                   FROM " . $this->table . "
                   WHERE restaurant_id = ?";
+
         $stmt = $this->conn->prepare($query);
 
         if (!$stmt) return 0;
@@ -495,6 +702,7 @@ class Order {
                   FROM " . $this->table . "
                   WHERE restaurant_id = ?
                   AND status != 'cancelled'";
+
         $stmt = $this->conn->prepare($query);
 
         if (!$stmt) return 0;
@@ -511,14 +719,11 @@ class Order {
     }
 
     public function getActiveOrdersByRestaurant($restaurantId) {
-        /*
-          Restaurant active means kitchen/restaurant work only.
-          Delivery movement is handled by delivery_status.
-        */
         $query = "SELECT COUNT(*) as active_orders
                   FROM " . $this->table . "
                   WHERE restaurant_id = ?
                   AND status IN ('confirmed', 'preparing', 'ready_for_pickup')";
+
         $stmt = $this->conn->prepare($query);
 
         if (!$stmt) return 0;
@@ -539,6 +744,7 @@ class Order {
                   FROM " . $this->table . "
                   WHERE restaurant_id = ?
                   AND status = 'pending'";
+
         $stmt = $this->conn->prepare($query);
 
         if (!$stmt) return 0;
@@ -560,6 +766,7 @@ class Order {
                   WHERE restaurant_id = ?
                   AND status != 'cancelled'
                   AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)";
+
         $stmt = $this->conn->prepare($query);
 
         if (!$stmt) return 0;
@@ -589,6 +796,7 @@ class Order {
                   WHERE restaurant_id = ?
                   ORDER BY created_at DESC
                   LIMIT ?";
+
         $stmt = $this->conn->prepare($query);
 
         if (!$stmt) return [];
