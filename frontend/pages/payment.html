@@ -959,7 +959,7 @@
       }
 
       .checkout-redirect-fill.animate {
-        animation: checkoutRedirectFill 1.8s linear forwards;
+        animation: checkoutRedirectFill 5s linear forwards;
       }
 
       .checkout-secure-note {
@@ -2663,7 +2663,7 @@
             window.location.href = `track-order.html?order=${encodeURIComponent(
               newOrder.orderNumber,
             )}`;
-          }, 2500);
+          }, 5000);
         } catch (error) {
           console.error("Order placement failed:", error);
           hideCheckoutStatusModal();
