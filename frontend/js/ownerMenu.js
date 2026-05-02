@@ -67,7 +67,7 @@ function renderMenu(items) {
     const imageUrl =
       item.image_url && item.image_url.trim() !== ""
         ? item.image_url
-        : "https://via.placeholder.com/400x300?text=No+Image";
+        : "https://via.placeholder.com/400x300?text=FoodExpress";
 
     card.innerHTML = `
       <div class="card-img-wrap">

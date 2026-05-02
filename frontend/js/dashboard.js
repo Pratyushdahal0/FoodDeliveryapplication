@@ -1,12 +1,20 @@
-console.log("[dashboard.js] Loaded - premium dashboard fixed");
+console.log("[dashboard.js] Loaded - final premium real-world customer dashboard");
 
 const ORDER_HISTORY_KEY = "foodExpressOrders";
-const NOTIFICATION_PREF_KEY = "foodExpressNotificationsEnabled";
 const DASHBOARD_PREFS_KEY = "foodExpressDashboardPrefs";
 const REWARDS_STORAGE_KEY = "foodexpressRewards";
+const CART_ITEMS_KEY = "foodDeliveryCartItems";
+const CART_COUNT_KEY = "foodDeliveryCartCount";
 
 const DASHBOARD_DEFAULT_IMAGE =
-  "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80";
+  "data:image/svg+xml;charset=UTF-8," +
+  encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120">
+      <rect width="100%" height="100%" rx="18" fill="#fff1f2"/>
+      <text x="50%" y="48%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#ef4444">Food</text>
+      <text x="50%" y="63%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#ef4444">Express</text>
+    </svg>
+  `);
 
 let allOrdersCache = [];
 let showAllOrders = false;
@@ -21,17 +29,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   restoreDashboardPrefs();
-  loadDashboardStats();
   setupTabs();
   setupDashboardActions();
-  updateRewardsUI();
 
   await refreshDashboardData();
 
-  // Delayed sync because navbar/profile/rewards may render after dashboard.
+  loadDashboardStats();
+  updateRewardsUI();
+  bindDashboardProfileInfo();
+
   setTimeout(() => {
     bindDashboardProfileInfo();
     updateRewardsUI();
+    loadDashboardStats();
 
     if (typeof window.bindProfileEverywhere === "function") {
       window.bindProfileEverywhere();
@@ -47,6 +57,7 @@ window.addEventListener("foodExpressProfileUpdated", async () => {
   bindDashboardProfileInfo();
   updateRewardsUI();
   await refreshDashboardData();
+  loadDashboardStats();
 });
 
 window.addEventListener("foodExpressRewardsUpdated", () => {
@@ -54,7 +65,7 @@ window.addEventListener("foodExpressRewardsUpdated", () => {
   loadDashboardStats();
 });
 
-window.addEventListener("storage", (event) => {
+window.addEventListener("storage", async (event) => {
   if (
     event.key === "userProfile" ||
     event.key === "userName" ||
@@ -63,10 +74,13 @@ window.addEventListener("storage", (event) => {
     event.key === "userPoints" ||
     event.key === "foodExpressRewardPoints" ||
     event.key === REWARDS_STORAGE_KEY ||
-    event.key === ORDER_HISTORY_KEY
+    event.key === ORDER_HISTORY_KEY ||
+    event.key === "lastOrder" ||
+    event.key === "latestOrder"
   ) {
     bindDashboardProfileInfo();
     updateRewardsUI();
+    await refreshDashboardData();
     loadDashboardStats();
   }
 });
@@ -83,23 +97,29 @@ async function refreshDashboardData() {
 
 function loadDashboardStats() {
   const profile = getDashboardProfile();
-
   const orders = getSortedOrders();
+
   const totalOrders = orders.length;
-
-  const totalSpent = orders.reduce(
-    (sum, order) => sum + Number(order.total || 0),
-    0,
-  );
-
-  const realisticSavings = Math.floor(totalSpent * 0.08);
+  const realisticSavings = calculateRealisticSavings(orders);
   const points = getCurrentRewardPoints(profile);
 
   setText("ordersCount", totalOrders);
   setText("pointsCount", points);
-  setText("savingsAmount", `$${realisticSavings}`);
+  setText("savingsAmount", formatRs(realisticSavings));
 
   bindDashboardProfileInfo();
+}
+
+function calculateRealisticSavings(orders) {
+  return orders.reduce((sum, order) => {
+    const discount =
+      Number(order.discountAmount || 0) ||
+      Number(order.discount_amount || 0) ||
+      Number(order.couponDiscountAmount || 0) ||
+      0;
+
+    return sum + discount;
+  }, 0);
 }
 
 function bindDashboardProfileInfo() {
@@ -119,7 +139,9 @@ function bindDashboardProfileInfo() {
 
 function updateRewardsUI() {
   const profile = getDashboardProfile();
+  const rewardsData = readJson(REWARDS_STORAGE_KEY, null);
   const points = getCurrentRewardPoints(profile);
+  const pendingPoints = Number(rewardsData?.pendingPoints || 0);
 
   const rewardTiers = [
     { points: 500, label: "5% OFF" },
@@ -131,19 +153,27 @@ function updateRewardsUI() {
   const nextTier = rewardTiers.find((tier) => points < tier.points);
   const finalTier = rewardTiers[rewardTiers.length - 1];
 
-  let targetPoints = nextTier ? nextTier.points : finalTier.points;
-  let progress = Math.min(100, Math.round((points / targetPoints) * 100));
-  let remaining = nextTier ? Math.max(0, nextTier.points - points) : 0;
+  const targetPoints = nextTier ? nextTier.points : finalTier.points;
+  const progress = Math.min(100, Math.round((points / targetPoints) * 100));
+  const remaining = nextTier ? Math.max(0, nextTier.points - points) : 0;
 
   const fill = document.getElementById("rewardsProgressFill");
   if (fill) fill.style.width = `${progress}%`;
 
   setText("rewardsProgressText", `${points} / ${targetPoints} points`);
 
+  if (pendingPoints > 0) {
+    setText(
+      "rewardsSubtitle",
+      `${pendingPoints} pending points will unlock after delivery.`
+    );
+    return;
+  }
+
   if (nextTier) {
     setText(
       "rewardsSubtitle",
-      `You're ${remaining} points away from ${nextTier.label}.`,
+      `You're ${remaining} points away from ${nextTier.label}.`
     );
   } else {
     setText("rewardsSubtitle", "🎉 You unlocked all reward tiers!");
@@ -158,7 +188,7 @@ function getCurrentRewardPoints(profile = {}) {
       profile.points ??
       localStorage.getItem("userPoints") ??
       localStorage.getItem("foodExpressRewardPoints") ??
-      0,
+      0
   );
 }
 
@@ -225,59 +255,40 @@ function renderOrdersList() {
 
   const ordersToShow = showAllOrders ? orders : orders.slice(0, 4);
 
-  list.innerHTML = ordersToShow
-    .map((order, index) => {
-      const count = Number(order.itemCount || countItems(order.items || []));
-      const orderTitle =
-        order.restaurantName ||
-        order.restaurant_name ||
-        order.storeName ||
-        "Restaurant";
+  list.innerHTML = ordersToShow.map(renderDashboardOrderCard).join("");
 
-      const orderId =
-        order.orderNumber || order.orderId || order.id || `ORD-${index + 1}`;
+  list
+    .querySelectorAll(".dashboard-order-track-btn")
+    .forEach((button, visibleIndex) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openTrackingForOrder(ordersToShow[visibleIndex]);
+      });
+    });
 
-      const status = getDisplayOrderStatus(order);
+  list
+    .querySelectorAll(".dashboard-order-reorder-btn")
+    .forEach((button, visibleIndex) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        reorderDashboardOrder(ordersToShow[visibleIndex]);
+      });
+    });
 
-      return `
-        <div class="dashboard-order-item" data-order-index="${index}">
-          <div class="dashboard-order-left">
-            <div class="dashboard-order-title">
-              ${escapeHtml(orderTitle)}
-            </div>
-
-            <div class="dashboard-order-meta">
-              Order #${escapeHtml(String(orderId))} • ${count} item${
-                count !== 1 ? "s" : ""
-              } • ${formatPlacedTime(order.timestamp || order.created_at)}
-            </div>
-          </div>
-
-          <div class="dashboard-order-right">
-            <div class="dashboard-order-total">
-              $${Number(order.total || 0).toFixed(2)}
-            </div>
-
-            <div class="dashboard-order-status status-${escapeHtml(status)}">
-              ${formatStatus(status)}
-            </div>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
+  list
+    .querySelectorAll(".dashboard-order-remove-btn")
+    .forEach((button, visibleIndex) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        showRemoveOrderConfirm(ordersToShow[visibleIndex]);
+      });
+    });
 
   list
     .querySelectorAll(".dashboard-order-item")
     .forEach((itemEl, visibleIndex) => {
       itemEl.addEventListener("click", () => {
-        const selectedOrder = ordersToShow[visibleIndex];
-
-        if (selectedOrder) {
-          localStorage.setItem("lastOrder", JSON.stringify(selectedOrder));
-        }
-
-        window.location.href = "track-order.html";
+        openTrackingForOrder(ordersToShow[visibleIndex]);
       });
     });
 
@@ -294,15 +305,439 @@ function renderOrdersList() {
     : `View All Orders <i class="fa-solid fa-chevron-right"></i>`;
 }
 
-function getDisplayOrderStatus(order = {}) {
-  const deliveryStatus = order.delivery_status || order.deliveryStatus || "";
-  const kitchenStatus = order.status || "pending";
+function renderDashboardOrderCard(order, index) {
+  const count = Number(order.itemCount || countItems(order.items || []));
+  const orderTitle = getOrderRestaurantName(order);
+  const orderNumber = getOrderNumber(order, index);
+  const status = getDisplayOrderStatus(order);
+  const statusMeta = getStatusMeta(status);
+  const primaryItem = getPrimaryOrderItem(order);
+  const placedTime = formatPlacedTime(order.timestamp || order.created_at);
+  const total = Number(order.total || 0);
+  const canReorder = Array.isArray(order.items) && order.items.length > 0;
 
-  if (deliveryStatus && deliveryStatus !== "searching") {
-    return deliveryStatus;
+  return `
+    <div class="dashboard-order-item" data-order-number="${escapeHtml(orderNumber)}">
+      <div class="dashboard-order-media">
+        <img
+          src="${escapeHtml(primaryItem.image)}"
+          alt="${escapeHtml(primaryItem.name)}"
+          onerror="this.src='${DASHBOARD_DEFAULT_IMAGE}'"
+        />
+      </div>
+
+      <div class="dashboard-order-main">
+        <div class="dashboard-order-top">
+          <div>
+            <div class="dashboard-order-title">
+              ${escapeHtml(orderTitle)}
+            </div>
+
+            <div class="dashboard-order-meta">
+              <span>Order #${escapeHtml(orderNumber)}</span>
+              <span>${count} item${count !== 1 ? "s" : ""}</span>
+              <span>${escapeHtml(placedTime)}</span>
+            </div>
+          </div>
+
+          <div class="dashboard-order-total">
+            ${formatRs(total)}
+          </div>
+        </div>
+
+        <div class="dashboard-order-bottom">
+          <div class="dashboard-order-status ${escapeHtml(statusMeta.className)}">
+            <i class="fa-solid ${escapeHtml(statusMeta.icon)}"></i>
+            ${escapeHtml(statusMeta.label)}
+          </div>
+
+          <div class="dashboard-order-actions">
+            <button
+              type="button"
+              class="dashboard-order-track-btn"
+              title="Track this order"
+            >
+              <i class="fa-solid fa-location-dot"></i>
+              Track
+            </button>
+
+            <button
+              type="button"
+              class="dashboard-order-reorder-btn"
+              ${canReorder ? "" : "disabled"}
+              title="Add this order back to cart"
+            >
+              <i class="fa-solid fa-rotate-right"></i>
+              Reorder
+            </button>
+
+            <button
+              type="button"
+              class="dashboard-order-remove-btn"
+              title="Remove from recent orders"
+              aria-label="Remove from recent orders"
+            >
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getOrderRestaurantName(order = {}) {
+  const firstItem = Array.isArray(order.items) ? order.items[0] : null;
+
+  const name =
+    order.restaurantName ||
+    order.restaurant_name ||
+    order.storeName ||
+    order.restaurant ||
+    firstItem?.restaurant_name ||
+    firstItem?.restaurantName ||
+    firstItem?.storeName ||
+    "";
+
+  const cleanName = String(name || "").trim();
+
+  if (
+    cleanName &&
+    cleanName.toLowerCase() !== "restaurant" &&
+    cleanName.toLowerCase() !== "unknown restaurant"
+  ) {
+    return cleanName;
   }
 
-  return kitchenStatus;
+  return "Spicy Grill";
+}
+
+function getOrderNumber(order = {}, index = 0) {
+  return String(
+    order.orderNumber ||
+      order.order_number ||
+      order.orderId ||
+      order.order_id ||
+      order.id ||
+      `ORD-${index + 1}`
+  );
+}
+
+function getPrimaryOrderItem(order = {}) {
+  const items = Array.isArray(order.items) ? order.items : [];
+  const firstItem = items[0] || null;
+
+  const image =
+    firstItem?.image_url ||
+    firstItem?.imageUrl ||
+    firstItem?.image ||
+    firstItem?.photo ||
+    firstItem?.thumbnail ||
+    firstItem?.product_image ||
+    firstItem?.productImage ||
+    order.image_url ||
+    order.image ||
+    order.productImage ||
+    "";
+
+  const name =
+    firstItem?.name ||
+    firstItem?.product_name ||
+    firstItem?.title ||
+    order.itemName ||
+    "Order item";
+
+  return {
+    name,
+    image: image || getSmartFoodFallback(name),
+  };
+}
+
+function getSmartFoodFallback(name = "") {
+  const itemName = String(name || "").toLowerCase();
+
+  if (itemName.includes("pizza")) {
+    return "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=300&q=80";
+  }
+
+  if (itemName.includes("burger")) {
+    return "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&q=80";
+  }
+
+  if (itemName.includes("sushi")) {
+    return "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=300&q=80";
+  }
+
+  if (itemName.includes("momo") || itemName.includes("dumpling")) {
+    return "https://images.unsplash.com/photo-1625220194771-7ebdea0b70b9?w=300&q=80";
+  }
+
+  if (itemName.includes("chicken") || itemName.includes("grill")) {
+    return "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=300&q=80";
+  }
+
+  return "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=300&q=80";
+}
+
+function getDisplayOrderStatus(order = {}) {
+  const deliveryStatus = String(
+    order.delivery_status || order.deliveryStatus || ""
+  )
+    .toLowerCase()
+    .trim();
+
+  const kitchenStatus = String(order.status || "pending").toLowerCase().trim();
+
+  if (deliveryStatus === "delivered") return "delivered";
+  if (deliveryStatus === "on_the_way") return "on_the_way";
+  if (deliveryStatus === "picked_up") return "picked_up";
+  if (deliveryStatus === "assigned") return "rider_assigned";
+  if (deliveryStatus === "accepted") return "rider_assigned";
+
+  if (kitchenStatus === "ready_for_pickup") return "ready_for_pickup";
+  if (kitchenStatus === "preparing") return "preparing";
+  if (kitchenStatus === "confirmed") return "confirmed";
+
+  if (kitchenStatus === "cancelled" || kitchenStatus === "canceled") {
+    return "cancelled";
+  }
+
+  return "pending";
+}
+
+function getStatusMeta(status = "pending") {
+  const clean = String(status || "pending").toLowerCase().trim();
+
+  const map = {
+    pending: {
+      label: "Order received",
+      className: "status-pending",
+      icon: "fa-clock",
+    },
+    confirmed: {
+      label: "Restaurant confirmed",
+      className: "status-confirmed",
+      icon: "fa-circle-check",
+    },
+    preparing: {
+      label: "Preparing now",
+      className: "status-preparing",
+      icon: "fa-utensils",
+    },
+    ready_for_pickup: {
+      label: "Ready for pickup",
+      className: "status-ready",
+      icon: "fa-bag-shopping",
+    },
+    searching: {
+      label: "Finding rider",
+      className: "status-searching",
+      icon: "fa-motorcycle",
+    },
+    rider_assigned: {
+      label: "Rider assigned",
+      className: "status-rider",
+      icon: "fa-motorcycle",
+    },
+    assigned: {
+      label: "Rider assigned",
+      className: "status-rider",
+      icon: "fa-motorcycle",
+    },
+    accepted: {
+      label: "Rider accepted",
+      className: "status-rider",
+      icon: "fa-motorcycle",
+    },
+    picked_up: {
+      label: "Picked up",
+      className: "status-picked",
+      icon: "fa-bag-shopping",
+    },
+    on_the_way: {
+      label: "On the way",
+      className: "status-way",
+      icon: "fa-route",
+    },
+    delivered: {
+      label: "Delivered",
+      className: "status-delivered",
+      icon: "fa-circle-check",
+    },
+    cancelled: {
+      label: "Cancelled",
+      className: "status-cancelled",
+      icon: "fa-ban",
+    },
+    canceled: {
+      label: "Cancelled",
+      className: "status-cancelled",
+      icon: "fa-ban",
+    },
+  };
+
+  return map[clean] || map.pending;
+}
+
+function openTrackingForOrder(order) {
+  if (!order) return;
+
+  const orderNumber = getOrderNumber(order);
+
+  localStorage.setItem("lastOrder", JSON.stringify(order));
+  localStorage.setItem("latestOrder", JSON.stringify(order));
+
+  window.location.href = `track-order.html?order=${encodeURIComponent(
+    orderNumber
+  )}`;
+}
+
+function reorderDashboardOrder(order) {
+  if (!order || !Array.isArray(order.items) || !order.items.length) {
+    showDashboardToast(
+      "No saved items",
+      "This order does not have saved items available for reorder.",
+      "warning"
+    );
+    return;
+  }
+
+  const restaurantId = String(order.restaurantId || order.restaurant_id || "");
+
+  const items = order.items.map((item) => ({
+    id: String(item.id || item.product_id || ""),
+    name: item.name || item.product_name || "Unnamed item",
+    price: Number(item.price || item.unit_price || 0),
+    image_url: item.image_url || item.image || "",
+    quantity: Number(item.quantity || 1),
+    restaurant_id: String(item.restaurant_id || restaurantId),
+    restaurant_name:
+      item.restaurant_name ||
+      item.restaurantName ||
+      getOrderRestaurantName(order),
+  }));
+
+  localStorage.setItem(CART_ITEMS_KEY, JSON.stringify(items));
+
+  const count = items.reduce(
+    (sum, item) => sum + Number(item.quantity || 0),
+    0
+  );
+
+  localStorage.setItem(CART_COUNT_KEY, String(count));
+
+  if (typeof window.updateCartCount === "function") {
+    window.updateCartCount();
+  }
+
+  window.dispatchEvent(new CustomEvent("foodexpress:cart-updated"));
+
+  showDashboardToast(
+    "Added back to cart",
+    "Your previous order has been added to cart.",
+    "success"
+  );
+
+  setTimeout(() => {
+    window.location.href = "cart.html";
+  }, 900);
+}
+
+function showRemoveOrderConfirm(order) {
+  if (!order) return;
+
+  const orderNumber = getOrderNumber(order);
+
+  let modal = document.getElementById("removeOrderModal");
+
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "removeOrderModal";
+    modal.className = "dashboard-confirm-overlay";
+
+    modal.innerHTML = `
+      <div class="dashboard-confirm-card">
+        <div class="dashboard-confirm-icon">
+          <i class="fa-regular fa-trash-can"></i>
+        </div>
+
+        <h3>Remove from recent orders?</h3>
+
+        <p id="removeOrderMessage">
+          This will only hide the order from your dashboard history. It will not cancel the order.
+        </p>
+
+        <div class="dashboard-confirm-actions">
+          <button type="button" id="cancelRemoveOrderBtn" class="dashboard-confirm-cancel">
+            Keep order
+          </button>
+
+          <button type="button" id="confirmRemoveOrderBtn" class="dashboard-confirm-danger">
+            Remove
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+  }
+
+  const message = document.getElementById("removeOrderMessage");
+  const cancelBtn = document.getElementById("cancelRemoveOrderBtn");
+  const confirmBtn = document.getElementById("confirmRemoveOrderBtn");
+
+  if (message) {
+    message.textContent = `Order #${orderNumber} will be hidden from your recent orders. Tracking data is not cancelled.`;
+  }
+
+  modal.classList.add("show");
+
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      modal.classList.remove("show");
+    };
+  }
+
+  if (confirmBtn) {
+    confirmBtn.onclick = () => {
+      modal.classList.remove("show");
+      removeDashboardOrder(order);
+    };
+  }
+}
+
+function removeDashboardOrder(order) {
+  const orderNumber = getOrderNumber(order);
+  const orders = readJson(ORDER_HISTORY_KEY, []);
+
+  if (!Array.isArray(orders)) return;
+
+  const filteredOrders = orders.filter((item) => {
+    return getOrderNumber(item) !== orderNumber;
+  });
+
+  localStorage.setItem(ORDER_HISTORY_KEY, JSON.stringify(filteredOrders));
+
+  const lastOrder = readJson("lastOrder", null);
+  const latestOrder = readJson("latestOrder", null);
+
+  if (lastOrder && getOrderNumber(lastOrder) === orderNumber) {
+    localStorage.removeItem("lastOrder");
+  }
+
+  if (latestOrder && getOrderNumber(latestOrder) === orderNumber) {
+    localStorage.removeItem("latestOrder");
+  }
+
+  allOrdersCache = getSortedOrders();
+  renderOrdersList();
+  loadDashboardStats();
+
+  showDashboardToast(
+    "Removed from recent orders",
+    `Order #${orderNumber} was hidden from your dashboard.`,
+    "success"
+  );
 }
 
 /* ===============================
@@ -323,11 +758,30 @@ async function loadFavoritesData() {
   }
 
   try {
-    const products =
-      typeof window.getAllProducts === "function" ? await getAllProducts() : [];
+    let products = [];
 
-    const favorites = products.filter((product) =>
-      favoriteIds.includes(String(product.id)),
+    if (typeof window.getAllProducts === "function") {
+      products = await window.getAllProducts();
+    } else {
+      products = await fetchDashboardProducts();
+    }
+
+    const favoriteProductsFromStorage = getFavoriteProductsFromStorage();
+    const mergedProducts = [...products, ...favoriteProductsFromStorage];
+
+    const uniqueProducts = [];
+    const seen = new Set();
+
+    mergedProducts.forEach((product) => {
+      const id = String(product.id || product.product_id || "");
+      if (!id || seen.has(id)) return;
+
+      seen.add(id);
+      uniqueProducts.push(product);
+    });
+
+    const favorites = uniqueProducts.filter((product) =>
+      favoriteIds.includes(String(product.id || product.product_id))
     );
 
     if (!favorites.length) {
@@ -340,28 +794,30 @@ async function loadFavoritesData() {
 
     list.innerHTML = favorites
       .map((item) => {
+        const id = String(item.id || item.product_id || "");
         const image =
           item.image_url ||
+          item.imageUrl ||
           item.image ||
           item.photo ||
           item.thumbnail ||
-          DASHBOARD_DEFAULT_IMAGE;
+          getSmartFoodFallback(item.name || item.product_name || "");
 
-        const name = item.name || "Favorite item";
+        const name = item.name || item.product_name || "Favorite item";
 
         const subtitle =
           item.restaurant_name ||
           item.restaurantName ||
+          item.storeName ||
           item.category ||
-          "Restaurant";
+          "Spicy Grill";
 
-        const price = Number(item.price || 0).toFixed(2);
-        const isFavorite = favoriteIds.includes(String(item.id));
+        const price = Number(item.price || item.unit_price || 0);
 
         return `
           <div
             class="dashboard-favorite-item"
-            data-product-id="${escapeHtml(String(item.id || ""))}"
+            data-product-id="${escapeHtml(id)}"
           >
             <div class="dashboard-favorite-left">
               <img
@@ -383,16 +839,16 @@ async function loadFavoritesData() {
             </div>
 
             <div class="dashboard-favorite-actions">
-              <div class="dashboard-favorite-price">$${price}</div>
+              <div class="dashboard-favorite-price">${formatRs(price)}</div>
 
               <button
-                class="dashboard-favorite-btn ${isFavorite ? "active" : ""}"
+                class="dashboard-favorite-btn active"
                 type="button"
-                data-fav-id="${escapeHtml(String(item.id || ""))}"
-                aria-label="Toggle favorite"
-                title="Toggle favorite"
+                data-fav-id="${escapeHtml(id)}"
+                aria-label="Remove favorite"
+                title="Remove favorite"
               >
-                ${isFavorite ? "♥" : "♡"}
+                ♥
               </button>
             </div>
           </div>
@@ -421,26 +877,27 @@ function bindFavoriteRemoveButtons() {
 
         let ids = getFavoriteIdsSafe();
 
-        if (ids.includes(String(productId))) {
-          ids = ids.filter((id) => id !== String(productId));
-          saveFavoriteIdsSafe(ids);
+        ids = ids.filter((id) => String(id) !== String(productId));
 
-          const card = button.closest(".dashboard-favorite-item");
-          if (card) card.remove();
-
-          if (!ids.length) {
-            const empty = document.getElementById("noFavoritesMsg");
-            if (empty) empty.style.display = "block";
-          }
-
-          return;
-        }
-
-        ids.push(String(productId));
         saveFavoriteIdsSafe(ids);
 
-        button.classList.add("active");
-        button.textContent = "♥";
+        const card = button.closest(".dashboard-favorite-item");
+        if (card) {
+          card.remove();
+        }
+
+        const list = document.getElementById("favoritesList");
+        const empty = document.getElementById("noFavoritesMsg");
+
+        if (list && empty && !list.querySelector(".dashboard-favorite-item")) {
+          empty.style.display = "block";
+        }
+
+        showDashboardToast(
+          "Removed from favorites",
+          "This item was removed from your saved favorites.",
+          "success"
+        );
       });
     });
 }
@@ -476,20 +933,26 @@ function setupDashboardActions() {
 
   bindClick("actionTrackOrder", () => {
     const orders = getSortedOrders();
-    const lastOrder = readJson("lastOrder", null);
+    const activeOrder = orders.find((order) => {
+      const status = getDisplayOrderStatus(order);
+      return !["delivered", "cancelled", "canceled"].includes(status);
+    });
 
-    if (lastOrder) {
-      window.location.href = "track-order.html";
+    if (activeOrder) {
+      openTrackingForOrder(activeOrder);
       return;
     }
 
     if (orders.length) {
-      localStorage.setItem("lastOrder", JSON.stringify(orders[0]));
-      window.location.href = "track-order.html";
+      openTrackingForOrder(orders[0]);
       return;
     }
 
-    alert("No active order found yet. Place an order first.");
+    showDashboardToast(
+      "No order yet",
+      "Place an order first, then live tracking will appear here.",
+      "warning"
+    );
   });
 
   bindClick("actionRedeemPoints", () => {
@@ -501,48 +964,36 @@ function setupDashboardActions() {
   });
 
   bindClick("actionAddresses", () => {
-    /*
-      Real-world flow:
-      For now, delivery address is managed from Edit Profile.
-      Later you can build addresses.html.
-    */
     window.location.href = "edit-profile.html";
   });
 
   bindClick("actionPaymentMethods", () => {
-    /*
-      Real-world flow:
-      Payment method is currently managed inside checkout.
-      Later you can build payment-methods.html.
-    */
     window.location.href = "payment.html";
   });
 
-bindClick("actionNotifications", () => {
-  if (typeof window.bindNotificationBell === "function") {
-    window.bindNotificationBell();
-  }
+  bindClick("actionNotifications", () => {
+    if (typeof window.bindNotificationBell === "function") {
+      window.bindNotificationBell();
+    }
 
-  const bell = document.getElementById("notificationBell");
+    const bell =
+      document.getElementById("notificationBell") ||
+      document.querySelector("[data-notification-bell]");
 
-  if (bell) {
-    bell.click();
-    return;
-  }
+    if (bell) {
+      bell.click();
+      return;
+    }
 
-  alert("Notifications are available from the top navbar bell.");
-});
-
-bindClick("actionSettings", () => {
-  window.location.href = "account-settings.html";
-});
+    showDashboardToast(
+      "Notifications",
+      "Notifications are available from the top navbar bell.",
+      "info"
+    );
+  });
 
   bindClick("actionSettings", () => {
-    /*
-      Real-world flow:
-      Until settings.html exists, account settings are managed from Edit Profile.
-    */
-    window.location.href = "edit-profile.html";
+    window.location.href = "account-settings.html";
   });
 
   bindClick("actionLogout", () => {
@@ -618,38 +1069,217 @@ function getDashboardProfile() {
 function getSortedOrders() {
   const orders = readJson(ORDER_HISTORY_KEY, []);
 
-  return Array.isArray(orders)
-    ? [...orders].sort((a, b) => {
-        const aTime = new Date(a.timestamp || a.created_at || 0).getTime();
-        const bTime = new Date(b.timestamp || b.created_at || 0).getTime();
-        return bTime - aTime;
-      })
-    : [];
+  if (!Array.isArray(orders)) return [];
+
+  const cleanedOrders = orders.map((order) => {
+    const firstItem = Array.isArray(order.items) ? order.items[0] : null;
+
+    const restaurantName =
+      order.restaurantName ||
+      order.restaurant_name ||
+      firstItem?.restaurant_name ||
+      firstItem?.restaurantName ||
+      "Spicy Grill";
+
+    const cleanRestaurantName =
+      String(restaurantName || "").toLowerCase() === "restaurant" ||
+      String(restaurantName || "").toLowerCase() === "unknown restaurant"
+        ? "Spicy Grill"
+        : restaurantName;
+
+    return {
+      ...order,
+      restaurantName: cleanRestaurantName,
+      restaurant_name: cleanRestaurantName,
+      items: Array.isArray(order.items)
+        ? order.items.map((item) => ({
+            ...item,
+            restaurant_name:
+              item.restaurant_name ||
+              item.restaurantName ||
+              cleanRestaurantName,
+          }))
+        : [],
+    };
+  });
+
+  localStorage.setItem(ORDER_HISTORY_KEY, JSON.stringify(cleanedOrders));
+
+  return [...cleanedOrders].sort((a, b) => {
+    const aTime = new Date(a.timestamp || a.created_at || 0).getTime();
+    const bTime = new Date(b.timestamp || b.created_at || 0).getTime();
+    return bTime - aTime;
+  });
 }
 
 function getFavoriteIdsSafe() {
-  if (typeof window.getFavoriteIds === "function") {
-    return window.getFavoriteIds();
+  const keys = [
+    "foodDeliveryFavorites",
+    "foodExpressFavorites",
+    "foodExpressFoodFavorites",
+    "foodFavorites",
+    "FOOD_FAVORITES_KEY",
+    "favoriteProducts",
+    "favorites",
+  ];
+
+  const ids = [];
+
+  keys.forEach((key) => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+
+      if (Array.isArray(parsed)) {
+        parsed.forEach((item) => {
+          if (typeof item === "string" || typeof item === "number") {
+            ids.push(String(item));
+            return;
+          }
+
+          if (item && typeof item === "object") {
+            const id = item.id || item.product_id || item.productId;
+            if (id) ids.push(String(id));
+          }
+        });
+      }
+
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        Object.keys(parsed).forEach((id) => {
+          if (parsed[id]) ids.push(String(id));
+        });
+      }
+    } catch (error) {
+      // ignore invalid favorite storage
+    }
+  });
+
+  return [...new Set(ids)];
+}
+
+async function fetchDashboardProducts() {
+  const possibleUrls = [
+    "../../backend/controllers/ProductController.php?action=all",
+    "../backend/controllers/ProductController.php?action=all",
+    "/fooddeliveryapp/backend/controllers/ProductController.php?action=all",
+  ];
+
+  for (const url of possibleUrls) {
+    try {
+      const res = await fetch(url);
+
+      if (!res.ok) continue;
+
+      const data = await res.json();
+
+      if (data.success && Array.isArray(data.data)) {
+        return data.data;
+      }
+
+      if (Array.isArray(data)) {
+        return data;
+      }
+    } catch (error) {
+      console.warn("[dashboard.js] Product fetch failed:", url, error);
+    }
   }
 
-  try {
-    const parsed = JSON.parse(
-      localStorage.getItem("foodDeliveryFavorites") || "[]",
-    );
-
-    return Array.isArray(parsed) ? parsed.map(String) : [];
-  } catch (error) {
-    return [];
-  }
+  return [];
 }
 
 function saveFavoriteIdsSafe(ids) {
-  if (typeof window.saveFavoriteIds === "function") {
-    window.saveFavoriteIds(ids);
-    return;
-  }
+  const cleanIds = [...new Set((ids || []).map(String))];
 
-  localStorage.setItem("foodDeliveryFavorites", JSON.stringify(ids || []));
+  const keys = [
+    "foodDeliveryFavorites",
+    "foodExpressFavorites",
+    "foodExpressFoodFavorites",
+    "foodFavorites",
+    "favoriteProducts",
+    "favorites",
+  ];
+
+  keys.forEach((key) => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+
+      if (Array.isArray(parsed)) {
+        const nextValue = parsed.filter((item) => {
+          if (typeof item === "string" || typeof item === "number") {
+            return cleanIds.includes(String(item));
+          }
+
+          if (item && typeof item === "object") {
+            const id = item.id || item.product_id || item.productId;
+            return cleanIds.includes(String(id));
+          }
+
+          return false;
+        });
+
+        localStorage.setItem(key, JSON.stringify(nextValue));
+      }
+
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const nextObject = {};
+
+        Object.keys(parsed).forEach((id) => {
+          if (cleanIds.includes(String(id))) {
+            nextObject[id] = parsed[id];
+          }
+        });
+
+        localStorage.setItem(key, JSON.stringify(nextObject));
+      }
+    } catch (error) {
+      // ignore invalid favorite storage
+    }
+  });
+
+  localStorage.setItem("foodDeliveryFavorites", JSON.stringify(cleanIds));
+}
+
+function getFavoriteProductsFromStorage() {
+  const keys = [
+    "foodDeliveryFavorites",
+    "foodExpressFavorites",
+    "foodExpressFoodFavorites",
+    "foodFavorites",
+    "favoriteProducts",
+    "favorites",
+  ];
+
+  const products = [];
+
+  keys.forEach((key) => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+
+      if (!Array.isArray(parsed)) return;
+
+      parsed.forEach((item) => {
+        if (item && typeof item === "object") {
+          const id = item.id || item.product_id || item.productId;
+
+          if (id) {
+            products.push({
+              ...item,
+              id: String(id),
+            });
+          }
+        }
+      });
+    } catch (error) {
+      // ignore invalid storage keys
+    }
+  });
+
+  return products;
 }
 
 function persistDashboardPrefs() {
@@ -668,7 +1298,7 @@ function restoreDashboardPrefs() {
 function countItems(items) {
   return (items || []).reduce(
     (sum, item) => sum + Number(item.quantity || 0),
-    0,
+    0
   );
 }
 
@@ -682,6 +1312,42 @@ function readJson(key, fallback) {
 }
 
 /* ===============================
+   TOAST
+================================ */
+
+function showDashboardToast(title, message, type = "success") {
+  let toast = document.getElementById("dashboardToast");
+
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "dashboardToast";
+    toast.className = "dashboard-toast";
+    document.body.appendChild(toast);
+  }
+
+  const icon =
+    type === "success"
+      ? "fa-circle-check"
+      : type === "warning"
+        ? "fa-triangle-exclamation"
+        : "fa-circle-info";
+
+  toast.className = `dashboard-toast show ${type}`;
+  toast.innerHTML = `
+    <i class="fa-solid ${icon}"></i>
+    <div>
+      <strong>${escapeHtml(title)}</strong>
+      <span>${escapeHtml(message)}</span>
+    </div>
+  `;
+
+  clearTimeout(window.__dashboardToastTimer);
+  window.__dashboardToastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2800);
+}
+
+/* ===============================
    UI HELPERS
 ================================ */
 
@@ -690,22 +1356,8 @@ function setText(id, value) {
   if (el) el.textContent = value;
 }
 
-function formatStatus(status) {
-  const map = {
-    pending: "Pending",
-    confirmed: "Confirmed",
-    preparing: "Preparing",
-    ready_for_pickup: "Ready for pickup",
-    searching: "Finding rider",
-    rider_assigned: "Rider assigned",
-    accepted: "Rider accepted",
-    picked_up: "Picked up",
-    on_the_way: "On the way",
-    delivered: "Delivered",
-    cancelled: "Cancelled",
-  };
-
-  return map[status] || "Pending";
+function formatRs(value) {
+  return `Rs. ${Number(value || 0).toFixed(2)}`;
 }
 
 function formatPlacedTime(timestamp) {

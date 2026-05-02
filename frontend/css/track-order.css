@@ -670,7 +670,7 @@ body {
     justify-content: flex-start;
   }
 }
-
+ 
 @media (max-width: 640px) {
   .track-hero {
     padding: 26px 0 22px;

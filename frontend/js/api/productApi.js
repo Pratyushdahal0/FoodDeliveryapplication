@@ -23,7 +23,7 @@ async function getAllProducts() {
                 description: "Test description",
                 price: "10.99",
                 category: "burger",
-                image_url: "https://via.placeholder.com/400x300",
+                image_url: "https://via.placeholder.com/400x300?text=FoodExpress",
                 rating: "4.5",
                 delivery_time: "20 min",
                 is_popular: 1,
