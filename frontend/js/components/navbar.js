@@ -1,6 +1,82 @@
 console.log("[navbar.js] Script loaded successfully");
 
 (function () {
+  const BRAND_LOGO = "../assets/images/brand/foodexpress-logo-navbar.png";
+
+  function detectActivePage() {
+    const file = window.location.pathname.split("/").pop().toLowerCase();
+
+    if (file.includes("dashboard")) return "dashboard";
+    if (file.includes("shop") || file.includes("cart") || file.includes("payment")) return "shop";
+    if (file.includes("track-order")) return "track";
+    if (file.includes("food")) return "food";
+    if (file.includes("contact")) return "contact";
+    if (file.includes("login")) return "login";
+    if (file.includes("register")) return "register";
+    if (file.includes("landing")) return "landing";
+
+    return "";
+  }
+
+  function isLoggedIn() {
+    return (
+      localStorage.getItem("isLoggedIn") === "true" ||
+      localStorage.getItem("foodExpressLoggedIn") === "true" ||
+      !!localStorage.getItem("foodExpressAuthUser") ||
+      !!localStorage.getItem("loggedInUser")
+    );
+  }
+
+  function getBrandLink(href = "landingpage.html") {
+    return `
+      <a href="${href}" class="brand-link brand-logo-link" aria-label="FoodExpress Home">
+        <img
+          src="${BRAND_LOGO}"
+          alt="FoodExpress"
+          class="brand-logo-img"
+        />
+      </a>
+    `;
+  }
+
+  function getPublicNavbar(activePage = "") {
+    const page = String(activePage || "").toLowerCase();
+
+    return `
+      <nav class="navbar" id="navbar">
+        <div class="container">
+          <div class="navbar-brand">
+            ${getBrandLink("landingpage.html")}
+          </div>
+
+          <div class="navbar-nav">
+            <a href="landingpage.html" class="nav-link ${
+              page === "landing" ? "active" : ""
+            }">Home</a>
+
+            <a href="shop.html" class="nav-link ${
+              page === "shop" ? "active" : ""
+            }">Shop</a>
+
+            <a href="food.html" class="nav-link ${
+              page === "food" ? "active" : ""
+            }">Food</a>
+
+            <a href="contact.html" class="nav-link ${
+              page === "contact" ? "active" : ""
+            }">Contact</a>
+          </div>
+
+          <div class="navbar-right">
+            <a href="login.html" class="login-btn ${
+              page === "login" ? "active" : ""
+            }">Log in</a>
+          </div>
+        </div>
+      </nav>
+    `;
+  }
+
   function getLoggedInNavbar(activePage = "") {
     const page = String(activePage || "").toLowerCase();
 
@@ -8,7 +84,7 @@ console.log("[navbar.js] Script loaded successfully");
       <nav class="navbar" id="navbar">
         <div class="container">
           <div class="navbar-brand">
-            <a href="dashboard.html">FoodExpress</a>
+            ${getBrandLink("dashboard.html")}
           </div>
 
           <div class="navbar-nav">
@@ -67,29 +143,53 @@ console.log("[navbar.js] Script loaded successfully");
     `;
   }
 
+  function shouldUsePublicNavbar(page) {
+    return ["login", "register", "landing"].includes(page);
+  }
+
   function renderNavbar(activePage = "") {
-    const container = document.getElementById("navbarContainer");
+    const page = activePage || detectActivePage();
+
+    const container =
+      document.getElementById("navbarContainer") ||
+      document.getElementById("navbar");
 
     if (!container) {
-      console.error("[navbar.js] navbarContainer not found");
+      console.error("[navbar.js] navbarContainer/navbar not found");
       return;
     }
 
-    container.innerHTML = getLoggedInNavbar(activePage);
+    const html =
+      shouldUsePublicNavbar(page) || !isLoggedIn()
+        ? getPublicNavbar(page)
+        : getLoggedInNavbar(page);
 
+    if (container.id === "navbar") {
+      container.outerHTML = html;
+    } else {
+      container.innerHTML = html;
+    }
+
+    bindNavbarActions();
+  }
+
+  function bindNavbarActions() {
     const logoutBtn = document.getElementById("logoutBtn");
+
     if (logoutBtn) {
       logoutBtn.addEventListener("click", function () {
         if (typeof window.logout === "function") {
           window.logout();
         } else {
           localStorage.removeItem("isLoggedIn");
+          localStorage.removeItem("foodExpressLoggedIn");
           window.location.href = "landingpage.html";
         }
       });
     }
 
     const navbarAvatar = document.getElementById("navbarAvatar");
+
     if (navbarAvatar) {
       navbarAvatar.addEventListener("click", function () {
         window.location.href = "edit-profile.html";
@@ -174,4 +274,13 @@ console.log("[navbar.js] Script loaded successfully");
   }
 
   window.renderNavbar = renderNavbar;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const hasNavbar =
+      document.getElementById("navbarContainer") || document.getElementById("navbar");
+
+    if (hasNavbar) {
+      renderNavbar();
+    }
+  });
 })();

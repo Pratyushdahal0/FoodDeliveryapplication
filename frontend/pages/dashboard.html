@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FoodExpress - Dashboard</title>
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../assets/images/brand/foodexpress-favicon-32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="64x64"
+      href="../assets/images/brand/foodexpress-favicon-64.png"
+    />
+
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/dashboard.css" />
@@ -25,7 +38,7 @@
 
     <div class="dashboard-container">
       <div class="welcome-card">
-        <div class="avatar" id="welcomeAvatar">
+        <div class="avatar" id="welcomeAvatar" data-profile-avatar>
           <span id="welcomeAvatarText">JD</span>
           <div class="avatar-online"></div>
         </div>
@@ -181,10 +194,11 @@
     <footer class="footer" id="footer"></footer>
 
     <script src="../js/modules/cart.js"></script>
+    <script src="../js/profile.js?v=profilesync2"></script>
     <script src="../js/components/notifications.js?v=routefix4"></script>
-    <script src="../js/components/navbar.js"></script>
+    <script src="../js/components/navbar.js?v=brandlogo4"></script>
     <script src="../js/components/footer.js"></script>
-    <script src="../js/dashboard.js?v=dashboardfavorites1"></script>
+    <script src="../js/dashboard.js?v=dashboardfavorites2"></script>
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {

@@ -117,6 +117,12 @@ function cleanText($value)
     return htmlspecialchars($value ?? "", ENT_QUOTES, "UTF-8");
 }
 
+function formatLabel($value)
+{
+    $value = str_replace("_", " ", $value ?? "");
+    return ucwords(trim($value));
+}
+
 /*
 |--------------------------------------------------------------------------
 | Insert Email Queue + Send Immediately
@@ -356,6 +362,12 @@ try {
     $safeRelatedOrderId = cleanText($relatedOrderId);
     $safeRelatedRestaurantId = cleanText($relatedRestaurantId);
     $safeRelatedRiderId = cleanText($relatedRiderId);
+    $safeSourcePage = cleanText($sourcePage);
+
+    $formattedIssueType = cleanText(formatLabel($issueType));
+    $formattedPriority = cleanText(formatLabel($priority));
+    $formattedUserType = cleanText(formatLabel($userType));
+    $formattedSourcePage = cleanText(formatLabel($sourcePage));
 
     $userFullName = trim($firstName . " " . $lastName);
 
@@ -364,6 +376,7 @@ try {
     }
 
     $safeUserFullName = cleanText($userFullName);
+    $customerFirstName = $safeFirstName ?: "there";
 
     /*
     |--------------------------------------------------------------------------
@@ -374,41 +387,91 @@ try {
     $adminEmail = "foodexpressnp.support@gmail.com";
     $adminName = "FoodExpress Admin";
 
-    $adminSubject = "New FoodExpress Support Request {$ticketNumber}: {$issueTitle}";
+    $adminSubject = "[{$formattedPriority}] New FoodExpress Support Ticket - {$ticketNumber}";
 
     $adminEmailBody = "
-        <div style='font-family: Arial, sans-serif; background:#f7f7f7; padding:24px;'>
-            <div style='max-width:650px; margin:auto; background:#ffffff; border-radius:16px; padding:24px;'>
-                <h2 style='color:#e53935; margin-top:0;'>New FoodExpress Support Request</h2>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='UTF-8'>
+  <title>New FoodExpress Support Ticket</title>
+</head>
+<body style='margin:0; padding:0; background:#f6f7fb; font-family:Arial, Helvetica, sans-serif; color:#12203A;'>
+  <div style='width:100%; background:#f6f7fb; padding:32px 14px;'>
+    <div style='max-width:720px; margin:0 auto; background:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 18px 45px rgba(18,32,58,0.10);'>
 
-                <div style='background:#fff5f5; border:1px solid #fecaca; border-radius:12px; padding:16px; margin:18px 0;'>
-                    <p style='margin:0;'><strong>Reference Number:</strong> {$safeTicketNumber}</p>
-                    <p style='margin:8px 0 0;'><strong>User Type:</strong> {$safeUserType}</p>
-                    <p style='margin:8px 0 0;'><strong>Priority:</strong> {$safePriority}</p>
-                    <p style='margin:8px 0 0;'><strong>Status:</strong> new</p>
-                </div>
-
-                <h3 style='margin-bottom:8px;'>User Details</h3>
-                <p><strong>Name:</strong> {$safeFirstName} {$safeLastName}</p>
-                <p><strong>Email:</strong> {$safeEmail}</p>
-                <p><strong>Phone:</strong> " . ($safePhone ?: "Not provided") . "</p>
-
-                <hr style='border:none; border-top:1px solid #eee; margin:20px 0;'>
-
-                <h3 style='margin-bottom:8px;'>Issue Details</h3>
-                <p><strong>Issue Type:</strong> {$safeIssueType}</p>
-                <p><strong>Issue Title:</strong> {$safeIssueTitle}</p>
-                <p><strong>Related Order ID:</strong> " . ($safeRelatedOrderId ?: "Not provided") . "</p>
-                <p><strong>Related Restaurant ID:</strong> " . ($safeRelatedRestaurantId ?: "Not provided") . "</p>
-                <p><strong>Related Rider ID:</strong> " . ($safeRelatedRiderId ?: "Not provided") . "</p>
-
-                <hr style='border:none; border-top:1px solid #eee; margin:20px 0;'>
-
-                <h3 style='margin-bottom:8px;'>Message</h3>
-                <p style='line-height:1.6;'>{$safeMessage}</p>
-            </div>
+      <div style='background:#12203A; padding:30px 34px; color:#ffffff;'>
+        <div style='font-size:28px; font-weight:900; letter-spacing:-0.5px;'>
+          <span style='color:#F2644C;'>▰</span> FoodExpress
         </div>
-    ";
+        <p style='margin:8px 0 0; font-size:15px; color:#dbe3ef;'>
+          New support ticket received
+        </p>
+      </div>
+
+      <div style='padding:34px;'>
+        <h2 style='margin:0 0 10px; font-size:26px; line-height:1.3; color:#12203A;'>
+          New customer support request
+        </h2>
+
+        <p style='margin:0 0 24px; color:#6B7280; font-size:15px; line-height:1.7;'>
+          A new support ticket has been submitted through FoodExpress. Review the customer issue and respond based on priority.
+        </p>
+
+        <div style='background:#fff7f5; border:1px solid #ffd2c8; border-radius:18px; padding:22px; margin:24px 0;'>
+          <p style='margin:0 0 12px; font-size:15px;'>
+            <strong>Reference Number:</strong> {$safeTicketNumber}
+          </p>
+          <p style='margin:0 0 12px; font-size:15px;'>
+            <strong>Priority:</strong> {$formattedPriority}
+          </p>
+          <p style='margin:0 0 12px; font-size:15px;'>
+            <strong>Status:</strong> New
+          </p>
+          <p style='margin:0; font-size:15px;'>
+            <strong>Source:</strong> {$formattedSourcePage}
+          </p>
+        </div>
+
+        <div style='border:1px solid #E9E2DC; border-radius:18px; padding:22px; margin:24px 0;'>
+          <h3 style='margin:0 0 16px; color:#12203A; font-size:18px;'>Customer details</h3>
+          <p style='margin:0 0 10px; font-size:15px;'><strong>Name:</strong> {$safeFirstName} {$safeLastName}</p>
+          <p style='margin:0 0 10px; font-size:15px;'><strong>Email:</strong> {$safeEmail}</p>
+          <p style='margin:0 0 10px; font-size:15px;'><strong>Phone:</strong> " . ($safePhone ?: "Not provided") . "</p>
+          <p style='margin:0; font-size:15px;'><strong>User Type:</strong> {$formattedUserType}</p>
+        </div>
+
+        <div style='border:1px solid #E9E2DC; border-radius:18px; padding:22px; margin:24px 0;'>
+          <h3 style='margin:0 0 16px; color:#12203A; font-size:18px;'>Issue details</h3>
+          <p style='margin:0 0 10px; font-size:15px;'><strong>Issue Type:</strong> {$formattedIssueType}</p>
+          <p style='margin:0 0 10px; font-size:15px;'><strong>Issue Title:</strong> {$safeIssueTitle}</p>
+          <p style='margin:0 0 10px; font-size:15px;'><strong>Related Order ID:</strong> " . ($safeRelatedOrderId ?: "Not provided") . "</p>
+          <p style='margin:0 0 10px; font-size:15px;'><strong>Related Restaurant ID:</strong> " . ($safeRelatedRestaurantId ?: "Not provided") . "</p>
+          <p style='margin:0; font-size:15px;'><strong>Related Rider ID:</strong> " . ($safeRelatedRiderId ?: "Not provided") . "</p>
+        </div>
+
+        <div style='background:#F9FAFB; border:1px solid #E5E7EB; border-radius:18px; padding:22px; margin:24px 0;'>
+          <h3 style='margin:0 0 14px; color:#12203A; font-size:18px;'>Customer message</h3>
+          <div style='font-size:15px; line-height:1.8; color:#374151;'>
+            {$safeMessage}
+          </div>
+        </div>
+
+        <p style='margin:24px 0 0; color:#6B7280; font-size:14px; line-height:1.7;'>
+          This admin notification was generated automatically by FoodExpress Support.
+        </p>
+      </div>
+
+      <div style='background:#FAF7F3; padding:20px 34px; border-top:1px solid #E9E2DC; color:#6B7280; font-size:13px;'>
+        <strong style='color:#12203A;'>FoodExpress Admin</strong><br>
+        Support operations notification
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
+";
 
     /*
     |--------------------------------------------------------------------------
@@ -416,50 +479,103 @@ try {
     |--------------------------------------------------------------------------
     */
 
-    $userSubject = "FoodExpress received your message - {$ticketNumber}";
+    $userSubject = "FoodExpress Support received your request - {$ticketNumber}";
+
+    $relatedOrderBlock = "";
+
+    if ($safeRelatedOrderId) {
+        $relatedOrderBlock = "
+        <div style='border:1px solid #E9E2DC; border-radius:18px; padding:20px; margin:24px 0;'>
+          <h3 style='margin:0 0 12px; font-size:18px; color:#12203A;'>Related order</h3>
+          <p style='margin:0; font-size:15px; color:#374151;'>
+            <strong>Order Number:</strong> {$safeRelatedOrderId}
+          </p>
+        </div>
+        ";
+    }
 
     $userEmailBody = "
-        <div style='font-family: Arial, sans-serif; background:#f7f7f7; padding:24px;'>
-            <div style='max-width:650px; margin:auto; background:#ffffff; border-radius:16px; padding:24px;'>
-                <h2 style='color:#e53935; margin-top:0;'>Thank you for contacting FoodExpress</h2>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='UTF-8'>
+  <title>FoodExpress Support</title>
+</head>
+<body style='margin:0; padding:0; background:#f6f7fb; font-family:Arial, Helvetica, sans-serif; color:#12203A;'>
+  <div style='width:100%; background:#f6f7fb; padding:32px 14px;'>
+    <div style='max-width:680px; margin:0 auto; background:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 18px 45px rgba(18,32,58,0.10);'>
 
-                <p>Hello {$safeUserFullName},</p>
-
-                <p style='line-height:1.6;'>
-                    Thank you for reaching out to FoodExpress Support. We have received your message
-                    and our team will review your request carefully.
-                </p>
-
-                <p style='line-height:1.6;'>
-                    We aim to respond as soon as possible. For order-related, payment, safety, or
-                    account issues, your request may be reviewed by our support/admin team before a
-                    final update is provided.
-                </p>
-
-                <div style='background:#fff5f5; border:1px solid #fecaca; border-radius:12px; padding:16px; margin:20px 0;'>
-                    <p style='margin:0;'><strong>Reference Number:</strong> {$safeTicketNumber}</p>
-                    <p style='margin:8px 0 0;'><strong>Subject:</strong> {$safeIssueTitle}</p>
-                    <p style='margin:8px 0 0;'><strong>Status:</strong> Received</p>
-                </div>
-
-                <p style='line-height:1.6;'>
-                    Please keep this reference number for your records. If you contact us again about
-                    the same matter, sharing this number will help us find your request faster.
-                </p>
-
-                <p style='line-height:1.6; color:#6b7280;'>
-                    This is an automated confirmation email. You do not need to reply to this email
-                    unless you have additional information to add.
-                </p>
-
-                <p style='margin-top:24px;'>
-                    Kind regards,<br>
-                    <strong>FoodExpress Support Team</strong><br>
-                    foodexpressnp.support@gmail.com
-                </p>
-            </div>
+      <div style='background:linear-gradient(135deg,#F2644C,#F58A5C); padding:30px 34px; color:#ffffff;'>
+        <div style='font-size:28px; font-weight:900; letter-spacing:-0.5px;'>
+          FoodExpress
         </div>
-    ";
+        <p style='margin:8px 0 0; font-size:15px; color:#fff4ef;'>
+          Support request received
+        </p>
+      </div>
+
+      <div style='padding:34px;'>
+        <h2 style='margin:0 0 16px; font-size:27px; line-height:1.3; color:#12203A;'>
+          We received your support request
+        </h2>
+
+        <p style='font-size:16px; line-height:1.7; margin:0 0 16px;'>
+          Hi {$customerFirstName},
+        </p>
+
+        <p style='font-size:16px; line-height:1.7; margin:0 0 16px; color:#374151;'>
+          Thanks for contacting FoodExpress Support. We’ve received your request and our team will review it shortly.
+        </p>
+
+        <p style='font-size:16px; line-height:1.7; margin:0 0 24px; color:#374151;'>
+          For order, delivery, payment, refund, safety, or account-related issues, our support/admin team may review the details before providing a final update.
+        </p>
+
+        <div style='background:#fff7f5; border:1px solid #ffd2c8; border-radius:18px; padding:22px; margin:24px 0;'>
+          <p style='margin:0 0 12px; font-size:15px;'>
+            <strong>Reference Number:</strong> {$safeTicketNumber}
+          </p>
+          <p style='margin:0 0 12px; font-size:15px;'>
+            <strong>Subject:</strong> {$safeIssueTitle}
+          </p>
+          <p style='margin:0 0 12px; font-size:15px;'>
+            <strong>Issue Type:</strong> {$formattedIssueType}
+          </p>
+          <p style='margin:0; font-size:15px;'>
+            <strong>Status:</strong> Received
+          </p>
+        </div>
+
+        <div style='background:#F9FAFB; border:1px solid #E5E7EB; border-radius:18px; padding:22px; margin:24px 0;'>
+          <h3 style='margin:0 0 12px; font-size:18px; color:#12203A;'>What happens next?</h3>
+          <p style='margin:0; font-size:15px; line-height:1.7; color:#4B5563;'>
+            Our support team will check your message and respond as soon as possible. Please keep your reference number for faster follow-up.
+          </p>
+        </div>
+
+        {$relatedOrderBlock}
+
+        <p style='font-size:15px; line-height:1.7; color:#4B5563; margin:0 0 20px;'>
+          If you contact us again about the same issue, sharing this reference number will help us find your request faster.
+        </p>
+
+        <p style='font-size:16px; line-height:1.7; margin:0;'>
+          Thank you,<br>
+          <strong>FoodExpress Support Team</strong>
+        </p>
+      </div>
+
+      <div style='background:#12203A; color:#dbe3ef; padding:22px 34px; text-align:center; font-size:13px;'>
+        <p style='margin:0 0 6px; font-weight:700; color:#ffffff;'>FoodExpress Support</p>
+        <p style='margin:0 0 6px;'>This is an automated confirmation email.</p>
+        <p style='margin:0;'>foodexpressnp.support@gmail.com</p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
+";
 
     /*
     |--------------------------------------------------------------------------
@@ -515,12 +631,10 @@ try {
         ]
     ]);
 } catch (Throwable $e) {
-    if ($conn && $conn->errno === 0) {
-        // no-op; prevents accidental rollback error after commit
-    }
-
     try {
-        $conn->rollback();
+        if (isset($conn)) {
+            $conn->rollback();
+        }
     } catch (Throwable $rollbackError) {
         // Ignore rollback errors if transaction already committed.
     }

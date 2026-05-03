@@ -42,13 +42,74 @@ function formatMoney($amount) {
 }
 
 function formatPaymentMethod($method) {
+    $method = strtolower(trim($method ?? "cash"));
+
     $map = [
         "cash" => "Cash on Delivery",
+        "cod" => "Cash on Delivery",
         "card" => "Card Payment",
-        "digital" => "Digital Wallet"
+        "digital" => "Digital Wallet",
+        "wallet" => "Digital Wallet",
+        "esewa" => "eSewa",
+        "khalti" => "Khalti"
     ];
 
-    return $map[$method] ?? $method;
+    return $map[$method] ?? ucwords(str_replace("_", " ", $method));
+}
+
+function formatStatusLabel($status) {
+    $status = trim($status ?? "");
+    if ($status === "") return "Pending";
+    return ucwords(str_replace("_", " ", $status));
+}
+
+function getDeliveryStatusLabel($status) {
+    $status = strtolower(trim($status ?? ""));
+
+    $map = [
+        "searching" => "Looking for a nearby rider",
+        "unassigned" => "Looking for a nearby rider",
+        "pending" => "Waiting for restaurant confirmation",
+        "assigned" => "Rider assigned",
+        "picked_up" => "Picked up by rider",
+        "on_the_way" => "Rider is on the way",
+        "delivered" => "Delivered"
+    ];
+
+    return $map[$status] ?? formatStatusLabel($status);
+}
+
+function buildEmailHeader($subtitle, $variant = "coral") {
+    if ($variant === "dark") {
+        return "
+            <div style='background:#12203A; padding:34px 38px; color:#ffffff;'>
+                <div style='font-size:30px; line-height:1; font-weight:900; letter-spacing:-0.7px;'>
+                    <span style='display:inline-block; width:15px; height:10px; background:#F2644C; border-radius:4px; margin-right:10px; vertical-align:middle;'></span>
+                    FoodExpress
+                </div>
+                <p style='margin:12px 0 0; color:#dbe3ef; font-size:15px; line-height:1.6;'>{$subtitle}</p>
+            </div>
+        ";
+    }
+
+    return "
+        <div style='background:linear-gradient(135deg,#F2644C,#F58A5C); padding:34px 38px; color:#ffffff;'>
+            <div style='font-size:30px; line-height:1; font-weight:900; letter-spacing:-0.7px;'>
+                FoodExpress
+            </div>
+            <p style='margin:12px 0 0; color:#fff4ef; font-size:15px; line-height:1.6;'>{$subtitle}</p>
+        </div>
+    ";
+}
+
+function buildEmailFooter() {
+    return "
+        <div style='background:#12203A; color:#dbe3ef; padding:24px 38px; text-align:center; font-size:13px; line-height:1.6;'>
+            <p style='margin:0 0 6px; font-weight:800; color:#ffffff;'>FoodExpress</p>
+            <p style='margin:0 0 6px;'>Fast delivery, reliable support.</p>
+            <p style='margin:0;'>foodexpressnp.support@gmail.com</p>
+        </div>
+    ";
 }
 
 /*
@@ -178,9 +239,12 @@ function buildOrderItemsHtml($items) {
 
         $html .= "
             <tr>
-                <td style='padding:10px 0; border-bottom:1px solid #eee;'>{$name}</td>
-                <td style='padding:10px 0; border-bottom:1px solid #eee; text-align:center;'>x{$quantity}</td>
-                <td style='padding:10px 0; border-bottom:1px solid #eee; text-align:right;'>Rs. " . formatMoney($lineTotal) . "</td>
+                <td style='padding:16px 0; border-bottom:1px solid #E9E2DC;'>
+                    <div style='font-weight:800; color:#12203A; font-size:15px;'>{$name}</div>
+                    <div style='color:#6B7280; font-size:13px; margin-top:4px;'>Rs. " . formatMoney($price) . " each</div>
+                </td>
+                <td style='padding:16px 0; border-bottom:1px solid #E9E2DC; text-align:center; color:#12203A; font-weight:700;'>x{$quantity}</td>
+                <td style='padding:16px 0; border-bottom:1px solid #E9E2DC; text-align:right; color:#12203A; font-weight:800;'>Rs. " . formatMoney($lineTotal) . "</td>
             </tr>
         ";
     }
@@ -233,69 +297,153 @@ function queueOrderConfirmationEmail($conn, $orderId, $orderNumber, $input, $res
 
     $itemsHtml = buildOrderItemsHtml($restaurantItems);
 
-    $subject = "Your FoodExpress order has been received - {$orderNumber}";
+    $subject = "FoodExpress order received - {$orderNumber}";
 
     $body = "
-        <div style='font-family: Arial, sans-serif; background:#f7f7f7; padding:24px;'>
-            <div style='max-width:680px; margin:auto; background:#ffffff; border-radius:16px; padding:24px;'>
-                <h2 style='color:#e53935; margin-top:0;'>Your FoodExpress order has been received</h2>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='UTF-8'>
+  <title>FoodExpress Order Received</title>
+</head>
+<body style='margin:0; padding:0; background:#f6f7fb; font-family:Arial, Helvetica, sans-serif; color:#12203A;'>
+  <div style='width:100%; background:#f6f7fb; padding:34px 14px;'>
+    <div style='max-width:720px; margin:0 auto; background:#ffffff; border-radius:26px; overflow:hidden; box-shadow:0 18px 45px rgba(18,32,58,0.10);'>
 
-                <p>Hello {$safeCustomerName},</p>
+      " . buildEmailHeader("Your order has been received and sent to the restaurant.", "coral") . "
 
-                <p style='line-height:1.6;'>
-                    Thank you for ordering from FoodExpress. We have received your order, sent it to the restaurant, and started looking for a nearby rider.
-                </p>
-
-                <div style='background:#fff5f5; border:1px solid #fecaca; border-radius:12px; padding:16px; margin:20px 0;'>
-                    <p style='margin:0;'><strong>Order Number:</strong> {$safeOrderNumber}</p>
-                    <p style='margin:8px 0 0;'><strong>Order Status:</strong> Pending</p>
-                    <p style='margin:8px 0 0;'><strong>Delivery Status:</strong> Looking for a nearby rider</p>
-                    <p style='margin:8px 0 0;'><strong>Restaurant:</strong> {$safeRestaurantName}</p>
-                    <p style='margin:8px 0 0;'><strong>Payment Method:</strong> {$safePaymentMethod}</p>
-                </div>
-
-                <h3 style='margin-bottom:10px;'>Order Items</h3>
-
-                <table style='width:100%; border-collapse:collapse;'>
-                    <thead>
-                        <tr>
-                            <th style='text-align:left; padding:10px 0; border-bottom:2px solid #eee;'>Item</th>
-                            <th style='text-align:center; padding:10px 0; border-bottom:2px solid #eee;'>Qty</th>
-                            <th style='text-align:right; padding:10px 0; border-bottom:2px solid #eee;'>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {$itemsHtml}
-                    </tbody>
-                </table>
-
-                <div style='margin-top:20px; background:#f9fafb; border-radius:12px; padding:16px;'>
-                    <p style='margin:0 0 8px;'><strong>Subtotal:</strong> Rs. " . formatMoney($subtotal) . "</p>
-                    <p style='margin:0 0 8px;'><strong>Tax:</strong> Rs. " . formatMoney($tax) . "</p>
-                    <p style='margin:0 0 8px;'><strong>Delivery Fee:</strong> Rs. " . formatMoney($deliveryFee) . "</p>
-                    <p style='margin:0; font-size:18px;'><strong>Total:</strong> Rs. " . formatMoney($total) . "</p>
-                </div>
-
-                <h3 style='margin-top:22px; margin-bottom:8px;'>Delivery Details</h3>
-
-                <p style='line-height:1.6; margin:0;'>
-                    <strong>Address:</strong> {$safeDeliveryAddress}
-                </p>
-
-                " . ($safeDeliveryNote !== "" ? "<p style='line-height:1.6; margin:8px 0 0;'><strong>Delivery Note:</strong> {$safeDeliveryNote}</p>" : "") . "
-
-                <p style='line-height:1.6; margin-top:22px;'>
-                    You can track your order from your FoodExpress account.
-                </p>
-
-                <p style='margin-top:24px;'>
-                    Kind regards,<br>
-                    <strong>FoodExpress Team</strong><br>
-                    foodexpressnp.support@gmail.com
-                </p>
-            </div>
+      <div style='padding:38px;'>
+        <div style='display:inline-block; background:#ECFDF3; color:#15803D; border:1px solid #BBF7D0; border-radius:999px; padding:9px 14px; font-size:13px; font-weight:800; margin-bottom:18px;'>
+          Order received
         </div>
-    ";
+
+        <h1 style='margin:0 0 14px; font-size:30px; line-height:1.25; letter-spacing:-0.7px; color:#12203A;'>
+          Thanks, {$safeCustomerName}. Your order is in progress.
+        </h1>
+
+        <p style='font-size:16px; line-height:1.75; margin:0 0 24px; color:#4B5563;'>
+          We received your FoodExpress order, sent it to <strong>{$safeRestaurantName}</strong>, and started preparing your live tracking updates.
+        </p>
+
+        <div style='background:#fff7f5; border:1px solid #ffd2c8; border-radius:20px; padding:24px; margin:26px 0;'>
+          <table style='width:100%; border-collapse:collapse;'>
+            <tr>
+              <td style='padding:0 0 14px; color:#6B7280; font-size:13px; font-weight:700;'>ORDER NUMBER</td>
+              <td style='padding:0 0 14px; text-align:right; color:#12203A; font-size:15px; font-weight:900;'>{$safeOrderNumber}</td>
+            </tr>
+            <tr>
+              <td style='padding:0 0 14px; color:#6B7280; font-size:13px; font-weight:700;'>RESTAURANT</td>
+              <td style='padding:0 0 14px; text-align:right; color:#12203A; font-size:15px; font-weight:800;'>{$safeRestaurantName}</td>
+            </tr>
+            <tr>
+              <td style='padding:0 0 14px; color:#6B7280; font-size:13px; font-weight:700;'>PAYMENT</td>
+              <td style='padding:0 0 14px; text-align:right; color:#12203A; font-size:15px; font-weight:800;'>{$safePaymentMethod}</td>
+            </tr>
+            <tr>
+              <td style='padding:0; color:#6B7280; font-size:13px; font-weight:700;'>TOTAL</td>
+              <td style='padding:0; text-align:right; color:#12203A; font-size:22px; font-weight:900;'>Rs. " . formatMoney($total) . "</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style='margin:28px 0;'>
+          <h2 style='font-size:20px; margin:0 0 16px; color:#12203A;'>Order progress</h2>
+
+          <table style='width:100%; border-collapse:collapse;'>
+            <tr>
+              <td style='width:28px; vertical-align:top; padding:0 0 16px;'>
+                <span style='display:inline-block; width:14px; height:14px; background:#22C55E; border-radius:50%; margin-top:4px;'></span>
+              </td>
+              <td style='padding:0 0 16px;'>
+                <div style='font-weight:900; color:#12203A;'>Order received</div>
+                <div style='font-size:14px; color:#6B7280; margin-top:4px;'>We saved your order details securely.</div>
+              </td>
+            </tr>
+            <tr>
+              <td style='width:28px; vertical-align:top; padding:0 0 16px;'>
+                <span style='display:inline-block; width:14px; height:14px; background:#F2644C; border-radius:50%; margin-top:4px;'></span>
+              </td>
+              <td style='padding:0 0 16px;'>
+                <div style='font-weight:900; color:#12203A;'>Sent to restaurant</div>
+                <div style='font-size:14px; color:#6B7280; margin-top:4px;'>The restaurant will confirm and start preparing your food.</div>
+              </td>
+            </tr>
+            <tr>
+              <td style='width:28px; vertical-align:top; padding:0;'>
+                <span style='display:inline-block; width:14px; height:14px; background:#CBD5E1; border-radius:50%; margin-top:4px;'></span>
+              </td>
+              <td style='padding:0;'>
+                <div style='font-weight:900; color:#12203A;'>Rider matching</div>
+                <div style='font-size:14px; color:#6B7280; margin-top:4px;'>A nearby rider will be assigned when your order is ready.</div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div style='border:1px solid #E9E2DC; border-radius:20px; padding:24px; margin:28px 0;'>
+          <h2 style='font-size:20px; margin:0 0 14px; color:#12203A;'>Order items</h2>
+
+          <table style='width:100%; border-collapse:collapse;'>
+            <thead>
+              <tr>
+                <th style='text-align:left; padding:0 0 12px; border-bottom:2px solid #E9E2DC; color:#6B7280; font-size:13px;'>Item</th>
+                <th style='text-align:center; padding:0 0 12px; border-bottom:2px solid #E9E2DC; color:#6B7280; font-size:13px;'>Qty</th>
+                <th style='text-align:right; padding:0 0 12px; border-bottom:2px solid #E9E2DC; color:#6B7280; font-size:13px;'>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {$itemsHtml}
+            </tbody>
+          </table>
+
+          <div style='background:#F9FAFB; border-radius:18px; padding:20px; margin-top:22px;'>
+            <table style='width:100%; border-collapse:collapse;'>
+              <tr>
+                <td style='padding:6px 0; color:#6B7280;'>Subtotal</td>
+                <td style='padding:6px 0; text-align:right; font-weight:800; color:#12203A;'>Rs. " . formatMoney($subtotal) . "</td>
+              </tr>
+              <tr>
+                <td style='padding:6px 0; color:#6B7280;'>Tax</td>
+                <td style='padding:6px 0; text-align:right; font-weight:800; color:#12203A;'>Rs. " . formatMoney($tax) . "</td>
+              </tr>
+              <tr>
+                <td style='padding:6px 0; color:#6B7280;'>Delivery fee</td>
+                <td style='padding:6px 0; text-align:right; font-weight:800; color:#12203A;'>Rs. " . formatMoney($deliveryFee) . "</td>
+              </tr>
+              <tr>
+                <td style='padding:14px 0 0; color:#12203A; font-size:18px; font-weight:900;'>Total</td>
+                <td style='padding:14px 0 0; text-align:right; color:#12203A; font-size:22px; font-weight:900;'>Rs. " . formatMoney($total) . "</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <div style='background:#F9FAFB; border:1px solid #E5E7EB; border-radius:20px; padding:22px; margin:28px 0;'>
+          <h2 style='font-size:20px; margin:0 0 12px; color:#12203A;'>Delivery details</h2>
+          <p style='margin:0; font-size:15px; line-height:1.7; color:#374151;'>
+            <strong>Address:</strong> {$safeDeliveryAddress}
+          </p>
+          " . ($safeDeliveryNote !== "" ? "<p style='margin:10px 0 0; font-size:15px; line-height:1.7; color:#374151;'><strong>Delivery note:</strong> {$safeDeliveryNote}</p>" : "") . "
+        </div>
+
+        <div style='text-align:center; margin:30px 0 8px;'>
+          <div style='display:inline-block; background:#12203A; color:#ffffff; border-radius:999px; padding:14px 28px; font-weight:900; font-size:15px;'>
+            Track your order from your FoodExpress account
+          </div>
+        </div>
+
+        <p style='margin:24px 0 0; font-size:14px; line-height:1.7; color:#6B7280; text-align:center;'>
+          This is an automated order confirmation email. Keep this email for your records.
+        </p>
+      </div>
+
+      " . buildEmailFooter() . "
+
+    </div>
+  </div>
+</body>
+</html>
+";
 
     return queueEmail(
         $conn,
@@ -334,60 +482,95 @@ function queueOrderDeliveredEmail($conn, $orderData, $orderItems) {
 
     $itemsHtml = buildOrderItemsHtml($orderItems);
 
-    $subject = "Your FoodExpress order has been delivered - {$orderNumber}";
+    $subject = "FoodExpress delivered your order - {$orderNumber}";
 
     $body = "
-        <div style='font-family: Arial, sans-serif; background:#f7f7f7; padding:24px;'>
-            <div style='max-width:680px; margin:auto; background:#ffffff; border-radius:16px; padding:24px;'>
-                <h2 style='color:#e53935; margin-top:0;'>Your FoodExpress order has been delivered</h2>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='UTF-8'>
+  <title>FoodExpress Order Delivered</title>
+</head>
+<body style='margin:0; padding:0; background:#f6f7fb; font-family:Arial, Helvetica, sans-serif; color:#12203A;'>
+  <div style='width:100%; background:#f6f7fb; padding:34px 14px;'>
+    <div style='max-width:720px; margin:0 auto; background:#ffffff; border-radius:26px; overflow:hidden; box-shadow:0 18px 45px rgba(18,32,58,0.10);'>
 
-                <p>Hello {$safeCustomerName},</p>
+      " . buildEmailHeader("Your order has arrived. Enjoy your meal!", "dark") . "
 
-                <p style='line-height:1.6;'>
-                    Your FoodExpress order has been delivered successfully. Thank you for choosing FoodExpress.
-                </p>
-
-                <div style='background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:16px; margin:20px 0;'>
-                    <p style='margin:0;'><strong>Order Number:</strong> {$safeOrderNumber}</p>
-                    <p style='margin:8px 0 0;'><strong>Order Status:</strong> Delivered</p>
-                    <p style='margin:8px 0 0;'><strong>Restaurant:</strong> {$safeRestaurantName}</p>
-                    <p style='margin:8px 0 0;'><strong>Payment Method:</strong> {$safePaymentMethod}</p>
-                    <p style='margin:8px 0 0;'><strong>Delivered At:</strong> {$safeDeliveredAt}</p>
-                </div>
-
-                <h3 style='margin-bottom:10px;'>Order Receipt</h3>
-
-                <table style='width:100%; border-collapse:collapse;'>
-                    <thead>
-                        <tr>
-                            <th style='text-align:left; padding:10px 0; border-bottom:2px solid #eee;'>Item</th>
-                            <th style='text-align:center; padding:10px 0; border-bottom:2px solid #eee;'>Qty</th>
-                            <th style='text-align:right; padding:10px 0; border-bottom:2px solid #eee;'>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {$itemsHtml}
-                    </tbody>
-                </table>
-
-                <div style='margin-top:20px; background:#f9fafb; border-radius:12px; padding:16px;'>
-                    <p style='margin:0; font-size:18px;'>
-                        <strong>Total:</strong> Rs. " . formatMoney($total) . "
-                    </p>
-                </div>
-
-                <p style='line-height:1.6; margin-top:22px;'>
-                    We hope you enjoyed your meal. You can view this order from your FoodExpress order history.
-                </p>
-
-                <p style='margin-top:24px;'>
-                    Kind regards,<br>
-                    <strong>FoodExpress Team</strong><br>
-                    foodexpressnp.support@gmail.com
-                </p>
-            </div>
+      <div style='padding:38px;'>
+        <div style='display:inline-block; background:#ECFDF3; color:#15803D; border:1px solid #BBF7D0; border-radius:999px; padding:9px 14px; font-size:13px; font-weight:900; margin-bottom:18px;'>
+          Delivered successfully
         </div>
-    ";
+
+        <h1 style='margin:0 0 14px; font-size:30px; line-height:1.25; letter-spacing:-0.7px; color:#12203A;'>
+          Your FoodExpress order has arrived
+        </h1>
+
+        <p style='font-size:16px; line-height:1.75; margin:0 0 24px; color:#4B5563;'>
+          Hi {$safeCustomerName}, your order from <strong>{$safeRestaurantName}</strong> has been delivered successfully.
+        </p>
+
+        <div style='background:#ECFDF3; border:1px solid #BBF7D0; border-radius:20px; padding:24px; margin:26px 0;'>
+          <table style='width:100%; border-collapse:collapse;'>
+            <tr>
+              <td style='padding:0 0 14px; color:#166534; font-size:13px; font-weight:800;'>ORDER NUMBER</td>
+              <td style='padding:0 0 14px; text-align:right; color:#12203A; font-size:15px; font-weight:900;'>{$safeOrderNumber}</td>
+            </tr>
+            <tr>
+              <td style='padding:0 0 14px; color:#166534; font-size:13px; font-weight:800;'>RESTAURANT</td>
+              <td style='padding:0 0 14px; text-align:right; color:#12203A; font-size:15px; font-weight:800;'>{$safeRestaurantName}</td>
+            </tr>
+            <tr>
+              <td style='padding:0 0 14px; color:#166534; font-size:13px; font-weight:800;'>PAYMENT</td>
+              <td style='padding:0 0 14px; text-align:right; color:#12203A; font-size:15px; font-weight:800;'>{$safePaymentMethod}</td>
+            </tr>
+            <tr>
+              <td style='padding:0 0 14px; color:#166534; font-size:13px; font-weight:800;'>DELIVERED AT</td>
+              <td style='padding:0 0 14px; text-align:right; color:#12203A; font-size:15px; font-weight:800;'>{$safeDeliveredAt}</td>
+            </tr>
+            <tr>
+              <td style='padding:0; color:#166534; font-size:13px; font-weight:800;'>TOTAL</td>
+              <td style='padding:0; text-align:right; color:#12203A; font-size:22px; font-weight:900;'>Rs. " . formatMoney($total) . "</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style='border:1px solid #E9E2DC; border-radius:20px; padding:24px; margin:28px 0;'>
+          <h2 style='font-size:20px; margin:0 0 14px; color:#12203A;'>Order receipt</h2>
+
+          <table style='width:100%; border-collapse:collapse;'>
+            <thead>
+              <tr>
+                <th style='text-align:left; padding:0 0 12px; border-bottom:2px solid #E9E2DC; color:#6B7280; font-size:13px;'>Item</th>
+                <th style='text-align:center; padding:0 0 12px; border-bottom:2px solid #E9E2DC; color:#6B7280; font-size:13px;'>Qty</th>
+                <th style='text-align:right; padding:0 0 12px; border-bottom:2px solid #E9E2DC; color:#6B7280; font-size:13px;'>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {$itemsHtml}
+            </tbody>
+          </table>
+        </div>
+
+        <div style='background:#fff7f5; border:1px solid #ffd2c8; border-radius:20px; padding:24px; margin:28px 0;'>
+          <h2 style='font-size:20px; margin:0 0 10px; color:#12203A;'>How was your order?</h2>
+          <p style='margin:0; font-size:15px; line-height:1.7; color:#4B5563;'>
+            Your feedback helps FoodExpress improve restaurant quality and rider experience. You can review this order from your FoodExpress account.
+          </p>
+        </div>
+
+        <p style='margin:24px 0 0; font-size:15px; line-height:1.7; color:#4B5563; text-align:center;'>
+          Thank you for choosing FoodExpress. We hope to deliver to you again soon.
+        </p>
+      </div>
+
+      " . buildEmailFooter() . "
+
+    </div>
+  </div>
+</body>
+</html>
+";
 
     return queueEmail(
         $conn,
@@ -405,6 +588,7 @@ function queueOrderDeliveredEmail($conn, $orderData, $orderItems) {
 | Bootstrap DB + Model
 |--------------------------------------------------------------------------
 */
+
 function createAppNotification($notification, $data) {
     try {
         return $notification->create($data);
@@ -627,28 +811,28 @@ switch ($action) {
 
             $tax = round($subtotal * 0.10, 2);
 
-if ($subtotal <= 0) {
-    $delivery_fee = 0.00;
-} elseif ($subtotal >= 1500) {
-    $delivery_fee = 0.00;
-} elseif ($subtotal >= 1000) {
-    $delivery_fee = 20.00;
-} elseif ($subtotal >= 500) {
-    $delivery_fee = 30.00;
-} else {
-    $delivery_fee = 50.00;
-}
+            if ($subtotal <= 0) {
+                $delivery_fee = 0.00;
+            } elseif ($subtotal >= 1500) {
+                $delivery_fee = 0.00;
+            } elseif ($subtotal >= 1000) {
+                $delivery_fee = 20.00;
+            } elseif ($subtotal >= 500) {
+                $delivery_fee = 30.00;
+            } else {
+                $delivery_fee = 50.00;
+            }
 
-if (isset($input['delivery_fee'])) {
-    $incomingDeliveryFee = floatval($input['delivery_fee']);
+            if (isset($input['delivery_fee'])) {
+                $incomingDeliveryFee = floatval($input['delivery_fee']);
 
-    if ($incomingDeliveryFee > 5 || $delivery_fee == 0.00) {
-        $delivery_fee = round($incomingDeliveryFee, 2);
-    }
-}
+                if ($incomingDeliveryFee > 5 || $delivery_fee == 0.00) {
+                    $delivery_fee = round($incomingDeliveryFee, 2);
+                }
+            }
 
-$discountAmount = isset($input['discount_amount']) ? floatval($input['discount_amount']) : 0;
-$total = round(max(0, $subtotal + $tax + $delivery_fee - $discountAmount), 2);
+            $discountAmount = isset($input['discount_amount']) ? floatval($input['discount_amount']) : 0;
+            $total = round(max(0, $subtotal + $tax + $delivery_fee - $discountAmount), 2);
 
             $orderData = [
                 "user_id" => $input['user_id'] ?? null,
@@ -694,26 +878,28 @@ $total = round(max(0, $subtotal + $tax + $delivery_fee - $discountAmount), 2);
                     } catch (Throwable $emailException) {
                         $emailQueued = false;
                     }
+
                     $createdOrderData = $order->getById($order_id);
 
-if ($createdOrderData) {
-    createCustomerNotification(
-        $notification,
-        $createdOrderData,
-        "order_placed",
-        "Order placed",
-        "Your order " . $result['order_number'] . " was sent to the restaurant."
-    );
+                    if ($createdOrderData) {
+                        createCustomerNotification(
+                            $notification,
+                            $createdOrderData,
+                            "order_placed",
+                            "Order placed",
+                            "Your order " . $result['order_number'] . " was sent to the restaurant."
+                        );
 
-    createOwnerNotification(
-        $notification,
-        $conn,
-        $createdOrderData,
-        "new_order",
-        "New order received",
-        "A new order " . $result['order_number'] . " has been placed for your restaurant."
-    );
-}
+                        createOwnerNotification(
+                            $notification,
+                            $conn,
+                            $createdOrderData,
+                            "new_order",
+                            "New order received",
+                            "A new order " . $result['order_number'] . " has been placed for your restaurant."
+                        );
+                    }
+
                     $createdOrders[] = [
                         "order_id" => $order_id,
                         "order_number" => $result['order_number'],
@@ -756,12 +942,6 @@ if ($createdOrderData) {
         ]);
         break;
 
-    /*
-    |--------------------------------------------------------------------------
-    | GET order by ID
-    |--------------------------------------------------------------------------
-    */
-
     case 'single':
         $order_id = $_GET['id'] ?? null;
 
@@ -789,12 +969,6 @@ if ($createdOrderData) {
             ]);
         }
         break;
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET order by order number
-    |--------------------------------------------------------------------------
-    */
 
     case 'by_number':
         $order_number = $_GET['order_number'] ?? null;
@@ -824,12 +998,6 @@ if ($createdOrderData) {
         }
         break;
 
-    /*
-    |--------------------------------------------------------------------------
-    | GET all orders
-    |--------------------------------------------------------------------------
-    */
-
     case 'all':
         $limit = intval($_GET['limit'] ?? 50);
         $offset = intval($_GET['offset'] ?? 0);
@@ -842,12 +1010,6 @@ if ($createdOrderData) {
             "count" => count($orders)
         ]);
         break;
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET orders by status
-    |--------------------------------------------------------------------------
-    */
 
     case 'by_status':
         $status = $_GET['status'] ?? null;
@@ -868,12 +1030,6 @@ if ($createdOrderData) {
             "count" => count($orders)
         ]);
         break;
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET available deliveries for riders
-    |--------------------------------------------------------------------------
-    */
 
     case 'available_deliveries':
         try {
@@ -1006,22 +1162,16 @@ if ($createdOrderData) {
 
         break;
 
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE order status
-    |--------------------------------------------------------------------------
-    */
-
     case 'update_status':
-    $input = json_decode(file_get_contents("php://input"), true);
+        $input = json_decode(file_get_contents("php://input"), true);
 
-    if (!isset($input['order_id'], $input['status'])) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Order ID and status required"
-        ]);
-        break;
-    }
+        if (!isset($input['order_id'], $input['status'])) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Order ID and status required"
+            ]);
+            break;
+        }
 
         $orderId = intval($input['order_id']);
         $newStatus = trim($input['status']);
@@ -1080,241 +1230,215 @@ if ($createdOrderData) {
         ]);
         break;
 
-    /*
-    |--------------------------------------------------------------------------
-    | ASSIGN rider to order
-    |--------------------------------------------------------------------------
-    */
-
     case 'assign_rider':
-    $input = json_decode(file_get_contents("php://input"), true);
+        $input = json_decode(file_get_contents("php://input"), true);
 
-    if (!isset($input['order_id'], $input['rider_id'], $input['rider_name'])) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Order ID, rider ID and rider name are required"
-        ]);
-        break;
-    }
-
-    $orderId = intval($input['order_id']);
-    $riderId = intval($input['rider_id']);
-    $riderName = trim($input['rider_name']);
-    $riderEmail = trim($input['rider_email'] ?? "");
-    $riderPhone = trim($input['rider_phone'] ?? "");
-
-    $existingOrder = $order->getById($orderId);
-
-    if (!$existingOrder) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Order not found"
-        ]);
-        break;
-    }
-
-    $result = $order->assignRider(
-        $orderId,
-        $riderId,
-        $riderName,
-        $riderEmail,
-        $riderPhone
-    );
-
-    if ($result) {
-        $updatedOrder = $order->getById($orderId);
-
-        if ($updatedOrder) {
-            $orderNumber = $updatedOrder["order_number"] ?? ("#" . $orderId);
-
-            $riderDisplayName = trim($updatedOrder["rider_name"] ?? $riderName ?? "FoodExpress Rider");
-$riderDisplayPhone = trim($updatedOrder["rider_phone"] ?? $riderPhone ?? "");
-
-if ($riderDisplayName === "") {
-    $riderDisplayName = "FoodExpress Rider";
-}
-
-$customerRiderMessage = $riderDisplayName . " is your rider for order " . $orderNumber . ". You can call or message your rider from tracking.";
-
-if ($riderDisplayPhone !== "") {
-    $customerRiderMessage = $riderDisplayName . " is your rider for order " . $orderNumber . ". Phone: " . $riderDisplayPhone . ". You can call or message your rider from tracking.";
-}
-
-createCustomerNotification(
-    $notification,
-    $updatedOrder,
-    "rider_assigned",
-    "Rider assigned",
-    $customerRiderMessage
-);
-
-createOwnerNotification(
-    $notification,
-    $conn,
-    $updatedOrder,
-    "rider_assigned_owner",
-    "Rider accepted pickup",
-    $riderDisplayName . " accepted pickup for order " . $orderNumber . "."
-);
-
-createRiderNotification(
-    $notification,
-    $updatedOrder,
-    "delivery_accepted",
-    "Delivery accepted",
-    "You accepted order " . $orderNumber . ". Pickup is from the restaurant."
-);
+        if (!isset($input['order_id'], $input['rider_id'], $input['rider_name'])) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Order ID, rider ID and rider name are required"
+            ]);
+            break;
         }
-    }
 
-    echo json_encode([
-        "success" => $result,
-        "message" => $result
-            ? "Rider assigned successfully"
-            : "Failed to assign rider"
-    ]);
-    break;
+        $orderId = intval($input['order_id']);
+        $riderId = intval($input['rider_id']);
+        $riderName = trim($input['rider_name']);
+        $riderEmail = trim($input['rider_email'] ?? "");
+        $riderPhone = trim($input['rider_phone'] ?? "");
 
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE delivery status from rider side
-    |--------------------------------------------------------------------------
-    */
+        $existingOrder = $order->getById($orderId);
 
-    case 'update_delivery_status':
-    $input = json_decode(file_get_contents("php://input"), true);
+        if (!$existingOrder) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Order not found"
+            ]);
+            break;
+        }
 
-    if (!isset($input['order_id'], $input['delivery_status'])) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Order ID and delivery status are required"
-        ]);
-        break;
-    }
+        $result = $order->assignRider(
+            $orderId,
+            $riderId,
+            $riderName,
+            $riderEmail,
+            $riderPhone
+        );
 
-    $orderId = intval($input['order_id']);
-    $deliveryStatus = trim($input['delivery_status']);
+        if ($result) {
+            $updatedOrder = $order->getById($orderId);
 
-    $allowedDeliveryStatuses = [
-        "searching",
-        "assigned",
-        "picked_up",
-        "on_the_way",
-        "delivered"
-    ];
+            if ($updatedOrder) {
+                $orderNumber = $updatedOrder["order_number"] ?? ("#" . $orderId);
 
-    if (!in_array($deliveryStatus, $allowedDeliveryStatuses, true)) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Invalid delivery status"
-        ]);
-        break;
-    }
+                $riderDisplayName = trim($updatedOrder["rider_name"] ?? $riderName ?? "FoodExpress Rider");
+                $riderDisplayPhone = trim($updatedOrder["rider_phone"] ?? $riderPhone ?? "");
 
-    $existingOrder = $order->getById($orderId);
+                if ($riderDisplayName === "") {
+                    $riderDisplayName = "FoodExpress Rider";
+                }
 
-    if (!$existingOrder) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Order not found"
-        ]);
-        break;
-    }
+                $customerRiderMessage = $riderDisplayName . " is your rider for order " . $orderNumber . ". You can call or message your rider from tracking.";
 
-    $oldDeliveryStatus = $existingOrder["delivery_status"] ?? "";
+                if ($riderDisplayPhone !== "") {
+                    $customerRiderMessage = $riderDisplayName . " is your rider for order " . $orderNumber . ". Phone: " . $riderDisplayPhone . ". You can call or message your rider from tracking.";
+                }
 
-    if ($deliveryStatus === "delivered") {
-        $result = $order->markDelivered($orderId);
-    } else {
-        $result = $order->updateDeliveryStatus($orderId, $deliveryStatus);
-    }
-
-    if ($result && $oldDeliveryStatus !== $deliveryStatus) {
-        $updatedOrder = $order->getById($orderId);
-
-        if ($updatedOrder) {
-            $orderNumber = $updatedOrder["order_number"] ?? ("#" . $orderId);
-            $riderName = trim($updatedOrder["rider_name"] ?? "Your rider");
-
-            if ($deliveryStatus === "picked_up") {
                 createCustomerNotification(
                     $notification,
                     $updatedOrder,
-                    "rider_picked_up",
-                    "Order picked up",
-                    $riderName . " picked up your order " . $orderNumber . "."
+                    "rider_assigned",
+                    "Rider assigned",
+                    $customerRiderMessage
                 );
 
                 createOwnerNotification(
                     $notification,
                     $conn,
                     $updatedOrder,
-                    "rider_picked_up_owner",
-                    "Order picked up",
-                    $riderName . " picked up order " . $orderNumber . "."
-                );
-            }
-
-            if ($deliveryStatus === "on_the_way") {
-                createCustomerNotification(
-                    $notification,
-                    $updatedOrder,
-                    "rider_on_the_way",
-                    "Rider on the way",
-                    $riderName . " is on the way with your order " . $orderNumber . "."
-                );
-            }
-
-            if ($deliveryStatus === "delivered") {
-                createCustomerNotification(
-                    $notification,
-                    $updatedOrder,
-                    "order_delivered",
-                    "Order delivered",
-                    "Your order " . $orderNumber . " was delivered successfully."
-                );
-
-                createOwnerNotification(
-                    $notification,
-                    $conn,
-                    $updatedOrder,
-                    "order_delivered_owner",
-                    "Order delivered",
-                    "Order " . $orderNumber . " was delivered successfully."
+                    "rider_assigned_owner",
+                    "Rider accepted pickup",
+                    $riderDisplayName . " accepted pickup for order " . $orderNumber . "."
                 );
 
                 createRiderNotification(
                     $notification,
                     $updatedOrder,
-                    "delivery_completed",
-                    "Delivery completed",
-                    "Delivery for order " . $orderNumber . " was completed. Earnings added."
+                    "delivery_accepted",
+                    "Delivery accepted",
+                    "You accepted order " . $orderNumber . ". Pickup is from the restaurant."
                 );
             }
         }
-    }
-
-    echo json_encode([
-        "success" => $result,
-        "message" => $result
-            ? ($deliveryStatus === "delivered" ? "Delivery completed" : "Delivery status updated")
-            : "Failed to update delivery status"
-    ]);
-    break;
-
-        $result = $order->updateDeliveryStatus($orderId, $deliveryStatus);
 
         echo json_encode([
             "success" => $result,
-            "message" => $result ? "Delivery status updated" : "Failed to update delivery status"
+            "message" => $result
+                ? "Rider assigned successfully"
+                : "Failed to assign rider"
         ]);
         break;
 
-    /*
-    |--------------------------------------------------------------------------
-    | GET total sales
-    |--------------------------------------------------------------------------
-    */
+    case 'update_delivery_status':
+        $input = json_decode(file_get_contents("php://input"), true);
+
+        if (!isset($input['order_id'], $input['delivery_status'])) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Order ID and delivery status are required"
+            ]);
+            break;
+        }
+
+        $orderId = intval($input['order_id']);
+        $deliveryStatus = trim($input['delivery_status']);
+
+        $allowedDeliveryStatuses = [
+            "searching",
+            "assigned",
+            "picked_up",
+            "on_the_way",
+            "delivered"
+        ];
+
+        if (!in_array($deliveryStatus, $allowedDeliveryStatuses, true)) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Invalid delivery status"
+            ]);
+            break;
+        }
+
+        $existingOrder = $order->getById($orderId);
+
+        if (!$existingOrder) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Order not found"
+            ]);
+            break;
+        }
+
+        $oldDeliveryStatus = $existingOrder["delivery_status"] ?? "";
+
+        if ($deliveryStatus === "delivered") {
+            $result = $order->markDelivered($orderId);
+        } else {
+            $result = $order->updateDeliveryStatus($orderId, $deliveryStatus);
+        }
+
+        if ($result && $oldDeliveryStatus !== $deliveryStatus) {
+            $updatedOrder = $order->getById($orderId);
+
+            if ($updatedOrder) {
+                $orderNumber = $updatedOrder["order_number"] ?? ("#" . $orderId);
+                $riderName = trim($updatedOrder["rider_name"] ?? "Your rider");
+
+                if ($deliveryStatus === "picked_up") {
+                    createCustomerNotification(
+                        $notification,
+                        $updatedOrder,
+                        "rider_picked_up",
+                        "Order picked up",
+                        $riderName . " picked up your order " . $orderNumber . "."
+                    );
+
+                    createOwnerNotification(
+                        $notification,
+                        $conn,
+                        $updatedOrder,
+                        "rider_picked_up_owner",
+                        "Order picked up",
+                        $riderName . " picked up order " . $orderNumber . "."
+                    );
+                }
+
+                if ($deliveryStatus === "on_the_way") {
+                    createCustomerNotification(
+                        $notification,
+                        $updatedOrder,
+                        "rider_on_the_way",
+                        "Rider on the way",
+                        $riderName . " is on the way with your order " . $orderNumber . "."
+                    );
+                }
+
+                if ($deliveryStatus === "delivered") {
+                    createCustomerNotification(
+                        $notification,
+                        $updatedOrder,
+                        "order_delivered",
+                        "Order delivered",
+                        "Your order " . $orderNumber . " was delivered successfully."
+                    );
+
+                    createOwnerNotification(
+                        $notification,
+                        $conn,
+                        $updatedOrder,
+                        "order_delivered_owner",
+                        "Order delivered",
+                        "Order " . $orderNumber . " was delivered successfully."
+                    );
+
+                    createRiderNotification(
+                        $notification,
+                        $updatedOrder,
+                        "delivery_completed",
+                        "Delivery completed",
+                        "Delivery for order " . $orderNumber . " was completed. Earnings added."
+                    );
+                }
+            }
+        }
+
+        echo json_encode([
+            "success" => $result,
+            "message" => $result
+                ? ($deliveryStatus === "delivered" ? "Delivery completed" : "Delivery status updated")
+                : "Failed to update delivery status"
+        ]);
+        break;
 
     case 'total_sales':
         $total_sales = $order->getTotalSales();
@@ -1325,12 +1449,6 @@ createRiderNotification(
         ]);
         break;
 
-    /*
-    |--------------------------------------------------------------------------
-    | GET orders count
-    |--------------------------------------------------------------------------
-    */
-
     case 'count':
         $count = $order->getOrdersCount();
 
@@ -1339,38 +1457,40 @@ createRiderNotification(
             "count" => $count
         ]);
         break;
-case 'active_delivery':
-    $riderId = intval($_GET['rider_id'] ?? 0);
 
-    if (!$riderId) {
-        echo json_encode([
-            "success" => false,
-            "message" => "rider_id required"
-        ]);
-        break;
-    }
+    case 'active_delivery':
+        $riderId = intval($_GET['rider_id'] ?? 0);
 
-    $activeOrder = $order->getActiveDeliveryByRider($riderId);
+        if (!$riderId) {
+            echo json_encode([
+                "success" => false,
+                "message" => "rider_id required"
+            ]);
+            break;
+        }
 
-    if (!$activeOrder) {
+        $activeOrder = $order->getActiveDeliveryByRider($riderId);
+
+        if (!$activeOrder) {
+            echo json_encode([
+                "success" => true,
+                "data" => null
+            ]);
+            break;
+        }
+
+        $activeOrder['items'] = $order->getItems($activeOrder['id']);
+
         echo json_encode([
             "success" => true,
-            "data" => null
+            "data" => $activeOrder
         ]);
         break;
-    }
 
-    $activeOrder['items'] = $order->getItems($activeOrder['id']);
-
-    echo json_encode([
-        "success" => true,
-        "data" => $activeOrder
-    ]);
-    break;
     default:
         echo json_encode([
             "success" => false,
-            "message" => "Invalid action. Available actions: create, single, by_number, all, by_status, available_deliveries, update_status, assign_rider, update_delivery_status, total_sales, count"
+            "message" => "Invalid action. Available actions: create, single, by_number, all, by_status, available_deliveries, update_status, assign_rider, update_delivery_status, total_sales, count, active_delivery"
         ]);
         break;
 }

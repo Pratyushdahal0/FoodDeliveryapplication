@@ -1058,7 +1058,7 @@
         const orderNumber = encodeURIComponent(
           order.orderNumber || order.order_number || ""
         );
-        window.location.href = `loggedContact.html?order=${orderNumber}`;
+        window.location.href = `loggedContact.html?order=${orderNumber}&source=track_order&issue=order_issue`;
       };
     }
 

@@ -820,3 +820,26 @@ footer,
   font-size: 0.78rem !important;
   padding: 9px 13px !important;
 }
+/* ================= FOOD EXPRESS BRAND LOGO ================= */
+
+.brand-logo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.brand-logo-img {
+  width: 172px;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .brand-logo-img {
+    width: 145px;
+  }
+}

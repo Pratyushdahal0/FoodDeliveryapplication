@@ -8,7 +8,9 @@ console.log("[notifications.js] Loaded - backend notification bell with smart ro
   let unreadCount = 0;
   let pollTimer = null;
   let isLoading = false;
-  let isBound = false;
+
+  let boundBell = null;
+  let outsideClickBound = false;
 
   function bindNotificationBell() {
     const bell = document.getElementById("notificationBell");
@@ -20,8 +22,13 @@ console.log("[notifications.js] Loaded - backend notification bell with smart ro
       return;
     }
 
-    if (!isBound) {
-      bell.addEventListener("click", async (event) => {
+    /*
+      Important:
+      Navbar is rendered dynamically.
+      If navbar.js replaces the bell element, we must bind the new element again.
+    */
+    if (boundBell !== bell) {
+      bell.onclick = async function (event) {
         event.preventDefault();
         event.stopPropagation();
 
@@ -30,17 +37,25 @@ console.log("[notifications.js] Loaded - backend notification bell with smart ro
 
         await loadNotificationsFromBackend();
         renderDropdown();
-      });
+      };
 
-      document.addEventListener("click", (event) => {
-        const wrapper = bell.closest(".notification-wrapper");
+      boundBell = bell;
+    }
 
-        if (wrapper && !wrapper.contains(event.target)) {
-          dropdown.classList.remove("show", "open");
+    if (!outsideClickBound) {
+      document.addEventListener("click", function (event) {
+        const activeDropdown = document.getElementById("notificationDropdown");
+        const activeBell = document.getElementById("notificationBell");
+        const wrapper = activeBell?.closest(".notification-wrapper");
+
+        if (!activeDropdown || !activeBell || !wrapper) return;
+
+        if (!wrapper.contains(event.target)) {
+          activeDropdown.classList.remove("show", "open");
         }
       });
 
-      isBound = true;
+      outsideClickBound = true;
     }
 
     loadNotificationsFromBackend();
@@ -52,17 +67,23 @@ console.log("[notifications.js] Loaded - backend notification bell with smart ro
       readJson("foodExpressCurrentUser", null) ||
       readJson("currentUser", null) ||
       readJson("foodExpressProfile", null) ||
-      readJson("foodExpressUserProfile", null);
+      readJson("foodExpressUserProfile", null) ||
+      readJson("foodExpressAuthUser", null) ||
+      readJson("loggedInUser", null) ||
+      readJson("userProfile", null);
 
     const email =
       profile?.email ||
       profile?.user_email ||
       localStorage.getItem("userEmail") ||
+      localStorage.getItem("foodExpressUserEmail") ||
+      localStorage.getItem("loggedInEmail") ||
       "";
 
     const role =
       profile?.role ||
       localStorage.getItem("userRole") ||
+      localStorage.getItem("foodExpressUserRole") ||
       "customer";
 
     return {
@@ -77,6 +98,7 @@ console.log("[notifications.js] Loaded - backend notification bell with smart ro
     if (value === "restaurant-owner") return "restaurant-owner";
     if (value === "restaurant_owner") return "restaurant-owner";
     if (value === "owner") return "restaurant-owner";
+    if (value === "restaurant") return "restaurant-owner";
 
     if (value === "delivery-rider") return "delivery-rider";
     if (value === "delivery_rider") return "delivery-rider";
@@ -138,7 +160,7 @@ console.log("[notifications.js] Loaded - backend notification bell with smart ro
   function startPolling() {
     if (pollTimer) return;
 
-    pollTimer = setInterval(() => {
+    pollTimer = setInterval(function () {
       if (document.hidden) return;
       loadNotificationsFromBackend();
     }, POLL_INTERVAL);
@@ -190,109 +212,114 @@ console.log("[notifications.js] Loaded - backend notification bell with smart ro
 
     document
       .getElementById("markAllNotificationsRead")
-      ?.addEventListener("click", async (event) => {
+      ?.addEventListener("click", async function (event) {
+        event.preventDefault();
         event.stopPropagation();
+
         await markAllRead();
       });
 
-    dropdown.querySelectorAll(".notification-item").forEach((item) => {
-      item.addEventListener("click", async () => {
+    dropdown.querySelectorAll(".notification-item").forEach(function (item) {
+      item.addEventListener("click", async function () {
         const id = item.dataset.id;
         const orderNumber = item.dataset.orderNumber;
         const type = item.dataset.type;
 
         await markOneRead(id);
 
+        const activeDropdown = document.getElementById("notificationDropdown");
+        if (activeDropdown) {
+          activeDropdown.classList.remove("show", "open");
+        }
+
         routeNotificationClick(type, orderNumber);
       });
     });
   }
 
-function routeNotificationClick(type, orderNumber) {
-  const cleanType = String(type || "").trim();
-  const cleanOrderNumber = String(orderNumber || "").trim();
+  function routeNotificationClick(type, orderNumber) {
+    const cleanType = String(type || "").trim();
+    const cleanOrderNumber = String(orderNumber || "").trim();
 
-  if (!cleanOrderNumber) return;
+    if (!cleanOrderNumber) return;
 
-  const encodedOrder = encodeURIComponent(cleanOrderNumber);
+    const encodedOrder = encodeURIComponent(cleanOrderNumber);
 
-  const riderFocusTypes = [
-    "rider_assigned",
-    "rider_picked_up",
-    "rider_on_the_way",
-  ];
+    const riderFocusTypes = [
+      "rider_assigned",
+      "rider_picked_up",
+      "rider_on_the_way",
+    ];
 
-  if (riderFocusTypes.includes(cleanType)) {
-    sessionStorage.setItem("foodExpressTrackFocus", "rider");
+    if (riderFocusTypes.includes(cleanType)) {
+      sessionStorage.setItem("foodExpressTrackFocus", "rider");
 
-    const targetUrl = `track-order.html?order=${encodedOrder}&focus=rider#rider`;
-    const isTrackPage = window.location.pathname.includes("track-order.html");
+      const targetUrl = `track-order.html?order=${encodedOrder}&focus=rider#rider`;
+      const isTrackPage = window.location.pathname.includes("track-order.html");
 
-    if (isTrackPage) {
-      const params = new URLSearchParams(window.location.search);
-      const currentOrder = params.get("order") || params.get("order_number") || "";
+      if (isTrackPage) {
+        const params = new URLSearchParams(window.location.search);
+        const currentOrder =
+          params.get("order") || params.get("order_number") || "";
 
-      if (String(currentOrder) === cleanOrderNumber) {
-        if (typeof window.focusTrackSection === "function") {
-          window.focusTrackSection("rider");
-        } else {
-          const riderCard = document.getElementById("riderInfoCard");
-          if (riderCard) {
-            riderCard.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-            });
+        if (String(currentOrder) === cleanOrderNumber) {
+          if (typeof window.focusTrackSection === "function") {
+            window.focusTrackSection("rider");
+          } else {
+            const riderCard = document.getElementById("riderInfoCard");
+            if (riderCard) {
+              riderCard.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
+            }
           }
+
+          return;
         }
-
-        const dropdown = document.getElementById("notificationDropdown");
-        if (dropdown) dropdown.classList.remove("show", "open");
-
-        return;
       }
+
+      window.location.href = targetUrl;
+      return;
     }
 
-    window.location.href = targetUrl;
-    return;
-  }
+    if (cleanType === "order_delivered") {
+      sessionStorage.setItem("foodExpressTrackFocus", "summary");
+      window.location.href = `track-order.html?order=${encodedOrder}&focus=summary#summary`;
+      return;
+    }
 
-  if (cleanType === "order_delivered") {
-    sessionStorage.setItem("foodExpressTrackFocus", "summary");
-    window.location.href = `track-order.html?order=${encodedOrder}&focus=summary#summary`;
-    return;
-  }
+    if (
+      [
+        "order_placed",
+        "order_confirmed",
+        "food_ready",
+        "order_cancelled",
+      ].includes(cleanType)
+    ) {
+      window.location.href = `track-order.html?order=${encodedOrder}`;
+      return;
+    }
 
-  if (
-    [
-      "order_placed",
-      "order_confirmed",
-      "food_ready",
-      "order_cancelled",
-    ].includes(cleanType)
-  ) {
+    if (
+      [
+        "new_order",
+        "rider_assigned_owner",
+        "rider_picked_up_owner",
+        "order_delivered_owner",
+      ].includes(cleanType)
+    ) {
+      window.location.href = `owner-orders.html?order=${encodedOrder}`;
+      return;
+    }
+
+    if (["delivery_accepted", "delivery_completed"].includes(cleanType)) {
+      window.location.href = `rider-deliveries.html?order=${encodedOrder}`;
+      return;
+    }
+
     window.location.href = `track-order.html?order=${encodedOrder}`;
-    return;
   }
-
-  if (
-    [
-      "new_order",
-      "rider_assigned_owner",
-      "rider_picked_up_owner",
-      "order_delivered_owner",
-    ].includes(cleanType)
-  ) {
-    window.location.href = `owner-orders.html?order=${encodedOrder}`;
-    return;
-  }
-
-  if (["delivery_accepted", "delivery_completed"].includes(cleanType)) {
-    window.location.href = `rider-deliveries.html?order=${encodedOrder}`;
-    return;
-  }
-
-  window.location.href = `track-order.html?order=${encodedOrder}`;
-}
 
   function createNotificationHTML(notification) {
     const isUnread = Number(notification.is_read || 0) === 0;
@@ -313,9 +340,15 @@ function routeNotificationClick(type, orderNumber) {
         </div>
 
         <div class="notification-content">
-          <h4 class="notification-title">${escapeHtml(notification.title || "Notification")}</h4>
-          <p class="notification-message">${escapeHtml(notification.message || "")}</p>
-          <span class="notification-time">${escapeHtml(formatTimeAgo(notification.created_at))}</span>
+          <h4 class="notification-title">${escapeHtml(
+            notification.title || "Notification"
+          )}</h4>
+          <p class="notification-message">${escapeHtml(
+            notification.message || ""
+          )}</p>
+          <span class="notification-time">${escapeHtml(
+            formatTimeAgo(notification.created_at)
+          )}</span>
         </div>
       </div>
     `;
@@ -346,34 +379,42 @@ function routeNotificationClick(type, orderNumber) {
     const user = getCurrentNotificationUser();
     if (!user.email) return;
 
-    await fetch(`${NOTIFICATION_API}?action=mark_all_read`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: user.email,
-        role: user.role,
-      }),
-    });
+    try {
+      await fetch(`${NOTIFICATION_API}?action=mark_all_read`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: user.email,
+          role: user.role,
+        }),
+      });
 
-    await loadNotificationsFromBackend();
+      await loadNotificationsFromBackend();
+    } catch (error) {
+      console.error("[notifications.js] Mark all read failed:", error);
+    }
   }
 
   async function markOneRead(id) {
     if (!id) return;
 
-    await fetch(`${NOTIFICATION_API}?action=mark_read`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        id: Number(id),
-      }),
-    });
+    try {
+      await fetch(`${NOTIFICATION_API}?action=mark_read`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: Number(id),
+        }),
+      });
 
-    await loadNotificationsFromBackend();
+      await loadNotificationsFromBackend();
+    } catch (error) {
+      console.error("[notifications.js] Mark one read failed:", error);
+    }
   }
 
   function formatTimeAgo(timestamp) {
@@ -415,8 +456,9 @@ function routeNotificationClick(type, orderNumber) {
   window.bindNotificationBell = bindNotificationBell;
   window.loadNotificationsFromBackend = loadNotificationsFromBackend;
 
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", function () {
     setTimeout(bindNotificationBell, 100);
     setTimeout(bindNotificationBell, 500);
+    setTimeout(bindNotificationBell, 1000);
   });
 })();
