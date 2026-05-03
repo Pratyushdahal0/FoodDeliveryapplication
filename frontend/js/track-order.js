@@ -1,7 +1,8 @@
 (() => {
-  console.log("[track-order.js] Loaded - backend live tracking fixed");
+  console.log("[track-order.js] Loaded - backend live tracking + delivered review fixed");
 
   const ORDER_API_URL = "../../backend/controllers/OrderController.php";
+  const ORDER_REVIEW_API_URL = "../../backend/controllers/OrderReviewController.php";
   const TRACK_ORDER_HISTORY_KEY = "foodExpressOrders";
   const TRACK_LAST_ORDER_KEY = "lastOrder";
   const DEFAULT_IMAGE = "";
@@ -233,16 +234,22 @@
       restaurant_id: order.restaurant_id || order.restaurantId || "",
 
       restaurantName:
-        order.restaurantName ||
-        order.restaurant_name ||
-        order.restaurant ||
-        "Restaurant",
+        cleanRestaurantName(
+          order.restaurantName ||
+            order.restaurant_name ||
+            order.restaurant ||
+            getFirstItemRestaurant(order) ||
+            "Spicy Grill"
+        ),
 
       restaurant_name:
-        order.restaurant_name ||
-        order.restaurantName ||
-        order.restaurant ||
-        "Restaurant",
+        cleanRestaurantName(
+          order.restaurant_name ||
+            order.restaurantName ||
+            order.restaurant ||
+            getFirstItemRestaurant(order) ||
+            "Spicy Grill"
+        ),
 
       customerName:
         order.customerName ||
@@ -307,7 +314,34 @@
       items: Array.isArray(order.items) ? order.items : [],
     };
 
+    normalized.items = normalized.items.map((item) => ({
+      ...item,
+      restaurant_name:
+        item.restaurant_name || item.restaurantName || normalized.restaurantName,
+      restaurantName:
+        item.restaurantName || item.restaurant_name || normalized.restaurantName,
+    }));
+
     return normalized;
+  }
+
+  function getFirstItemRestaurant(order) {
+    const first = Array.isArray(order.items) ? order.items[0] : null;
+    return first?.restaurant_name || first?.restaurantName || first?.storeName || "";
+  }
+
+  function cleanRestaurantName(name) {
+    const value = String(name || "").trim();
+
+    if (
+      !value ||
+      value.toLowerCase() === "restaurant" ||
+      value.toLowerCase() === "unknown restaurant"
+    ) {
+      return "Spicy Grill";
+    }
+
+    return value;
   }
 
   function saveLatestOrderLocally(order) {
@@ -340,12 +374,12 @@
   }
 
   function renderTrackingPage(order) {
-  latestOrder = normalizeOrder(order);
-  showTrackState();
-  hydrateLatestOrder();
-  updateStepUI(latestOrder);
-  handleTrackPageAnchorScroll();
-}
+    latestOrder = normalizeOrder(order);
+    showTrackState();
+    hydrateLatestOrder();
+    updateStepUI(latestOrder);
+    handleTrackPageAnchorScroll();
+  }
 
   function showEmptyState() {
     const empty = document.getElementById("emptyOrderState");
@@ -365,7 +399,7 @@
 
   function hydrateLatestOrder() {
     setText("orderNumberBadge", latestOrder.orderNumber || "#ORDER");
-    setText("restaurantName", latestOrder.restaurantName || "Restaurant");
+    setText("restaurantName", latestOrder.restaurantName || "Spicy Grill");
 
     setText(
       "deliveryAddress",
@@ -390,6 +424,7 @@
     fillStepTimesFromHistory(latestOrder);
     setLiveNote(latestOrder);
     renderRiderInfo(latestOrder);
+    renderDeliveredExperience(latestOrder);
   }
 
   function renderSummaryItems() {
@@ -420,10 +455,10 @@
             ${
               image
                 ? `
-                  <img 
-                    src="${escapeHtml(image)}" 
-                    alt="${escapeHtml(itemName)}" 
-                    onerror="this.style.display='none'" 
+                  <img
+                    src="${escapeHtml(image)}"
+                    alt="${escapeHtml(itemName)}"
+                    onerror="this.style.display='none'"
                   />
                 `
                 : `
@@ -614,181 +649,180 @@
   }
 
   function renderRiderInfo(order) {
-  const riderName = getRiderName(order);
-  const deliveryStatus = getDeliveryStatus(order);
-  const existing = document.getElementById("riderInfoCard");
+    const riderName = getRiderName(order);
+    const deliveryStatus = getDeliveryStatus(order);
+    const existing = document.getElementById("riderInfoCard");
 
-  if (!riderName || deliveryStatus === "searching") {
-    if (existing) existing.remove();
-    return;
-  }
+    if (!riderName || deliveryStatus === "searching") {
+      if (existing) existing.remove();
+      return;
+    }
 
-  const phone = String(order.riderPhone || order.rider_phone || "").trim();
-  const cleanPhone = phone.replace(/\s+/g, "");
+    const phone = String(order.riderPhone || order.rider_phone || "").trim();
+    const cleanPhone = phone.replace(/\s+/g, "");
 
-  const statusLabelMap = {
-    assigned: "Waiting for pickup",
-    picked_up: "Order picked up",
-    on_the_way: "On the way",
-    delivered: "Delivered",
-  };
+    const statusLabelMap = {
+      assigned: "Waiting for pickup",
+      picked_up: "Order picked up",
+      on_the_way: "On the way",
+      delivered: "Delivered",
+    };
 
-  const riderStatus = statusLabelMap[deliveryStatus] || "Assigned";
+    const riderStatus = statusLabelMap[deliveryStatus] || "Assigned";
 
-  const callButton = phone
-    ? `
-      <a
-        href="tel:${escapeHtml(cleanPhone)}"
+    const callButton = phone
+      ? `
+        <a
+          href="tel:${escapeHtml(cleanPhone)}"
+          style="
+            flex:1;
+            min-height:44px;
+            border-radius:999px;
+            background:#ef4444;
+            color:#fff;
+            text-decoration:none;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:8px;
+            font-weight:900;
+          "
+        >
+          <i class="fa-solid fa-phone"></i>
+          Call Rider
+        </a>
+      `
+      : `
+        <button
+          type="button"
+          disabled
+          style="
+            flex:1;
+            min-height:44px;
+            border-radius:999px;
+            border:none;
+            background:#e5e7eb;
+            color:#9ca3af;
+            font-weight:900;
+            cursor:not-allowed;
+          "
+        >
+          <i class="fa-solid fa-phone"></i>
+          No phone
+        </button>
+      `;
+
+    const messageButton = `
+      <button
+        type="button"
+        onclick="openRiderMessagePlaceholder()"
         style="
           flex:1;
           min-height:44px;
           border-radius:999px;
-          background:#ef4444;
-          color:#fff;
-          text-decoration:none;
+          background:#ffffff;
+          color:#111827;
+          border:1px solid #e5e7eb;
           display:flex;
           align-items:center;
           justify-content:center;
           gap:8px;
           font-weight:900;
+          cursor:pointer;
         "
       >
-        <i class="fa-solid fa-phone"></i>
-        Call Rider
-      </a>
-    `
-    : `
-      <button
-        type="button"
-        disabled
-        style="
-          flex:1;
-          min-height:44px;
-          border-radius:999px;
-          border:none;
-          background:#e5e7eb;
-          color:#9ca3af;
-          font-weight:900;
-          cursor:not-allowed;
-        "
-      >
-        <i class="fa-solid fa-phone"></i>
-        No phone
+        <i class="fa-solid fa-message"></i>
+        Message
       </button>
     `;
 
-  const messageButton = `
-    <button
-      type="button"
-      onclick="openRiderMessagePlaceholder()"
-      style="
-        flex:1;
-        min-height:44px;
-        border-radius:999px;
-        background:#ffffff;
-        color:#111827;
-        border:1px solid #e5e7eb;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        gap:8px;
-        font-weight:900;
-        cursor:pointer;
-      "
-    >
-      <i class="fa-solid fa-message"></i>
-      Message
-    </button>
-  `;
+    const html = `
+      <div
+        id="riderInfoCard"
+        class="track-info-card"
+        style="
+          margin-top:18px;
+          padding:18px;
+          border-radius:24px;
+          border:1px solid #e5e7eb;
+          background:linear-gradient(135deg,#ffffff 0%,#fff7ed 100%);
+          box-shadow:0 18px 40px rgba(15,23,42,0.08);
+        "
+      >
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <div
+            style="
+              width:56px;
+              height:56px;
+              border-radius:999px;
+              background:#fff1f1;
+              color:#e53935;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              font-weight:900;
+              font-size:18px;
+              flex-shrink:0;
+            "
+          >
+            ${escapeHtml(getInitials(riderName))}
+          </div>
 
-  const html = `
-    <div
-      id="riderInfoCard"
-      class="track-info-card"
-      style="
-        margin-top:18px;
-        padding:18px;
-        border-radius:24px;
-        border:1px solid #e5e7eb;
-        background:linear-gradient(135deg,#ffffff 0%,#fff7ed 100%);
-        box-shadow:0 18px 40px rgba(15,23,42,0.08);
-      "
-    >
-      <div style="display:flex;align-items:flex-start;gap:14px;">
-        <div
-          style="
-            width:56px;
-            height:56px;
-            border-radius:999px;
-            background:#fff1f1;
-            color:#e53935;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-weight:900;
-            font-size:18px;
-            flex-shrink:0;
-          "
-        >
-          ${escapeHtml(getInitials(riderName))}
-        </div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+              <div>
+                <div style="font-weight:900;color:#111827;font-size:18px;">
+                  Your Rider
+                </div>
+                <div style="color:#111827;font-weight:900;margin-top:3px;">
+                  ${escapeHtml(riderName)}
+                </div>
+              </div>
 
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-            <div>
-              <div style="font-weight:900;color:#111827;font-size:18px;">
-                Your Rider
-              </div>
-              <div style="color:#111827;font-weight:900;margin-top:3px;">
-                ${escapeHtml(riderName)}
-              </div>
+              <span
+                style="
+                  border-radius:999px;
+                  padding:7px 11px;
+                  background:#ecfdf5;
+                  color:#16a34a;
+                  font-size:12px;
+                  font-weight:900;
+                "
+              >
+                ${escapeHtml(riderStatus)}
+              </span>
             </div>
 
-            <span
-              style="
-                border-radius:999px;
-                padding:7px 11px;
-                background:#ecfdf5;
-                color:#16a34a;
-                font-size:12px;
-                font-weight:900;
-              "
-            >
-              ${escapeHtml(riderStatus)}
-            </span>
-          </div>
+            <div style="margin-top:8px;color:#6b7280;font-size:14px;line-height:1.5;">
+              ${
+                phone
+                  ? `<i class="fa-solid fa-phone"></i> ${escapeHtml(phone)}`
+                  : `<i class="fa-solid fa-circle-info"></i> Rider phone will appear once available.`
+              }
+            </div>
 
-          <div style="margin-top:8px;color:#6b7280;font-size:14px;line-height:1.5;">
-            ${
-              phone
-                ? `<i class="fa-solid fa-phone"></i> ${escapeHtml(phone)}`
-                : `<i class="fa-solid fa-circle-info"></i> Rider phone will appear once available.`
-            }
-          </div>
+            <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+              ${callButton}
+              ${messageButton}
+            </div>
 
-          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-            ${callButton}
-            ${messageButton}
+            <p style="margin:12px 0 0;color:#6b7280;font-size:13px;line-height:1.5;">
+              Use this only for delivery coordination, address clarification, or urgent order questions.
+            </p>
           </div>
-
-          <p style="margin:12px 0 0;color:#6b7280;font-size:13px;line-height:1.5;">
-            Use this only for delivery coordination, address clarification, or urgent order questions.
-          </p>
         </div>
       </div>
-    </div>
-  `;
+    `;
 
-  const liveNote = document.getElementById("liveNote");
+    const liveNote = document.getElementById("liveNote");
 
-  if (existing) {
-    existing.outerHTML = html;
-    return;
+    if (existing) {
+      existing.outerHTML = html;
+      return;
+    }
+
+    if (liveNote) liveNote.insertAdjacentHTML("afterend", html);
   }
-
-  if (liveNote) liveNote.insertAdjacentHTML("afterend", html);
-}
-    
 
   function fillStepTimesFromHistory(order) {
     const historyMap = {};
@@ -833,80 +867,717 @@
       el.textContent = time ? formatClockTime(new Date(time)) : "--:--";
     });
   }
-  function showTrackActionModal(type, title, message) {
-  const modal = document.getElementById("trackActionModal");
-  const icon = document.getElementById("trackActionIcon");
-  const titleEl = document.getElementById("trackActionTitle");
-  const messageEl = document.getElementById("trackActionMessage");
 
-  if (!modal || !icon || !titleEl || !messageEl) {
-    console.log(`[track:${type}]`, title, message);
-    return;
+  /* ===============================
+     DELIVERED FINAL UX + REVIEW DRAFT
+  ================================ */
+
+  function renderDeliveredExperience(order) {
+    const isDelivered = getFinalOrderStatus(order) === "delivered";
+    let section = document.getElementById("deliveredExperienceCard");
+
+    if (!isDelivered) {
+      if (section) section.remove();
+      return;
+    }
+
+    const orderNumberForCard = getReviewOrderNumber(order);
+
+    if (
+      section &&
+      section.dataset.orderNumber === orderNumberForCard &&
+      section.dataset.rendered === "true"
+    ) {
+      hydrateReviewDraftUI(order);
+      bindDeliveredExperienceActions(order);
+      return;
+    }
+
+    const earnedPoints = awardDeliveredPointsFromTrack(order);
+    const orderNumber = order.orderNumber || order.order_number || "your order";
+    const restaurantName =
+      order.restaurantName || order.restaurant_name || "the restaurant";
+
+    if (!section) {
+      section = document.createElement("section");
+      section.id = "deliveredExperienceCard";
+      section.className = "delivered-experience-card";
+
+      const timelineCard =
+        document.querySelector(".timeline-card") ||
+        document.querySelector(".tracking-card") ||
+        document.querySelector("#orderTimeline") ||
+        document.querySelector("#trackContent");
+
+      if (timelineCard && timelineCard.parentNode) {
+        timelineCard.parentNode.insertBefore(section, timelineCard.nextSibling);
+      } else {
+        document.body.appendChild(section);
+      }
+    }
+
+    section.dataset.orderNumber = orderNumberForCard;
+    section.dataset.rendered = "true";
+
+    section.innerHTML = `
+      <div class="delivered-success-top">
+        <div class="delivered-success-icon">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+
+        <div>
+          <p class="delivered-kicker">Delivered successfully</p>
+          <h2>Your order has arrived</h2>
+          <p>
+            ${escapeHtml(restaurantName)} completed order
+            <strong>#${escapeHtml(orderNumber)}</strong>. Enjoy your meal!
+          </p>
+        </div>
+      </div>
+
+      <div class="delivered-reward-box">
+        <div>
+          <span>FoodExpress Rewards</span>
+          <strong>+${earnedPoints} points earned</strong>
+          <p>Points are now added to your rewards balance.</p>
+        </div>
+
+        <button type="button" id="viewRewardsAfterDeliveryBtn">
+          View rewards
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <div class="delivered-rating-box">
+        <div class="delivered-rating-head">
+          <div>
+            <h3>How was your order?</h3>
+            <p>Your feedback helps improve restaurants and riders.</p>
+          </div>
+        </div>
+
+        <div class="rating-row">
+          <span>Food quality</span>
+          <div class="rating-stars" data-rating-type="food">
+            ${buildRatingStars("food")}
+          </div>
+        </div>
+
+        <div class="rating-row">
+          <span>Delivery experience</span>
+          <div class="rating-stars" data-rating-type="rider">
+            ${buildRatingStars("rider")}
+          </div>
+        </div>
+
+        <textarea
+          id="deliveryReviewNote"
+          class="delivery-review-note"
+          placeholder="Add a quick note, for example: food was hot, rider was polite..."
+        ></textarea>
+
+        <button type="button" id="submitDeliveryReviewBtn" class="submit-review-btn">
+          Submit review
+        </button>
+      </div>
+
+      <div class="delivered-action-row">
+        <button type="button" id="deliveredReorderBtn" class="delivered-primary-btn">
+          <i class="fa-solid fa-rotate-right"></i>
+          Reorder these items
+        </button>
+
+        <button type="button" id="deliveredSupportBtn" class="delivered-secondary-btn">
+          <i class="fa-solid fa-headset"></i>
+          Contact support
+        </button>
+
+        <button type="button" id="deliveredDashboardBtn" class="delivered-secondary-btn">
+          <i class="fa-solid fa-house"></i>
+          Back to dashboard
+        </button>
+      </div>
+    `;
+
+    bindDeliveredExperienceActions(order);
   }
 
-  modal.classList.add("show");
-  icon.className = `track-action-icon ${type === "warning" ? "warning" : ""}`;
+  function getFinalOrderStatus(order) {
+    const deliveryStatus = String(
+      order?.delivery_status || order?.deliveryStatus || ""
+    ).toLowerCase();
 
-  icon.innerHTML =
-    type === "warning"
-      ? `<i class="fa-solid fa-triangle-exclamation"></i>`
-      : `<i class="fa-solid fa-check"></i>`;
+    const kitchenStatus = String(order?.status || "").toLowerCase();
 
-  titleEl.textContent = title;
-  messageEl.textContent = message;
-}
+    if (deliveryStatus === "delivered" || kitchenStatus === "delivered") {
+      return "delivered";
+    }
 
-function hideTrackActionModal() {
-  const modal = document.getElementById("trackActionModal");
-  if (modal) modal.classList.remove("show");
-}
+    return deliveryStatus || kitchenStatus || "pending";
+  }
 
-  function reorderLatestOrder() {
-  if (!latestOrder || !latestOrder.items || !latestOrder.items.length) {
+  function buildRatingStars(type) {
+    return [1, 2, 3, 4, 5]
+      .map(
+        (value) => `
+          <button
+            type="button"
+            class="rating-star"
+            data-rating-type="${type}"
+            data-rating-value="${value}"
+            aria-label="${value} star"
+          >
+            <i class="fa-solid fa-star"></i>
+          </button>
+        `
+      )
+      .join("");
+  }
+
+  function bindDeliveredExperienceActions(order) {
+    const viewRewardsBtn = document.getElementById("viewRewardsAfterDeliveryBtn");
+    const reorderBtn = document.getElementById("deliveredReorderBtn");
+    const supportBtn = document.getElementById("deliveredSupportBtn");
+    const dashboardBtn = document.getElementById("deliveredDashboardBtn");
+    const reviewBtn = document.getElementById("submitDeliveryReviewBtn");
+
+    if (viewRewardsBtn) {
+      viewRewardsBtn.onclick = () => {
+        window.location.href = "rewards.html";
+      };
+    }
+
+    if (reorderBtn) {
+      reorderBtn.onclick = () => {
+        reorderLatestOrder();
+      };
+    }
+
+    if (supportBtn) {
+      supportBtn.onclick = () => {
+        const orderNumber = encodeURIComponent(
+          order.orderNumber || order.order_number || ""
+        );
+        window.location.href = `loggedContact.html?order=${orderNumber}`;
+      };
+    }
+
+    if (dashboardBtn) {
+      dashboardBtn.onclick = () => {
+        window.location.href = "dashboard.html";
+      };
+    }
+
+    bindRatingStars(order);
+    hydrateReviewDraftUI(order);
+
+    if (reviewBtn) {
+      reviewBtn.onclick = () => {
+        saveDeliveryReview(order);
+      };
+    }
+  }
+
+  function bindRatingStars(order) {
+    const savedReview = getSavedDeliveryReview(order);
+
+    if (savedReview) {
+      lockSubmittedReviewUI(savedReview);
+      return;
+    }
+
+    document.querySelectorAll(".rating-star").forEach((button) => {
+      button.onclick = () => {
+        const wrapper = button.closest(".rating-stars");
+
+        if (!wrapper || wrapper.dataset.locked === "true") return;
+
+        const type = button.dataset.ratingType;
+        const value = Number(button.dataset.ratingValue || 0);
+
+        paintReviewStars(type, value);
+        wrapper.setAttribute("data-selected-rating", String(value));
+        saveReviewDraft(order, type, value);
+      };
+    });
+  }
+
+  function paintReviewStars(type, value) {
+    document
+      .querySelectorAll(`.rating-star[data-rating-type="${type}"]`)
+      .forEach((star) => {
+        const starValue = Number(star.dataset.ratingValue || 0);
+        star.classList.toggle("active", starValue <= value);
+      });
+  }
+
+  function getReviewOrderNumber(order) {
+    return String(
+      order?.orderNumber ||
+        order?.order_number ||
+        order?.orderId ||
+        order?.order_id ||
+        order?.id ||
+        getQueryOrderNumber() ||
+        ""
+    );
+  }
+
+  function getReviewDraftKey(order) {
+    return `foodExpressReviewDraft_${getReviewOrderNumber(order)}`;
+  }
+
+  function getSavedReviewDraft(order) {
+    return readJson(getReviewDraftKey(order), {
+      foodRating: 0,
+      riderRating: 0,
+      note: "",
+    });
+  }
+
+  function saveReviewDraft(order, type, value) {
+    const draft = getSavedReviewDraft(order);
+
+    if (type === "food") {
+      draft.foodRating = value;
+    }
+
+    if (type === "rider") {
+      draft.riderRating = value;
+    }
+
+    const noteInput = document.getElementById("deliveryReviewNote");
+    draft.note = noteInput ? noteInput.value : draft.note || "";
+
+    localStorage.setItem(getReviewDraftKey(order), JSON.stringify(draft));
+  }
+
+  function hydrateReviewDraftUI(order) {
+    const savedReview = getSavedDeliveryReview(order);
+
+    if (savedReview) {
+      lockSubmittedReviewUI(savedReview);
+      return;
+    }
+
+    const draft = getSavedReviewDraft(order);
+
+    if (draft.foodRating) {
+      const foodWrapper = document.querySelector(
+        '.rating-stars[data-rating-type="food"]'
+      );
+
+      if (foodWrapper) {
+        foodWrapper.setAttribute("data-selected-rating", String(draft.foodRating));
+        paintReviewStars("food", Number(draft.foodRating));
+      }
+    }
+
+    if (draft.riderRating) {
+      const riderWrapper = document.querySelector(
+        '.rating-stars[data-rating-type="rider"]'
+      );
+
+      if (riderWrapper) {
+        riderWrapper.setAttribute("data-selected-rating", String(draft.riderRating));
+        paintReviewStars("rider", Number(draft.riderRating));
+      }
+    }
+
+    const noteInput = document.getElementById("deliveryReviewNote");
+
+    if (noteInput && draft.note) {
+      noteInput.value = draft.note;
+    }
+
+    if (noteInput && noteInput.dataset.reviewDraftBound !== "true") {
+      noteInput.dataset.reviewDraftBound = "true";
+
+      noteInput.addEventListener("input", () => {
+        const nextDraft = getSavedReviewDraft(order);
+        nextDraft.note = noteInput.value;
+        localStorage.setItem(getReviewDraftKey(order), JSON.stringify(nextDraft));
+      });
+    }
+  }
+
+  async function saveDeliveryReview(order) {
+  const foodRating = Number(
+    document
+      .querySelector('.rating-stars[data-rating-type="food"]')
+      ?.getAttribute("data-selected-rating") || 0
+  );
+
+  const riderRating = Number(
+    document
+      .querySelector('.rating-stars[data-rating-type="rider"]')
+      ?.getAttribute("data-selected-rating") || 0
+  );
+
+  const note = document.getElementById("deliveryReviewNote")?.value || "";
+  const orderNumber = getReviewOrderNumber(order);
+
+  if (!foodRating || !riderRating) {
     showTrackActionModal(
       "warning",
-      "No items to reorder",
-      "This order does not have saved items available for reorder."
+      "Rating needed",
+      "Please rate both food quality and delivery experience."
     );
-
     setTimeout(hideTrackActionModal, 1800);
     return;
   }
 
-  const items = latestOrder.items.map((item) => ({
-    id: String(item.id || item.product_id || ""),
-    name: item.name || item.product_name || "Unnamed Item",
-    price: Number(item.price || item.unit_price || 0),
-    image_url: item.image_url || item.image || "",
-    quantity: Number(item.quantity || 1),
-    restaurant_id: String(item.restaurant_id || latestOrder.restaurantId || ""),
-    restaurant_name:
-      item.restaurant_name || latestOrder.restaurantName || "Restaurant",
-  }));
+  const submitBtn = document.getElementById("submitDeliveryReviewBtn");
 
-  localStorage.setItem("foodDeliveryCartItems", JSON.stringify(items));
-
-  const count = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-  localStorage.setItem("foodDeliveryCartCount", String(count));
-
-  if (typeof window.updateCartCount === "function") {
-    window.updateCartCount();
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Saving review...";
   }
+
+  const review = {
+    orderNumber,
+    foodRating,
+    riderRating,
+    note: note.trim(),
+    submitted: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  const backendPayload = {
+    order_id: order?.id || order?.orderId || order?.order_id || null,
+    order_number: orderNumber,
+    customer_email:
+      order?.customerEmail ||
+      order?.customer_email ||
+      localStorage.getItem("userEmail") ||
+      "",
+    restaurant_id: order?.restaurantId || order?.restaurant_id || null,
+    rider_id: order?.riderId || order?.rider_id || null,
+    food_rating: foodRating,
+    rider_rating: riderRating,
+    review_note: note.trim(),
+  };
+
+  try {
+    const response = await fetch(`${ORDER_REVIEW_API_URL}?action=create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(backendPayload),
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.message || "Could not save review to database.");
+    }
+
+    review.backendSaved = true;
+    review.backendReviewId = result.id || null;
+  } catch (error) {
+    console.warn("[track-order.js] Review backend save failed:", error);
+
+    review.backendSaved = false;
+    review.backendError = error.message || "Backend save failed";
+  }
+
+  saveReviewLocally(order, review);
+  localStorage.removeItem(getReviewDraftKey(order));
+
+  lockSubmittedReviewUI(review);
 
   showTrackActionModal(
     "success",
-    "Added back to cart",
-    "Your previous order has been added to cart. Opening cart now."
+    "Review submitted",
+    review.backendSaved
+      ? "Thanks! Your review was saved successfully."
+      : "Thanks! Your review was saved locally and can sync later."
   );
 
-  setTimeout(() => {
-    window.location.href = "cart.html";
-  }, 1300);
+  setTimeout(hideTrackActionModal, 1800);
 }
+
+function saveReviewLocally(order, review) {
+  const orderNumber = getReviewOrderNumber(order);
+  const reviews = readJson("foodExpressOrderReviews", []);
+
+  const cleanReviews = Array.isArray(reviews)
+    ? reviews.filter((item) => String(item.orderNumber) !== String(orderNumber))
+    : [];
+
+  cleanReviews.unshift(review);
+
+  localStorage.setItem("foodExpressOrderReviews", JSON.stringify(cleanReviews));
+}
+
+  function getSavedDeliveryReview(order) {
+    const orderNumber = getReviewOrderNumber(order);
+    if (!orderNumber) return null;
+
+    const reviews = readJson("foodExpressOrderReviews", []);
+
+    if (!Array.isArray(reviews)) return null;
+
+    return (
+      reviews.find(
+        (review) =>
+          String(review.orderNumber || "") === String(orderNumber) &&
+          review.submitted === true
+      ) || null
+    );
+  }
+
+  function lockSubmittedReviewUI(review) {
+    const foodWrapper = document.querySelector('.rating-stars[data-rating-type="food"]');
+    const riderWrapper = document.querySelector('.rating-stars[data-rating-type="rider"]');
+    const noteInput = document.getElementById("deliveryReviewNote");
+    const submitBtn = document.getElementById("submitDeliveryReviewBtn");
+
+    paintLockedStars(foodWrapper, Number(review.foodRating || 0));
+    paintLockedStars(riderWrapper, Number(review.riderRating || 0));
+
+    if (noteInput) {
+      noteInput.value = review.note || "";
+      noteInput.disabled = true;
+      noteInput.readOnly = true;
+      noteInput.classList.add("delivery-review-note-locked");
+    }
+
+    if (submitBtn) {
+      submitBtn.textContent = "Review submitted";
+      submitBtn.disabled = true;
+      submitBtn.classList.add("review-submitted");
+    }
+  }
+
+  function paintLockedStars(wrapper, rating) {
+    if (!wrapper) return;
+
+    wrapper.dataset.locked = "true";
+    wrapper.setAttribute("data-selected-rating", String(rating));
+
+    wrapper.querySelectorAll(".rating-star").forEach((star) => {
+      const value = Number(star.dataset.ratingValue || 0);
+
+      star.classList.toggle("active", value <= rating);
+      star.disabled = true;
+      star.classList.add("locked");
+    });
+  }
+
+  function awardDeliveredPointsFromTrack(order) {
+    const earned = Math.max(0, Math.floor(Number(order?.total || 0) / 10));
+    const orderId = String(
+      order?.id || order?.orderId || order?.order_id || order?.orderNumber || ""
+    );
+
+    if (!orderId || earned <= 0) return earned;
+
+    if (typeof window.awardPointsFromOrder === "function") {
+      window.awardPointsFromOrder({
+        ...order,
+        status: "delivered",
+        delivery_status: "delivered",
+      });
+
+      window.dispatchEvent(new Event("foodExpressRewardsUpdated"));
+      return earned;
+    }
+
+    const data = readJson("foodexpressRewards", {
+      currentPoints: Number(localStorage.getItem("userPoints") || 0),
+      lifetimePoints: Number(localStorage.getItem("foodExpressRewardPoints") || 0),
+      activeCoupons: [],
+      redeemedRewards: [],
+      history: [],
+      processedOrderIds: [],
+    });
+
+    data.currentPoints = Number(data.currentPoints || 0);
+    data.lifetimePoints = Number(data.lifetimePoints || 0);
+    data.activeCoupons = Array.isArray(data.activeCoupons) ? data.activeCoupons : [];
+    data.redeemedRewards = Array.isArray(data.redeemedRewards)
+      ? data.redeemedRewards
+      : [];
+    data.history = Array.isArray(data.history) ? data.history : [];
+    data.processedOrderIds = Array.isArray(data.processedOrderIds)
+      ? data.processedOrderIds.map(String)
+      : [];
+
+    if (!data.processedOrderIds.includes(orderId)) {
+      data.currentPoints += earned;
+      data.lifetimePoints += earned;
+      data.processedOrderIds.push(orderId);
+
+      data.history.unshift({
+        id: `earned-${orderId}`,
+        type: "earn",
+        title: "Points earned",
+        description: `Delivered order ${order.orderNumber || orderId} earned ${earned} points.`,
+        points: earned,
+        createdAt: new Date().toISOString(),
+      });
+
+      localStorage.setItem("foodexpressRewards", JSON.stringify(data));
+      localStorage.setItem("userPoints", String(data.currentPoints));
+      localStorage.setItem("foodExpressRewardPoints", String(data.currentPoints));
+      window.dispatchEvent(new Event("foodExpressRewardsUpdated"));
+    }
+
+    return earned;
+  }
+
+  /* ===============================
+     MODAL + ACTIONS
+  ================================ */
+
+  function showTrackActionModal(type, title, message) {
+    const modal = document.getElementById("trackActionModal");
+    const icon = document.getElementById("trackActionIcon");
+    const titleEl = document.getElementById("trackActionTitle");
+    const messageEl = document.getElementById("trackActionMessage");
+
+    if (!modal || !icon || !titleEl || !messageEl) {
+      console.log(`[track:${type}]`, title, message);
+      return;
+    }
+
+    modal.classList.add("show");
+    icon.className = `track-action-icon ${type === "warning" ? "warning" : ""}`;
+
+    icon.innerHTML =
+      type === "warning"
+        ? `<i class="fa-solid fa-triangle-exclamation"></i>`
+        : `<i class="fa-solid fa-check"></i>`;
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+  }
+
+  function hideTrackActionModal() {
+    const modal = document.getElementById("trackActionModal");
+    if (modal) modal.classList.remove("show");
+  }
+
+  function reorderLatestOrder() {
+    if (!latestOrder || !latestOrder.items || !latestOrder.items.length) {
+      showTrackActionModal(
+        "warning",
+        "No items to reorder",
+        "This order does not have saved items available for reorder."
+      );
+
+      setTimeout(hideTrackActionModal, 1800);
+      return;
+    }
+
+    const items = latestOrder.items.map((item) => ({
+      id: String(item.id || item.product_id || ""),
+      name: item.name || item.product_name || "Unnamed Item",
+      price: Number(item.price || item.unit_price || 0),
+      image_url: item.image_url || item.image || "",
+      quantity: Number(item.quantity || 1),
+      restaurant_id: String(item.restaurant_id || latestOrder.restaurantId || ""),
+      restaurant_name:
+        item.restaurant_name || latestOrder.restaurantName || "Spicy Grill",
+    }));
+
+    localStorage.setItem("foodDeliveryCartItems", JSON.stringify(items));
+
+    const count = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+    localStorage.setItem("foodDeliveryCartCount", String(count));
+
+    if (typeof window.updateCartCount === "function") {
+      window.updateCartCount();
+    }
+
+    showTrackActionModal(
+      "success",
+      "Added back to cart",
+      "Your previous order has been added to cart. Opening cart now."
+    );
+
+    setTimeout(() => {
+      window.location.href = "cart.html";
+    }, 1300);
+  }
 
   function goBackToDashboard() {
     window.location.href = "dashboard.html";
   }
+
+  function openRiderMessagePlaceholder() {
+    showTrackActionModal(
+      "warning",
+      "Rider chat coming soon",
+      "For now, please call the rider or contact FoodExpress support for urgent delivery help."
+    );
+
+    setTimeout(hideTrackActionModal, 2200);
+  }
+
+  function handleTrackPageAnchorScroll() {
+    const params = new URLSearchParams(window.location.search);
+    const focusFromUrl = params.get("focus");
+    const focusFromHash = String(window.location.hash || "").replace("#", "");
+    const focusFromSession = sessionStorage.getItem("foodExpressTrackFocus");
+
+    const target = focusFromUrl || focusFromHash || focusFromSession;
+
+    if (!target) return;
+
+    let attempts = 0;
+
+    const scrollTimer = setInterval(() => {
+      attempts++;
+
+      let targetElement = null;
+
+      if (target === "rider") {
+        targetElement = document.getElementById("riderInfoCard");
+      }
+
+      if (target === "summary") {
+        targetElement =
+          document.querySelector(".summary-title") ||
+          document.getElementById("summaryItems");
+      }
+
+      if (targetElement) {
+        targetElement.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+
+        targetElement.style.boxShadow =
+          "0 0 0 5px rgba(239, 68, 68, 0.18), 0 18px 40px rgba(15,23,42,0.10)";
+
+        setTimeout(() => {
+          targetElement.style.boxShadow = "";
+        }, 2000);
+
+        sessionStorage.removeItem("foodExpressTrackFocus");
+        clearInterval(scrollTimer);
+      }
+
+      if (attempts >= 12) {
+        clearInterval(scrollTimer);
+      }
+    }, 300);
+  }
+
+  function focusTrackSection(target = "rider") {
+    sessionStorage.setItem("foodExpressTrackFocus", target);
+
+    setTimeout(() => {
+      handleTrackPageAnchorScroll();
+    }, 150);
+  }
+
+  /* ===============================
+     HELPERS
+  ================================ */
 
   function formatStatus(status) {
     const map = {
@@ -1023,108 +1694,8 @@ function hideTrackActionModal() {
       .replace(/>/g, "&gt;");
   }
 
-  function openRiderMessagePlaceholder() {
-  showTrackActionModal(
-    "warning",
-    "Rider chat coming soon",
-    "For now, please call the rider or contact FoodExpress support for urgent delivery help."
-  );
-
-  setTimeout(hideTrackActionModal, 2200);
-}
-
-function handleTrackPageAnchorScroll() {
-  const hash = String(window.location.hash || "").toLowerCase();
-
-  if (!hash) return;
-
-  setTimeout(() => {
-    if (hash === "#rider") {
-      const riderCard = document.getElementById("riderInfoCard");
-
-      if (riderCard) {
-        riderCard.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-
-        riderCard.style.boxShadow = "0 0 0 4px rgba(239, 68, 68, 0.18), 0 18px 40px rgba(15,23,42,0.08)";
-
-        setTimeout(() => {
-          riderCard.style.boxShadow = "";
-        }, 1800);
-      }
-    }
-
-    if (hash === "#summary") {
-      document.querySelector(".summary-title")?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
-  }, 450);
-}
-function handleTrackPageAnchorScroll() {
-  const params = new URLSearchParams(window.location.search);
-  const focusFromUrl = params.get("focus");
-  const focusFromHash = String(window.location.hash || "").replace("#", "");
-  const focusFromSession = sessionStorage.getItem("foodExpressTrackFocus");
-
-  const target = focusFromUrl || focusFromHash || focusFromSession;
-
-  if (!target) return;
-
-  let attempts = 0;
-
-  const scrollTimer = setInterval(() => {
-    attempts++;
-
-    let targetElement = null;
-
-    if (target === "rider") {
-      targetElement = document.getElementById("riderInfoCard");
-    }
-
-    if (target === "summary") {
-      targetElement =
-        document.querySelector(".summary-title") ||
-        document.getElementById("summaryItems");
-    }
-
-    if (targetElement) {
-      targetElement.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-
-      targetElement.style.boxShadow =
-        "0 0 0 5px rgba(239, 68, 68, 0.18), 0 18px 40px rgba(15,23,42,0.10)";
-
-      setTimeout(() => {
-        targetElement.style.boxShadow = "";
-      }, 2000);
-
-      sessionStorage.removeItem("foodExpressTrackFocus");
-      clearInterval(scrollTimer);
-    }
-
-    if (attempts >= 12) {
-      clearInterval(scrollTimer);
-    }
-  }, 300);
-}
-
-
-function focusTrackSection(target = "rider") {
-  sessionStorage.setItem("foodExpressTrackFocus", target);
-
-  setTimeout(() => {
-    handleTrackPageAnchorScroll();
-  }, 150);
-}
-
   window.reorderLatestOrder = reorderLatestOrder;
-window.goBackToDashboard = goBackToDashboard;
-window.openRiderMessagePlaceholder = openRiderMessagePlaceholder;
-window.focusTrackSection = focusTrackSection;
+  window.goBackToDashboard = goBackToDashboard;
+  window.openRiderMessagePlaceholder = openRiderMessagePlaceholder;
+  window.focusTrackSection = focusTrackSection;
 })();
