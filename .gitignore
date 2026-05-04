@@ -1,3 +1,4 @@
 backend/config/mail.php
 .env
 *.env
+backend/config/mail.example.php

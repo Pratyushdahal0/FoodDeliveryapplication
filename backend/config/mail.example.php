@@ -1,5 +1,6 @@
 <?php
 
+
 return [
     "host" => "smtp.gmail.com",
     "username" => "your-email@gmail.com",
