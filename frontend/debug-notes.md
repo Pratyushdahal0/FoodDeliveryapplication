@@ -16,3 +16,4 @@
 - Compact mode persists
 - Download account data works
 - Delete request prevents duplicate pending request
+- Ready for beta testing
