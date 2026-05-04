@@ -3,18 +3,541 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FoodExpress - Restaurant Dashboard</title>
+    <title>FoodExpress - Owner Dashboard</title>
 
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/ownerdashboard.css" />
+
+    <style>
+      :root {
+        --owner-red: #ef3f3f;
+        --owner-red-dark: #dc2626;
+        --owner-red-soft: #fff1f1;
+        --owner-navy: #111827;
+        --owner-text: #334155;
+        --owner-muted: #64748b;
+        --owner-faint: #94a3b8;
+        --owner-border: #e5e7eb;
+        --owner-card: #ffffff;
+        --owner-green: #16a34a;
+        --owner-green-soft: #ecfdf5;
+        --owner-blue: #2563eb;
+        --owner-blue-soft: #eff6ff;
+        --owner-purple: #7c3aed;
+        --owner-purple-soft: #f5f3ff;
+        --owner-orange: #f59e0b;
+        --owner-orange-soft: #fffbeb;
+        --owner-cyan: #0891b2;
+        --owner-cyan-soft: #ecfeff;
+        --owner-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
+        --owner-shadow-soft: 0 10px 24px rgba(15, 23, 42, 0.055);
+      }
+
+      body {
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+      }
+
+      .owner-command-header {
+        margin: 18px 0 22px;
+        padding: 32px 34px;
+        border-radius: 30px;
+        background:
+          radial-gradient(
+            circle at 92% 0%,
+            rgba(239, 63, 63, 0.1),
+            transparent 35%
+          ),
+          linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.98),
+            rgba(255, 250, 247, 0.96)
+          );
+        border: 1px solid rgba(229, 231, 235, 0.92);
+        box-shadow: var(--owner-shadow);
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .owner-command-header::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 34px;
+        width: 5px;
+        height: 72px;
+        border-radius: 0 999px 999px 0;
+        background: linear-gradient(180deg, var(--owner-red), #fb7185);
+      }
+
+      .owner-eyebrow {
+        margin: 0 0 10px;
+        color: var(--owner-muted);
+        font-size: 0.72rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+      }
+
+      .owner-command-header h1 {
+        margin: 0;
+        color: var(--owner-navy);
+        font-size: clamp(1.9rem, 3vw, 2.45rem);
+        line-height: 1.08;
+        font-weight: 950;
+        letter-spacing: -0.055em;
+      }
+
+      .owner-command-header p {
+        margin: 12px 0 0;
+        max-width: 720px;
+        color: var(--owner-muted);
+        line-height: 1.65;
+        font-size: 0.96rem;
+      }
+
+      .owner-live-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: #ecfdf5;
+        color: #15803d;
+        border: 1px solid #bbf7d0;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .owner-dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .owner-metric-card {
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(229, 231, 235, 0.92);
+        border-radius: 24px;
+        padding: 20px;
+        box-shadow: var(--owner-shadow-soft);
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        min-height: 128px;
+      }
+
+      .owner-metric-card span {
+        color: var(--owner-muted);
+        font-size: 0.75rem;
+        font-weight: 950;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .owner-metric-card h2 {
+        margin: 10px 0 0;
+        color: var(--owner-navy);
+        font-size: 1.75rem;
+        font-weight: 950;
+        letter-spacing: -0.04em;
+      }
+
+      .owner-metric-card p {
+        margin: 6px 0 0;
+        color: var(--owner-muted);
+        font-size: 0.82rem;
+      }
+
+      .metric-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 17px;
+        display: grid;
+        place-items: center;
+        font-size: 1.08rem;
+        flex-shrink: 0;
+      }
+
+      .metric-red .metric-icon {
+        color: var(--owner-red);
+        background: var(--owner-red-soft);
+      }
+
+      .metric-orange .metric-icon {
+        color: #b45309;
+        background: var(--owner-orange-soft);
+      }
+
+      .metric-blue .metric-icon {
+        color: #1d4ed8;
+        background: var(--owner-blue-soft);
+      }
+
+      .metric-green .metric-icon {
+        color: #15803d;
+        background: var(--owner-green-soft);
+      }
+
+      .metric-purple .metric-icon {
+        color: #6d28d9;
+        background: var(--owner-purple-soft);
+      }
+
+      .metric-cyan .metric-icon {
+        color: var(--owner-cyan);
+        background: var(--owner-cyan-soft);
+      }
+
+      .owner-intelligence-grid {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 18px;
+        margin-bottom: 20px;
+      }
+
+      .owner-panel {
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(229, 231, 235, 0.92);
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: var(--owner-shadow-soft);
+      }
+
+      .owner-panel-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .owner-panel-header h2 {
+        margin: 0;
+        color: var(--owner-navy);
+        font-size: 1.16rem;
+        font-weight: 950;
+        letter-spacing: -0.03em;
+      }
+
+      .owner-panel-header p {
+        margin: 6px 0 0;
+        color: var(--owner-muted);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+
+      .ai-risk-card {
+        border-radius: 24px;
+        padding: 20px;
+        background:
+          radial-gradient(
+            circle at top right,
+            rgba(124, 58, 237, 0.14),
+            transparent 40%
+          ),
+          linear-gradient(135deg, #fff, #fbf7ff);
+        border: 1px solid rgba(124, 58, 237, 0.16);
+      }
+
+      .ai-score-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .ai-score-ring {
+        width: 92px;
+        height: 92px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: conic-gradient(
+          var(--owner-purple) var(--ai-score, 0%),
+          #ede9fe 0
+        );
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .ai-score-ring::after {
+        content: "";
+        position: absolute;
+        inset: 9px;
+        border-radius: 50%;
+        background: #ffffff;
+      }
+
+      .ai-score-ring strong {
+        position: relative;
+        z-index: 1;
+        color: var(--owner-navy);
+        font-size: 1.2rem;
+        font-weight: 950;
+      }
+
+      .ai-risk-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: #f5f3ff;
+        color: #6d28d9;
+        font-size: 0.8rem;
+        font-weight: 950;
+      }
+
+      .ai-risk-title {
+        margin: 12px 0 4px;
+        color: var(--owner-navy);
+        font-size: 1.2rem;
+        font-weight: 950;
+      }
+
+      .ai-risk-copy {
+        margin: 0;
+        color: var(--owner-muted);
+        line-height: 1.55;
+      }
+
+      .ai-reasons {
+        margin: 16px 0 0;
+        display: grid;
+        gap: 9px;
+      }
+
+      .ai-reason {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        color: var(--owner-text);
+        font-size: 0.87rem;
+      }
+
+      .ai-reason i {
+        margin-top: 2px;
+        color: var(--owner-purple);
+      }
+
+      .smart-queue-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .smart-queue-item {
+        display: flex;
+        gap: 12px;
+        padding: 14px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+      }
+
+      .smart-queue-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: var(--owner-red-soft);
+        color: var(--owner-red);
+        flex-shrink: 0;
+      }
+
+      .smart-queue-item h3 {
+        margin: 0;
+        color: var(--owner-navy);
+        font-size: 0.92rem;
+        font-weight: 950;
+      }
+
+      .smart-queue-item p {
+        margin: 4px 0 0;
+        color: var(--owner-muted);
+        line-height: 1.45;
+        font-size: 0.84rem;
+      }
+
+      .owner-lower-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 18px;
+      }
+
+      .recent-orders-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .recent-orders-table th {
+        text-align: left;
+        padding: 11px 10px;
+        color: var(--owner-faint);
+        font-size: 0.72rem;
+        font-weight: 950;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border-bottom: 1px solid #edf2f7;
+      }
+
+      .recent-orders-table td {
+        padding: 14px 10px;
+        color: var(--owner-text);
+        font-size: 0.87rem;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .recent-orders-table strong {
+        color: var(--owner-navy);
+        font-weight: 950;
+      }
+
+      .dashboard-status {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 0.74rem;
+        font-weight: 950;
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+      }
+
+      .status-ready_for_pickup {
+        background: var(--owner-cyan-soft);
+        color: var(--owner-cyan);
+        border-color: rgba(8, 145, 178, 0.3);
+      }
+
+      .status-delivered {
+        background: var(--owner-green-soft);
+        color: #15803d;
+        border-color: rgba(22, 163, 74, 0.28);
+      }
+
+      .status-pending {
+        background: var(--owner-orange-soft);
+        color: #b45309;
+        border-color: rgba(245, 158, 11, 0.3);
+      }
+
+      .most-items-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .most-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        padding: 14px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+      }
+
+      .most-item strong {
+        color: var(--owner-navy);
+        font-size: 0.92rem;
+      }
+
+      .most-item span {
+        color: var(--owner-muted);
+        font-size: 0.82rem;
+      }
+
+      .most-item b {
+        color: var(--owner-red);
+        font-size: 0.92rem;
+      }
+
+      .owner-empty {
+        padding: 26px;
+        text-align: center;
+        border-radius: 20px;
+        border: 1px dashed #e2e8f0;
+        color: var(--owner-muted);
+        background: #ffffff;
+      }
+
+      .dashboard-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        padding: 0 15px;
+        border-radius: 999px;
+        border: 1.5px solid rgba(239, 63, 63, 0.22);
+        background: #fff7f7;
+        color: var(--owner-red);
+        font-weight: 900;
+        text-decoration: none;
+        font-size: 0.84rem;
+      }
+
+      .dashboard-action-btn:hover {
+        background: var(--owner-red);
+        color: #ffffff;
+      }
+
+      @media (max-width: 1280px) {
+        .owner-dashboard-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .owner-intelligence-grid,
+        .owner-lower-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .owner-command-header {
+          flex-direction: column;
+          align-items: flex-start;
+          padding: 26px 22px;
+        }
+
+        .owner-dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .owner-metric-card {
+          min-height: auto;
+        }
+
+        .recent-orders-table {
+          min-width: 680px;
+        }
+
+        .recent-table-wrap {
+          overflow-x: auto;
+        }
+      }
+    </style>
   </head>
+
   <body>
-    <!-- TOP NAV -->
     <nav class="navbar">
       <div class="container">
         <div class="navbar-brand">FoodExpress</div>
@@ -22,408 +545,264 @@
         <div class="navbar-nav">
           <a href="ownerdashboard.html" class="nav-link active">Dashboard</a>
           <a href="ownermanagement.html" class="nav-link">Orders</a>
-          <a href="ownermenu.html" class="nav-link">Menu</a>
+          <a href="ownerMenu.html" class="nav-link">Menu</a>
           <a href="ownerearning.html" class="nav-link">Earnings</a>
           <a href="ownerSettings.html" class="nav-link">Settings</a>
         </div>
 
         <div class="navbar-right">
           <div class="search-box">
-            <input type="text" placeholder="Search orders..." />
+            <input
+              type="text"
+              id="dashboardSearchInput"
+              placeholder="Search dashboard..."
+              autocomplete="off"
+            />
           </div>
 
-          <button class="login-btn" type="button" onclick="logout()">
+          <button class="login-btn" type="button" id="ownerLogoutBtn">
             Logout
           </button>
         </div>
       </div>
     </nav>
-    <!-- LAYOUT -->
+
     <div class="layout">
-      <!-- SIDEBAR -->
       <aside class="sidebar">
         <div class="sidebar-profile">
           <div class="avatar">R</div>
           <div>
-            <div class="name">Restaurant Name</div>
+            <div class="name" id="sidebarRestaurantName">Restaurant Name</div>
             <div class="sub">Owner Dashboard</div>
           </div>
         </div>
+
         <a href="ownerdashboard.html" class="nav-item active">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-            <rect x="14" y="14" width="7" height="7" rx="1" />
-          </svg>
+          <i class="fa-solid fa-table-cells-large"></i>
           Dashboard
         </a>
-        <a href="#" class="nav-item">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <path d="M16 10a4 4 0 0 1-8 0" />
-          </svg>
+
+        <a href="ownermanagement.html" class="nav-item">
+          <i class="fa-solid fa-bag-shopping"></i>
           Orders
         </a>
+
         <a href="ownerMenu.html" class="nav-item">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
+          <i class="fa-solid fa-bars-staggered"></i>
           Menu
         </a>
-        <a href="#" class="nav-item">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <line x1="12" y1="1" x2="12" y2="23" />
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-          </svg>
+
+        <a href="ownerearning.html" class="nav-item">
+          <i class="fa-solid fa-chart-line"></i>
           Earnings
         </a>
-        <a href="#" class="nav-item">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path
-              d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"
-            />
-          </svg>
+
+        <a href="ownerSettings.html" class="nav-item">
+          <i class="fa-solid fa-gear"></i>
           Settings
         </a>
       </aside>
 
-      <!-- MAIN -->
       <main class="main">
-        <!-- WELCOME -->
-        <div class="welcome-banner">
+        <section class="owner-command-header">
           <div>
-            <h2>
-              Welcome back, <span id="ownerNameLabel">Restaurant Owner</span>!
-            </h2>
-            <p>Here's what's happening with your restaurant today</p>
-          </div>
-          <div class="banner-actions">
-            <button class="bell-btn">
-              <svg
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-              >
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-              <div class="bell-dot"></div>
-            </button>
-            <button class="profile-btn">
-              <div
-                class="avatar"
-                style="width: 32px; height: 32px; font-size: 0.8rem"
-              >
-                R
-              </div>
-              Profile
-            </button>
-          </div>
-        </div>
-
-        <!-- STATS -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-top">
-              <div class="stat-icon blue">
-                <svg
-                  width="22"
-                  height="22"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"
-                  />
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <path d="M16 10a4 4 0 0 1-8 0" />
-                </svg>
-              </div>
-              <span class="stat-badge up">↗ +12.5%</span>
-            </div>
-            <div class="stat-label">Total Orders</div>
-            <div class="stat-value" id="totalOrders">0</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-top">
-              <div class="stat-icon green">
-                <svg
-                  width="22"
-                  height="22"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  viewBox="0 0 24 24"
-                >
-                  <line x1="12" y1="1" x2="12" y2="23" />
-                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                </svg>
-              </div>
-              <span class="stat-badge up">↗ +8.2%</span>
-            </div>
-            <div class="stat-label">Total Earnings</div>
-            <div class="stat-value" id="totalEarnings">$0.00</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-top">
-              <div class="stat-icon orange">
-                <svg
-                  width="22"
-                  height="22"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="m12.89 1.45 8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.1-1.8V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"
-                  />
-                </svg>
-              </div>
-              <span class="stat-badge down">↘ -3</span>
-            </div>
-            <div class="stat-label">Active Orders</div>
-            <div class="stat-value" id="activeOrders">0</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-top">
-              <div class="stat-icon red">
-                <svg
-                  width="22"
-                  height="22"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-              </div>
-              <span class="stat-badge up">↗ +2</span>
-            </div>
-            <div class="stat-label">Pending Orders</div>
-            <div class="stat-value" id="pendingOrders">0</div>
-          </div>
-        </div>
-
-        <!-- BOTTOM ROW -->
-        <div class="bottom-row">
-          <!-- ORDERS TABLE -->
-          <div class="orders-card">
-            <div class="card-header">
-              <h3>Recent Orders</h3>
-              <button class="view-all-btn">View All</button>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Order ID</th>
-                  <th>Customer</th>
-                  <th>Items</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="recentOrdersTable">
-                <tr>
-                  <td colspan="5">Loading recent orders...</td>
-                </tr>
-              </tbody>
-            </table>
+            <p class="owner-eyebrow">Restaurant command center</p>
+            <h1 id="dashboardGreeting">Welcome back, Restaurant Owner</h1>
+            <p>
+              Monitor live orders, kitchen pressure, rider handoff, revenue, and
+              AI delay risk from one premium operation dashboard.
+            </p>
           </div>
 
-          <!-- RIGHT PANEL -->
-          <div class="right-panel">
-            <div class="earnings-card">
-              <h3>Weekly Earnings</h3>
-              <div class="earnings-box">
-                <div class="earnings-amount" id="weeklyEarnings">$0.00</div>
-                <div class="earnings-label">This Week</div>
+          <div class="owner-live-chip" id="restaurantStateChip">
+            <i class="fa-solid fa-circle"></i>
+            Loading
+          </div>
+        </section>
+
+        <section class="owner-dashboard-grid">
+          <article class="owner-metric-card metric-red">
+            <div>
+              <span>Today’s Orders</span>
+              <h2 id="metricTodayOrders">0</h2>
+              <p id="metricTotalOrders">0 total orders</p>
+            </div>
+            <div class="metric-icon"><i class="fa-solid fa-receipt"></i></div>
+          </article>
+
+          <article class="owner-metric-card metric-orange">
+            <div>
+              <span>Pending</span>
+              <h2 id="metricPendingOrders">0</h2>
+              <p>Need restaurant action</p>
+            </div>
+            <div class="metric-icon"><i class="fa-solid fa-clock"></i></div>
+          </article>
+
+          <article class="owner-metric-card metric-blue">
+            <div>
+              <span>Preparing</span>
+              <h2 id="metricPreparingOrders">0</h2>
+              <p>Kitchen active now</p>
+            </div>
+            <div class="metric-icon"><i class="fa-solid fa-utensils"></i></div>
+          </article>
+
+          <article class="owner-metric-card metric-cyan">
+            <div>
+              <span>Ready Pickup</span>
+              <h2 id="metricReadyOrders">0</h2>
+              <p>Waiting for rider</p>
+            </div>
+            <div class="metric-icon"><i class="fa-solid fa-box-open"></i></div>
+          </article>
+
+          <article class="owner-metric-card metric-green">
+            <div>
+              <span>Completed</span>
+              <h2 id="metricCompletedOrders">0</h2>
+              <p>Delivered orders</p>
+            </div>
+            <div class="metric-icon">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+          </article>
+
+          <article class="owner-metric-card metric-red">
+            <div>
+              <span>Cancelled</span>
+              <h2 id="metricCancelledOrders">0</h2>
+              <p>Rejected/cancelled</p>
+            </div>
+            <div class="metric-icon">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </div>
+          </article>
+
+          <article class="owner-metric-card metric-purple">
+            <div>
+              <span>Today Revenue</span>
+              <h2 id="metricTodayRevenue">Rs. 0</h2>
+              <p id="metricWeeklyRevenue">Rs. 0 this week</p>
+            </div>
+            <div class="metric-icon"><i class="fa-solid fa-wallet"></i></div>
+          </article>
+
+          <article class="owner-metric-card metric-blue">
+            <div>
+              <span>Avg Prep Time</span>
+              <h2 id="metricAvgPrep">0m</h2>
+              <p>Kitchen performance</p>
+            </div>
+            <div class="metric-icon"><i class="fa-solid fa-stopwatch"></i></div>
+          </article>
+        </section>
+
+        <section class="owner-intelligence-grid">
+          <article class="owner-panel">
+            <div class="owner-panel-header">
+              <div>
+                <h2><i class="fa-solid fa-brain"></i> AI Delay Prediction</h2>
+                <p>
+                  Smart operational risk based on pending, active and ready
+                  orders.
+                </p>
+              </div>
+              <a href="ownermanagement.html" class="dashboard-action-btn">
+                <i class="fa-solid fa-arrow-right"></i>
+                Orders
+              </a>
+            </div>
+
+            <div class="ai-risk-card">
+              <div class="ai-score-row">
+                <div>
+                  <span class="ai-risk-label" id="aiRiskPill">
+                    <i class="fa-solid fa-sparkles"></i>
+                    Low risk
+                  </span>
+                  <h3 class="ai-risk-title" id="aiRiskTitle">
+                    Loading AI prediction...
+                  </h3>
+                  <p class="ai-risk-copy" id="aiRiskSuggestion">
+                    Checking kitchen flow and delay signals.
+                  </p>
+                </div>
+
+                <div
+                  class="ai-score-ring"
+                  id="aiScoreRing"
+                  style="--ai-score: 0%"
+                >
+                  <strong id="aiScoreText">0</strong>
+                </div>
+              </div>
+
+              <div class="ai-reasons" id="aiReasonsList"></div>
+            </div>
+          </article>
+
+          <article class="owner-panel">
+            <div class="owner-panel-header">
+              <div>
+                <h2>
+                  <i class="fa-solid fa-list-check"></i> Smart Kitchen Queue
+                </h2>
+                <p>Suggested actions to reduce delay and improve handoff.</p>
               </div>
             </div>
-            <div class="quick-actions-card">
-              <h3>Quick Actions</h3>
-              <button class="qa-btn primary" id="ownerQuickAddMenuBtn">
-                <svg
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  viewBox="0 0 24 24"
-                >
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                Add Menu Item
-              </button>
-              <button class="qa-btn secondary" id="ownerQuickViewOrdersBtn">
-                <svg
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.35-4.35" />
-                </svg>
-                View Orders
-              </button>
+
+            <div class="smart-queue-list" id="smartQueueList"></div>
+          </article>
+        </section>
+
+        <section class="owner-lower-grid">
+          <article class="owner-panel">
+            <div class="owner-panel-header">
+              <div>
+                <h2>
+                  <i class="fa-solid fa-clock-rotate-left"></i> Recent Orders
+                </h2>
+                <p>Latest restaurant orders and rider handoff state.</p>
+              </div>
             </div>
-          </div>
-        </div>
+
+            <div class="recent-table-wrap">
+              <table class="recent-orders-table">
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Rider</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="recentOrdersTableBody">
+                  <tr>
+                    <td colspan="6">Loading recent orders...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="owner-panel">
+            <div class="owner-panel-header">
+              <div>
+                <h2><i class="fa-solid fa-fire"></i> Most Ordered Items</h2>
+                <p>Best sellers from current restaurant orders.</p>
+              </div>
+            </div>
+
+            <div class="most-items-list" id="mostOrderedItemsList"></div>
+          </article>
+        </section>
       </main>
     </div>
 
-    <!-- FOOTER -->
-    <footer>
-      <div class="footer-grid">
-        <div>
-          <div class="footer-logo">FoodExpress</div>
-          <p class="footer-tagline"></p>
-          <div class="social-icons">
-            <a href="#">
-              <svg
-                width="14"
-                height="14"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
-                />
-              </svg>
-            </a>
-            <a href="#">
-              <svg
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"
-                />
-              </svg>
-            </a>
-            <a href="#">
-              <svg
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-              >
-                <rect x="2" y="2" width="20" height="20" rx="5" />
-                <circle cx="12" cy="12" r="4" />
-                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" />
-              </svg>
-            </a>
-          </div>
-        </div>
-        <div class="footer-col">
-          <h4>Quick Links</h4>
-          <a href="ownerdashboard.html">Dashboard</a>
-          <a href="#">Order</a>
-          <a href="ownerMenu.html">Menu</a>
-          <a href="#">Earnings</a>
-        </div>
-        <div class="footer-col">
-          <h4>Contact</h4>
-          <div class="contact-row">
-            <svg
-              width="15"
-              height="15"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
-            kaks ko hostel
-          </div>
-          <div class="contact-row">
-            <svg
-              width="15"
-              height="15"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-              />
-            </svg>
-            9826385149
-          </div>
-          <div class="contact-row">
-            <svg
-              width="15"
-              height="15"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-              />
-              <polyline points="22,6 12,13 2,6" />
-            </svg>
-            hello@foodexpress.com
-          </div>
-        </div>
-      </div>
-      <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
-    </footer>
-
-    <!-- FAB -->
-    <button class="fab">?</button>
-    <script src="../js/shared.js?v=ownerfix5"></script>
-    <script src="../js/ownerdashboard.js?v=ownerfix5"></script>
+    <script src="../js/shared.js?v=owner-dashboard-safe-1"></script>
+    <script src="../js/ownerdashboard.js?v=owner-dashboard-ai-1"></script>
   </body>
 </html>

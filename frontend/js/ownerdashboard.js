@@ -1,146 +1,428 @@
-const API_URL = "../../backend/controllers/OwnerDashboardController.php";
+console.log("[ownerdashboard.js] Loaded - AI restaurant command center v1");
+
+const OWNER_DASHBOARD_API = "../../backend/controllers/OwnerDashboardController.php";
+const OWNER_DASHBOARD_REFRESH_MS = 8000;
+
+let ownerDashboardTimer = null;
+let latestDashboardData = null;
+
+document.addEventListener("DOMContentLoaded", async () => {
+  renderOwnerShell();
+  setupOwnerLogout();
+
+  await loadOwnerDashboard();
+
+  ownerDashboardTimer = setInterval(() => {
+    if (!document.hidden) {
+      loadOwnerDashboard({ silent: true });
+    }
+  }, OWNER_DASHBOARD_REFRESH_MS);
+});
+
+window.addEventListener("beforeunload", () => {
+  if (ownerDashboardTimer) clearInterval(ownerDashboardTimer);
+});
 
 function readJson(key, fallback = null) {
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
-  } catch (error) {
-    console.error(`[ownerdashboard.js] Failed to read ${key}`, error);
+  } catch {
     return fallback;
   }
 }
 
-function getOwnerRestaurantInfo() {
+function getOwnerRestaurantContext() {
   const owner = readJson("foodExpressCurrentOwner", {});
+  const currentUser = readJson("foodExpressCurrentUser", {});
 
   const restaurantId =
     localStorage.getItem("ownerRestaurantId") ||
     owner.restaurantId ||
     owner.restaurant_id ||
+    currentUser.restaurantId ||
+    currentUser.restaurant_id ||
     "1";
 
   const restaurantName =
     localStorage.getItem("ownerRestaurantName") ||
     owner.restaurantName ||
     owner.restaurant_name ||
+    currentUser.restaurantName ||
+    currentUser.restaurant_name ||
     "Spicy Grill";
 
   return {
-    restaurantId: String(restaurantId),
-    restaurantName: String(restaurantName),
+    restaurantId: String(restaurantId || "1"),
+    restaurantName: String(restaurantName || "Spicy Grill"),
   };
 }
 
-const ownerRestaurant = getOwnerRestaurantInfo();
-const restaurantId = ownerRestaurant.restaurantId;
+function renderOwnerShell() {
+  const { restaurantName } = getOwnerRestaurantContext();
 
-const totalOrdersEl = document.getElementById("totalOrders");
-const totalEarningsEl = document.getElementById("totalEarnings");
-const activeOrdersEl = document.getElementById("activeOrders");
-const pendingOrdersEl = document.getElementById("pendingOrders");
-const weeklyEarningsEl = document.getElementById("weeklyEarnings");
-const recentOrdersTableEl = document.getElementById("recentOrdersTable");
-
-function formatCurrency(amount) {
-  return `$${Number(amount || 0).toFixed(2)}`;
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function renderOwnerName() {
-  const { restaurantName } = getOwnerRestaurantInfo();
-  const displayName = restaurantName || "Restaurant";
-
-  const ownerNameLabel = document.getElementById("ownerNameLabel");
-  if (ownerNameLabel) {
-    ownerNameLabel.textContent = displayName;
-  }
-
-  document.querySelectorAll(".sidebar-profile .name").forEach((el) => {
-    el.textContent = displayName;
+  document.querySelectorAll(".sidebar-profile .name, #sidebarRestaurantName").forEach((el) => {
+    el.textContent = restaurantName;
   });
 
   document.querySelectorAll(".sidebar-profile .avatar").forEach((el) => {
-    el.textContent = displayName.charAt(0).toUpperCase();
+    el.textContent = restaurantName.charAt(0).toUpperCase();
   });
 
-  document.querySelectorAll(".profile-btn .avatar").forEach((el) => {
-    el.textContent = displayName.charAt(0).toUpperCase();
+  const greeting = document.getElementById("dashboardGreeting");
+  if (greeting) {
+    greeting.textContent = `Welcome back, ${restaurantName}`;
+  }
+}
+
+function setupOwnerLogout() {
+  document.getElementById("ownerLogoutBtn")?.addEventListener("click", () => {
+    if (typeof logout === "function") {
+      logout();
+      return;
+    }
+
+    localStorage.removeItem("foodExpressCurrentOwner");
+    localStorage.removeItem("foodExpressCurrentUser");
+    window.location.href = "restaurant-login.html";
   });
 }
 
-function setupOwnerActions() {
-  document.getElementById("ownerQuickAddMenuBtn")?.addEventListener("click", () => {
-    window.location.href = "ownerMenu.html";
-  });
+async function loadOwnerDashboard(options = {}) {
+  const { silent = false } = options;
+  const { restaurantId } = getOwnerRestaurantContext();
 
-  document.getElementById("ownerQuickViewOrdersBtn")?.addEventListener("click", () => {
-    window.location.href = "ownermanagement.html";
-  });
+  try {
+    if (!silent) {
+      setDashboardLoading();
+    }
 
-  document.querySelector(".view-all-btn")?.addEventListener("click", () => {
-    window.location.href = "ownermanagement.html";
-  });
+    const url = `${OWNER_DASHBOARD_API}?restaurant_id=${encodeURIComponent(
+      restaurantId
+    )}&_=${Date.now()}`;
+
+    const response = await fetch(url);
+    const result = await readJsonResponse(response);
+
+    if (!result.success) {
+      throw new Error(result.message || "Failed to load owner dashboard.");
+    }
+
+    latestDashboardData = result.data || {};
+    renderDashboard(latestDashboardData);
+
+    console.log("[ownerdashboard.js] Dashboard loaded:", latestDashboardData);
+  } catch (error) {
+    console.error("[ownerdashboard.js] Dashboard load failed:", error);
+    renderDashboardError(error.message);
+  }
 }
 
-function formatTimeAgo(dateString) {
-  if (!dateString) return "Just now";
+async function readJsonResponse(response) {
+  const raw = await response.text();
 
-  const now = new Date();
-  const orderDate = new Date(dateString);
+  try {
+    return JSON.parse(raw);
+  } catch {
+    console.error("[ownerdashboard.js] Non JSON response:", raw);
+    throw new Error("Dashboard backend returned invalid JSON.");
+  }
+}
 
-  if (Number.isNaN(orderDate.getTime())) return "Just now";
+function setDashboardLoading() {
+  setText("metricTodayOrders", "...");
+  setText("metricPendingOrders", "...");
+  setText("metricPreparingOrders", "...");
+  setText("metricReadyOrders", "...");
+  setText("metricCompletedOrders", "...");
+  setText("metricCancelledOrders", "...");
+  setText("metricTodayRevenue", "...");
+  setText("metricAvgPrep", "...");
+}
 
-  const diffMs = now - orderDate;
-  const minutes = Math.floor(diffMs / (1000 * 60));
-  const hours = Math.floor(diffMs / (1000 * 60 * 60));
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+function renderDashboard(data) {
+  const restaurantState = data.restaurant_state || {};
+  const ai = data.ai_delay_prediction || {};
+  const smartQueue = createSmartQueue(data);
 
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes} min${minutes > 1 ? "s" : ""} ago`;
-  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-  return `${days} day${days > 1 ? "s" : ""} ago`;
+  setText("metricTodayOrders", number(data.today_orders));
+  setText("metricTotalOrders", `${number(data.total_orders)} total orders`);
+
+  setText("metricPendingOrders", number(data.pending_orders));
+  setText("metricPreparingOrders", number(data.preparing_orders));
+  setText("metricReadyOrders", number(data.ready_for_pickup_orders));
+  setText("metricCompletedOrders", number(data.completed_orders));
+  setText("metricCancelledOrders", number(data.cancelled_orders));
+
+  setText("metricTodayRevenue", money(data.today_revenue));
+  setText("metricWeeklyRevenue", `${money(data.weekly_earnings)} this week`);
+  setText("metricAvgPrep", `${number(data.average_prep_minutes)}m`);
+
+  renderRestaurantState(restaurantState);
+  renderAiPrediction(ai);
+  renderSmartQueue(smartQueue);
+  renderRecentOrders(data.recent_orders || []);
+  renderMostOrderedItems(data.most_ordered_items || []);
+}
+
+function renderRestaurantState(state) {
+  const chip = document.getElementById("restaurantStateChip");
+  if (!chip) return;
+
+  const isOpen = String(state.is_open ?? "1") === "1";
+  const accepting = String(state.accepting_orders ?? "1") === "1";
+  const busy = String(state.busy_mode ?? "0") === "1";
+
+  let label = "Open";
+  let bg = "#ecfdf5";
+  let color = "#15803d";
+  let border = "#bbf7d0";
+
+  if (!isOpen) {
+    label = "Closed";
+    bg = "#fff1f1";
+    color = "#dc2626";
+    border = "#fecaca";
+  } else if (!accepting) {
+    label = "Paused";
+    bg = "#fffbeb";
+    color = "#b45309";
+    border = "#fde68a";
+  } else if (busy) {
+    label = "Busy mode";
+    bg = "#f5f3ff";
+    color = "#6d28d9";
+    border = "#ddd6fe";
+  }
+
+  chip.innerHTML = `<i class="fa-solid fa-circle"></i> ${escapeHtml(label)}`;
+  chip.style.background = bg;
+  chip.style.color = color;
+  chip.style.borderColor = border;
+}
+
+function renderAiPrediction(ai) {
+  const score = clamp(Number(ai.score || 0), 0, 100);
+  const risk = String(ai.risk || "low").toLowerCase();
+  const label = ai.label || `${capitalize(risk)} delay risk`;
+  const suggestion =
+    ai.suggestion || "Kitchen flow looks healthy. Keep monitoring pending orders.";
+
+  const scoreRing = document.getElementById("aiScoreRing");
+  if (scoreRing) {
+    scoreRing.style.setProperty("--ai-score", `${score}%`);
+  }
+
+  setText("aiScoreText", String(score));
+  setText("aiRiskTitle", label);
+  setText("aiRiskSuggestion", suggestion);
+
+  const pill = document.getElementById("aiRiskPill");
+  if (pill) {
+    const icon = risk === "critical" || risk === "high"
+      ? "fa-triangle-exclamation"
+      : risk === "medium"
+        ? "fa-gauge-high"
+        : "fa-sparkles";
+
+    pill.innerHTML = `<i class="fa-solid ${icon}"></i> ${escapeHtml(capitalize(risk))} risk`;
+
+    if (risk === "critical" || risk === "high") {
+      pill.style.background = "#fff1f1";
+      pill.style.color = "#dc2626";
+    } else if (risk === "medium") {
+      pill.style.background = "#fffbeb";
+      pill.style.color = "#b45309";
+    } else {
+      pill.style.background = "#f5f3ff";
+      pill.style.color = "#6d28d9";
+    }
+  }
+
+  const reasons = Array.isArray(ai.reasons) && ai.reasons.length
+    ? ai.reasons
+    : ["No major delay signals detected right now."];
+
+  const list = document.getElementById("aiReasonsList");
+  if (list) {
+    list.innerHTML = reasons
+      .map((reason) => {
+        return `
+          <div class="ai-reason">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>${escapeHtml(reason)}</span>
+          </div>
+        `;
+      })
+      .join("");
+  }
+}
+
+function createSmartQueue(data) {
+  const queue = [];
+
+  const pending = Number(data.pending_orders || 0);
+  const preparing = Number(data.preparing_orders || 0);
+  const ready = Number(data.ready_for_pickup_orders || 0);
+  const active = Number(data.active_orders || 0);
+  const ai = data.ai_delay_prediction || {};
+  const recent = Array.isArray(data.recent_orders) ? data.recent_orders : [];
+  const topItems = Array.isArray(data.most_ordered_items)
+    ? data.most_ordered_items
+    : [];
+
+  if (pending > 0) {
+    queue.push({
+      icon: "fa-clock",
+      title: "Confirm pending orders first",
+      text: `${pending} order${pending > 1 ? "s" : ""} still need restaurant confirmation.`,
+    });
+  }
+
+  if (preparing > 0) {
+    queue.push({
+      icon: "fa-utensils",
+      title: "Keep kitchen prep focused",
+      text: `${preparing} order${preparing > 1 ? "s are" : " is"} currently preparing. Avoid long idle time before ready pickup.`,
+    });
+  }
+
+  if (ready > 0) {
+    queue.push({
+      icon: "fa-motorcycle",
+      title: "Rider handoff waiting",
+      text: `${ready} order${ready > 1 ? "s are" : " is"} ready for pickup. Monitor rider assignment.`,
+    });
+  }
+
+  if (Number(ai.score || 0) >= 60) {
+    queue.push({
+      icon: "fa-triangle-exclamation",
+      title: "Delay risk action needed",
+      text: ai.suggestion || "Turn on busy mode or increase estimated prep time.",
+    });
+  }
+
+  if (topItems.length) {
+    const top = topItems[0];
+    queue.push({
+      icon: "fa-fire",
+      title: "Batch prep opportunity",
+      text: `${top.item_name || "Top item"} is your most ordered item today. Keep ingredients ready.`,
+    });
+  }
+
+  if (!queue.length) {
+    queue.push({
+      icon: "fa-circle-check",
+      title: "Kitchen flow looks healthy",
+      text: "No urgent action needed. Keep monitoring new orders and rider pickup.",
+    });
+  }
+
+  return queue.slice(0, 5);
+}
+
+function renderSmartQueue(queue) {
+  const list = document.getElementById("smartQueueList");
+  if (!list) return;
+
+  list.innerHTML = queue
+    .map((item) => {
+      return `
+        <div class="smart-queue-item">
+          <div class="smart-queue-icon">
+            <i class="fa-solid ${escapeHtml(item.icon)}"></i>
+          </div>
+          <div>
+            <h3>${escapeHtml(item.title)}</h3>
+            <p>${escapeHtml(item.text)}</p>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderRecentOrders(orders) {
+  const body = document.getElementById("recentOrdersTableBody");
+  if (!body) return;
+
+  if (!orders.length) {
+    body.innerHTML = `
+      <tr>
+        <td colspan="6">
+          <div class="owner-empty">No recent orders yet.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  body.innerHTML = orders
+    .slice(0, 8)
+    .map((order) => {
+      const status = normalizeStatus(order.status);
+      return `
+        <tr>
+          <td><strong>#${escapeHtml(order.order_number || order.id)}</strong></td>
+          <td>${escapeHtml(order.customer_name || "Guest")}</td>
+          <td><strong>${money(order.total)}</strong></td>
+          <td>
+            <span class="dashboard-status status-${escapeHtml(status)}">
+              ${escapeHtml(formatStatusLabel(status))}
+            </span>
+          </td>
+          <td>${escapeHtml(order.rider_name || "Not assigned")}</td>
+          <td>${escapeHtml(formatTimeAgo(order.created_at))}</td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function renderMostOrderedItems(items) {
+  const list = document.getElementById("mostOrderedItemsList");
+  if (!list) return;
+
+  if (!items.length) {
+    list.innerHTML = `<div class="owner-empty">No item analytics yet.</div>`;
+    return;
+  }
+
+  list.innerHTML = items
+    .slice(0, 6)
+    .map((item) => {
+      return `
+        <div class="most-item">
+          <div>
+            <strong>${escapeHtml(item.item_name || "Food item")}</strong>
+            <span>${number(item.order_count)} order${Number(item.order_count || 0) === 1 ? "" : "s"}</span>
+          </div>
+          <b>${number(item.total_qty)} sold</b>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderDashboardError(message) {
+  setText("aiRiskTitle", "Dashboard could not load");
+  setText("aiRiskSuggestion", message || "Please check backend connection.");
+  setText("recentOrdersTableBody", "");
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
 }
 
 function normalizeStatus(status) {
-  const s = String(status || "pending").toLowerCase().trim();
-
-  if (s === "accepted") return "confirmed";
-  return s;
+  return String(status || "pending").toLowerCase().trim();
 }
 
-function getStatusClass(status) {
-  const s = normalizeStatus(status);
-
-  if (s === "pending") return "pending";
-
-  if (
-    s === "confirmed" ||
-    s === "preparing" ||
-    s === "ready_for_pickup" ||
-    s === "picked_up" ||
-    s === "on_the_way"
-  ) {
-    return "progress";
-  }
-
-  if (s === "delivered") return "delivered";
-  if (s === "cancelled") return "cancelled";
-
-  return "pending";
-}
-
-function formatStatus(status) {
-  const s = normalizeStatus(status);
-
-  const labels = {
+function formatStatusLabel(status) {
+  const map = {
     pending: "Pending",
     confirmed: "Confirmed",
     preparing: "Preparing",
@@ -151,122 +433,49 @@ function formatStatus(status) {
     cancelled: "Cancelled",
   };
 
-  return labels[s] || "Pending";
+  return map[normalizeStatus(status)] || "Pending";
 }
 
-function renderRecentOrders(orders) {
-  if (!recentOrdersTableEl) return;
-
-  if (!Array.isArray(orders) || orders.length === 0) {
-    recentOrdersTableEl.innerHTML = `
-      <tr>
-        <td colspan="5">No recent orders found for this restaurant.</td>
-      </tr>
-    `;
-    return;
-  }
-
-  recentOrdersTableEl.innerHTML = orders
-    .map((order) => {
-      const orderNumber = order.order_number || order.orderNumber || order.id || "N/A";
-      const customerName = order.customer_name || order.customerName || "Guest User";
-      const total = order.total || order.total_amount || 0;
-      const createdAt = order.created_at || order.createdAt || order.timestamp;
-      const status = order.delivery_status || order.status || "pending";
-
-      return `
-        <tr>
-          <td>
-            <div class="order-id">#${escapeHtml(orderNumber)}</div>
-            <div class="order-time">${escapeHtml(formatTimeAgo(createdAt))}</div>
-          </td>
-          <td>
-            <span class="customer-name">${escapeHtml(customerName)}</span>
-          </td>
-          <td>
-            <span class="items-text">Order placed</span>
-          </td>
-          <td>
-            <span class="amount">${escapeHtml(formatCurrency(total))}</span>
-          </td>
-          <td>
-            <span class="status-badge ${getStatusClass(status)}">
-              ${escapeHtml(formatStatus(status))}
-            </span>
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
+function money(value) {
+  const amount = Number(value || 0);
+  return `Rs. ${amount.toFixed(2)}`;
 }
 
-async function loadDashboard() {
-  try {
-    const currentRestaurant = getOwnerRestaurantInfo();
-    const currentRestaurantId = currentRestaurant.restaurantId || "1";
-
-    console.log("[ownerdashboard.js] Loading dashboard for restaurant:", currentRestaurant);
-
-    const res = await fetch(
-      `${API_URL}?restaurant_id=${encodeURIComponent(currentRestaurantId)}`
-    );
-
-    const raw = await res.text();
-
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch (error) {
-      console.error("[ownerdashboard.js] Non-JSON dashboard response:", raw);
-      throw new Error("Dashboard backend did not return valid JSON.");
-    }
-
-    if (!data.success) {
-      console.error("Dashboard load failed:", data.message);
-      renderRecentOrders([]);
-      return;
-    }
-
-    const dashboard = data.data || {};
-
-    if (totalOrdersEl) totalOrdersEl.textContent = dashboard.total_orders ?? 0;
-
-    if (totalEarningsEl) {
-      totalEarningsEl.textContent = formatCurrency(dashboard.total_earnings);
-    }
-
-    if (activeOrdersEl) {
-      activeOrdersEl.textContent = dashboard.active_orders ?? 0;
-    }
-
-    if (pendingOrdersEl) {
-      pendingOrdersEl.textContent = dashboard.pending_orders ?? 0;
-    }
-
-    if (weeklyEarningsEl) {
-      weeklyEarningsEl.textContent = formatCurrency(dashboard.weekly_earnings);
-    }
-
-    renderRecentOrders(dashboard.recent_orders || []);
-  } catch (error) {
-    console.error("Error loading dashboard:", error);
-
-    if (recentOrdersTableEl) {
-      recentOrdersTableEl.innerHTML = `
-        <tr>
-          <td colspan="5">Failed to load dashboard data.</td>
-        </tr>
-      `;
-    }
-  }
+function number(value) {
+  return Number(value || 0).toLocaleString("en-AU");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  if (typeof requireOwnerAuth === "function") {
-    if (!requireOwnerAuth()) return;
-  }
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
 
-  renderOwnerName();
-  setupOwnerActions();
-  loadDashboard();
-});
+function capitalize(value) {
+  const text = String(value || "");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function formatTimeAgo(timestamp) {
+  if (!timestamp) return "Just now";
+
+  const time = new Date(timestamp).getTime();
+  if (Number.isNaN(time)) return "Just now";
+
+  const diffMinutes = Math.floor((Date.now() - time) / 60000);
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes} min${diffMinutes > 1 ? "s" : ""} ago`;
+
+  const hours = Math.floor(diffMinutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+
+  const days = Math.floor(hours / 24);
+  return `${days} day${days > 1 ? "s" : ""} ago`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}

@@ -22,7 +22,6 @@
   </head>
 
   <body>
-    <!-- TOP NAV -->
     <nav class="navbar">
       <div class="container">
         <div class="navbar-brand">FoodExpress</div>
@@ -30,7 +29,7 @@
         <div class="navbar-nav">
           <a href="ownerdashboard.html" class="nav-link">Dashboard</a>
           <a href="ownermanagement.html" class="nav-link active">Orders</a>
-          <a href="ownermenu.html" class="nav-link">Menu</a>
+          <a href="ownerMenu.html" class="nav-link">Menu</a>
           <a href="ownerearning.html" class="nav-link">Earnings</a>
           <a href="ownerSettings.html" class="nav-link">Settings</a>
         </div>
@@ -45,16 +44,14 @@
             />
           </div>
 
-          <button class="login-btn" type="button" onclick="logout()">
+          <button class="login-btn" type="button" id="ownerLogoutBtn">
             Logout
           </button>
         </div>
       </div>
     </nav>
 
-    <!-- OWNER LAYOUT -->
     <div class="layout">
-      <!-- SIDEBAR -->
       <aside class="sidebar">
         <div class="sidebar-profile">
           <div class="avatar">R</div>
@@ -65,80 +62,32 @@
         </div>
 
         <a href="ownerdashboard.html" class="nav-item">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-            <rect x="14" y="14" width="7" height="7" rx="1" />
-          </svg>
+          <i class="fa-solid fa-table-cells-large"></i>
           Dashboard
         </a>
 
         <a href="ownermanagement.html" class="nav-item active">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <path d="M16 10a4 4 0 0 1-8 0" />
-          </svg>
+          <i class="fa-solid fa-bag-shopping"></i>
           Orders
         </a>
 
         <a href="ownerMenu.html" class="nav-item">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
+          <i class="fa-solid fa-bars-staggered"></i>
           Menu
         </a>
 
         <a href="ownerearning.html" class="nav-item">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <line x1="12" y1="1" x2="12" y2="23" />
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-          </svg>
+          <i class="fa-solid fa-chart-line"></i>
           Earnings
         </a>
 
         <a href="ownerSettings.html" class="nav-item">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path
-              d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"
-            />
-          </svg>
+          <i class="fa-solid fa-gear"></i>
           Settings
         </a>
       </aside>
 
-      <!-- MAIN CONTENT -->
       <main class="main">
-        <!-- PAGE HEADER -->
         <section class="orders-main-header">
           <div>
             <p class="orders-eyebrow">Restaurant operations</p>
@@ -149,70 +98,70 @@
             </p>
           </div>
 
-          <button
-            class="orders-refresh-btn"
-            type="button"
-            onclick="window.location.reload()"
-          >
+          <button class="orders-refresh-btn" type="button" id="ownerRefreshBtn">
             <i class="fa fa-rotate-right"></i>
             Refresh
           </button>
         </section>
 
-        <!-- STATUS TABS -->
+        <section class="owner-order-toolbar">
+          <div class="owner-toolbar-card">
+            <label for="ownerStatusFilter">Filter</label>
+            <select id="ownerStatusFilter">
+              <option value="all">All orders</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="preparing">Preparing</option>
+              <option value="ready_for_pickup">Ready for pickup</option>
+              <option value="delivery">With rider</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div class="owner-toolbar-card">
+            <label for="ownerSortMode">Sort</label>
+            <select id="ownerSortMode">
+              <option value="latest">Latest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="highest">Highest amount</option>
+              <option value="urgent">Most urgent</option>
+            </select>
+          </div>
+        </section>
+
         <section class="tabs owner-order-tabs">
-          <button
-            class="tab active-pending"
-            type="button"
-            onclick="switchTab('pending', this)"
-          >
+          <button class="tab active-pending" type="button" data-tab="pending">
             <i class="fa fa-clock"></i>
             <span>Pending (0)</span>
           </button>
 
-          <button
-            class="tab"
-            type="button"
-            onclick="switchTab('accepted', this)"
-          >
+          <button class="tab" type="button" data-tab="accepted">
             <i class="fa fa-utensils"></i>
             <span>In Progress (0)</span>
           </button>
 
-          <button class="tab" type="button" onclick="switchTab('ready', this)">
+          <button class="tab" type="button" data-tab="ready">
             <i class="fa fa-box-open"></i>
             <span>Ready for Pickup (0)</span>
           </button>
 
-          <button
-            class="tab"
-            type="button"
-            onclick="switchTab('delivery', this)"
-          >
+          <button class="tab" type="button" data-tab="delivery">
             <i class="fa fa-motorcycle"></i>
             <span>In Delivery (0)</span>
           </button>
 
-          <button
-            class="tab"
-            type="button"
-            onclick="switchTab('delivered', this)"
-          >
+          <button class="tab" type="button" data-tab="delivered">
             <i class="fa fa-circle-check"></i>
             <span>Completed (0)</span>
           </button>
 
-          <button
-            class="tab"
-            type="button"
-            onclick="switchTab('cancelled', this)"
-          >
+          <button class="tab" type="button" data-tab="cancelled">
             <i class="fa fa-circle-xmark"></i>
             <span>Cancelled (0)</span>
           </button>
         </section>
 
-        <!-- ORDER SECTIONS -->
         <section class="orders-content-card">
           <div class="order-section active" id="section-pending"></div>
           <div class="order-section" id="section-accepted"></div>
@@ -224,43 +173,7 @@
       </main>
     </div>
 
-    <script src="../js/shared.js?v=ownerfix3"></script>
-    <script src="../js/ownerOrders.js?v=ownerpoll1"></script>
-
-    <script>
-      const tabClasses = {
-        pending: "active-pending",
-        accepted: "active-accepted",
-        ready: "active-ready",
-        delivery: "active-delivery",
-        delivered: "active-delivered",
-        cancelled: "active-cancelled",
-      };
-
-      function switchTab(type, el) {
-        document.querySelectorAll(".tab").forEach((tab) => {
-          tab.classList.remove(
-            "active-pending",
-            "active-accepted",
-            "active-ready",
-            "active-delivery",
-            "active-delivered",
-            "active-cancelled",
-          );
-        });
-
-        el.classList.add(tabClasses[type]);
-
-        document.querySelectorAll(".order-section").forEach((section) => {
-          section.classList.remove("active");
-        });
-
-        const targetSection = document.getElementById("section-" + type);
-
-        if (targetSection) {
-          targetSection.classList.add("active");
-        }
-      }
-    </script>
+    <script src="../js/shared.js?v=owner-orders-safe-1"></script>
+    <script src="../js/ownerOrders.js?v=owner-orders-safe-2"></script>
   </body>
 </html>

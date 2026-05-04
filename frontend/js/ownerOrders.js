@@ -1,13 +1,22 @@
-console.log("[ownerOrders.js] Loaded - backend owner orders with owner-side view modal fixed");
+console.log("[ownerOrders.js] Loaded - fixed renderer v3");
 
-const OWNER_ORDER_API = "../../backend/controllers/OrderController.php";
-const OWNER_ORDERS_POLL_INTERVAL = 5000;
+const OWNER_ORDER_API = "../../backend/controllers/OwnerOrderController.php";
+const OWNER_ORDERS_POLL_INTERVAL = 6000;
+
+const tabClassMap = {
+  pending: "active-pending",
+  accepted: "active-accepted",
+  ready: "active-ready",
+  delivery: "active-delivery",
+  delivered: "active-delivered",
+  cancelled: "active-cancelled",
+};
 
 const statusBadgeMap = {
   pending: { label: "Pending", css: "badge-pending" },
   confirmed: { label: "Confirmed", css: "badge-accepted" },
   preparing: { label: "Preparing", css: "badge-accepted" },
-  ready_for_pickup: { label: "Ready for Pickup", css: "badge-accepted" },
+  ready_for_pickup: { label: "Ready for Pickup", css: "badge-ready" },
   picked_up: { label: "Picked Up", css: "badge-accepted" },
   on_the_way: { label: "On The Way", css: "badge-accepted" },
   delivered: { label: "Delivered", css: "badge-delivered" },
@@ -18,49 +27,27 @@ let ownerOrdersCache = [];
 let ownerOrdersRefreshTimer = null;
 let isOwnerOrdersLoading = false;
 let isOwnerOrderUpdating = false;
-
-/* ===============================
-   INIT
-================================ */
+let currentSortMode = "latest";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  if (typeof requireOwnerAuth === "function") {
-    if (!requireOwnerAuth()) return;
-  }
+  console.log("[ownerOrders.js] DOM ready");
 
-  initializeOrderSearch();
   renderOwnerName();
-  setupOwnerRefreshButton();
-  ensureOwnerOrderModal();
+  setupTabs();
+  setupControls();
+  setupLogout();
+  ensureModals();
+  ensureToastHost();
 
   await loadOwnerOrdersFromBackend();
-
-  startOwnerOrdersAutoRefresh();
-
-  window.addEventListener("storage", (event) => {
-    if (
-      event.key === "ownerRestaurantId" ||
-      event.key === "ownerRestaurantName" ||
-      event.key === "foodExpressCurrentOwner"
-    ) {
-      loadOwnerOrdersFromBackend();
-    }
-  });
-
-  window.addEventListener("beforeunload", () => {
-    stopOwnerOrdersAutoRefresh();
-  });
+  startAutoRefresh();
 });
-
-/* ===============================
-   OWNER INFO
-================================ */
 
 function readJson(key, fallback = null) {
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
-  } catch (error) {
+  } catch {
     return fallback;
   }
 }
@@ -85,28 +72,83 @@ function getCurrentOwnerRestaurant() {
     currentUser.restaurant_name ||
     "Spicy Grill";
 
+  const ownerUserId =
+    owner.id || owner.user_id || currentUser.id || currentUser.user_id || null;
+
   return {
     restaurantId: String(restaurantId || "1"),
     restaurantName: String(restaurantName || "Spicy Grill"),
+    ownerUserId,
   };
 }
 
 function renderOwnerName() {
   const { restaurantName } = getCurrentOwnerRestaurant();
-  const displayName = restaurantName || "Restaurant";
 
   document.querySelectorAll(".sidebar-profile .name").forEach((el) => {
-    el.textContent = displayName;
+    el.textContent = restaurantName;
   });
 
   document.querySelectorAll(".sidebar-profile .avatar").forEach((el) => {
-    el.textContent = displayName.charAt(0).toUpperCase();
+    el.textContent = restaurantName.charAt(0).toUpperCase();
   });
 }
 
-/* ===============================
-   BACKEND LOAD + AUTO REFRESH
-================================ */
+function setupLogout() {
+  document.getElementById("ownerLogoutBtn")?.addEventListener("click", () => {
+    if (typeof logout === "function") {
+      logout();
+      return;
+    }
+
+    localStorage.removeItem("foodExpressCurrentOwner");
+    localStorage.removeItem("foodExpressCurrentUser");
+    window.location.href = "restaurant-login.html";
+  });
+}
+
+function setupTabs() {
+  document.querySelectorAll(".owner-order-tabs .tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      switchTab(button.dataset.tab, button);
+    });
+  });
+}
+
+function switchTab(type, activeButton) {
+  document.querySelectorAll(".owner-order-tabs .tab").forEach((button) => {
+    Object.values(tabClassMap).forEach((className) => {
+      button.classList.remove(className);
+    });
+  });
+
+  activeButton.classList.add(tabClassMap[type] || "active-pending");
+
+  document.querySelectorAll(".order-section").forEach((section) => {
+    section.classList.remove("active");
+  });
+
+  document.getElementById(`section-${type}`)?.classList.add("active");
+}
+
+function setupControls() {
+  document.getElementById("orderSearchInput")?.addEventListener("input", () => {
+    renderOwnerOrders();
+  });
+
+  document.getElementById("ownerStatusFilter")?.addEventListener("change", () => {
+    renderOwnerOrders();
+  });
+
+  document.getElementById("ownerSortMode")?.addEventListener("change", (event) => {
+    currentSortMode = event.target.value || "latest";
+    renderOwnerOrders();
+  });
+
+  document.getElementById("ownerRefreshBtn")?.addEventListener("click", async () => {
+    await loadOwnerOrdersFromBackend({ force: true });
+  });
+}
 
 async function loadOwnerOrdersFromBackend(options = {}) {
   const { silent = false, force = false } = options;
@@ -114,169 +156,95 @@ async function loadOwnerOrdersFromBackend(options = {}) {
   if (isOwnerOrdersLoading && !force) return;
   if (isOwnerOrderUpdating && !force) return;
 
+  const { restaurantId } = getCurrentOwnerRestaurant();
+
   try {
     isOwnerOrdersLoading = true;
 
-    const response = await fetch(
-      `${OWNER_ORDER_API}?action=all&limit=100&_=${Date.now()}`
-    );
-
-    const raw = await response.text();
-
-    let result;
-    try {
-      result = JSON.parse(raw);
-    } catch (error) {
-      console.error("[ownerOrders.js] Non-JSON response:", raw);
-      throw new Error("Order backend did not return valid JSON.");
+    if (!silent) {
+      renderLoadingState();
     }
+
+    const url = `${OWNER_ORDER_API}?action=list&restaurant_id=${encodeURIComponent(
+      restaurantId
+    )}&limit=150&_=${Date.now()}`;
+
+    console.log("[ownerOrders.js] Fetching:", url);
+
+    const response = await fetch(url);
+    const result = await readJsonResponse(response);
+
+    console.log("[ownerOrders.js] API result:", result);
 
     if (!result.success) {
-      throw new Error(result.message || "Failed to load orders.");
+      throw new Error(result.message || "Failed to load restaurant orders.");
     }
 
-    const allOrders = Array.isArray(result.data) ? result.data : [];
-    const ownerRestaurant = getCurrentOwnerRestaurant();
+    ownerOrdersCache = Array.isArray(result.data)
+      ? result.data.map(normalizeBackendOrder)
+      : [];
 
-    ownerOrdersCache = filterOrdersForCurrentRestaurant(
-      allOrders.map(normalizeBackendOrder),
-      ownerRestaurant
-    );
+    console.log("[ownerOrders.js] Orders loaded:", ownerOrdersCache.length);
 
     renderOwnerOrders();
-
-    if (!silent) {
-      console.log("[ownerOrders.js] Orders loaded:", ownerOrdersCache.length);
-    }
   } catch (error) {
-    console.error("[ownerOrders.js] Failed to load backend orders:", error);
-
-    if (!silent) {
-      renderErrorState(error.message);
-    }
+    console.error("[ownerOrders.js] Load failed:", error);
+    renderErrorState(error.message);
+    showToast(error.message, "error");
   } finally {
     isOwnerOrdersLoading = false;
   }
 }
 
-function startOwnerOrdersAutoRefresh() {
-  stopOwnerOrdersAutoRefresh();
+async function readJsonResponse(response) {
+  const raw = await response.text();
 
-  ownerOrdersRefreshTimer = setInterval(() => {
-    if (document.hidden) return;
-    if (isOwnerOrderUpdating) return;
-
-    loadOwnerOrdersFromBackend({ silent: true });
-  }, OWNER_ORDERS_POLL_INTERVAL);
-
-  console.log("[ownerOrders.js] Auto-refresh started every 5 seconds");
-}
-
-function stopOwnerOrdersAutoRefresh() {
-  if (ownerOrdersRefreshTimer) {
-    clearInterval(ownerOrdersRefreshTimer);
-    ownerOrdersRefreshTimer = null;
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error("[ownerOrders.js] Non JSON response:", raw);
+    throw new Error("Backend returned invalid JSON. Check PHP error.");
   }
 }
-
-function setupOwnerRefreshButton() {
-  const refreshBtn =
-    document.getElementById("refreshOrders") ||
-    document.getElementById("refreshOrdersBtn") ||
-    document.getElementById("ownerRefreshOrdersBtn");
-
-  if (!refreshBtn) return;
-
-  refreshBtn.addEventListener("click", async () => {
-    refreshBtn.disabled = true;
-    refreshBtn.classList.add("loading");
-
-    await loadOwnerOrdersFromBackend({ force: true });
-
-    refreshBtn.disabled = false;
-    refreshBtn.classList.remove("loading");
-  });
-}
-
-/* ===============================
-   NORMALIZE / FILTER
-================================ */
 
 function normalizeBackendOrder(order) {
   return {
     ...order,
-
     id: order.id,
     orderId: order.id,
     orderNumber: order.order_number || order.orderNumber || order.id,
-
     restaurantId: order.restaurant_id || order.restaurantId,
     restaurantName: order.restaurant_name || order.restaurantName || "",
-
     customerName: order.customer_name || order.customerName || "Guest User",
     customerEmail: order.customer_email || order.customerEmail || "",
     phoneNumber: order.phone_number || order.phoneNumber || "No phone",
-
     address: order.address || "",
     city: order.city || "",
     postalCode: order.postal_code || order.postalCode || "",
     paymentMethod: order.payment_method || order.paymentMethod || "cash",
-
-    deliveryStatus: order.delivery_status || order.deliveryStatus || "searching",
-
+    deliveryStatus: order.delivery_status || order.deliveryStatus || "pending",
     riderName: order.rider_name || order.riderName || "",
     riderEmail: order.rider_email || order.riderEmail || "",
     riderPhone: order.rider_phone || order.riderPhone || "",
-
     createdAt: order.created_at || order.createdAt,
     updatedAt: order.updated_at || order.updatedAt,
-
+    confirmedAt: order.confirmed_at || order.confirmedAt,
+    preparingAt: order.preparing_at || order.preparingAt,
+    readyForPickupAt: order.ready_for_pickup_at || order.readyForPickupAt,
+    cancelReason: order.cancel_reason || order.cancelReason || "",
     subtotal: Number(order.subtotal || 0),
     tax: Number(order.tax || 0),
     deliveryFee: Number(order.delivery_fee || order.deliveryFee || 0),
     total: Number(order.total || 0),
-
     notes: order.notes || "",
-
     items: Array.isArray(order.items) ? order.items : [],
+    statusHistory: Array.isArray(order.status_history)
+      ? order.status_history
+      : [],
   };
 }
 
-function filterOrdersForCurrentRestaurant(orders, ownerRestaurant) {
-  const ownerRestaurantId = String(ownerRestaurant.restaurantId || "").trim();
-
-  const ownerRestaurantName = String(ownerRestaurant.restaurantName || "")
-    .trim()
-    .toLowerCase();
-
-  return orders.filter((order) => {
-    const orderRestaurantId = String(
-      order.restaurantId || order.restaurant_id || ""
-    ).trim();
-
-    const orderRestaurantName = String(
-      order.restaurantName || order.restaurant_name || ""
-    )
-      .trim()
-      .toLowerCase();
-
-    if (ownerRestaurantId && orderRestaurantId) {
-      return orderRestaurantId === ownerRestaurantId;
-    }
-
-    if (ownerRestaurantName && orderRestaurantName) {
-      return orderRestaurantName === ownerRestaurantName;
-    }
-
-    return false;
-  });
-}
-
-/* ===============================
-   RENDER ORDERS
-================================ */
-
-function renderOwnerOrders() {
+function getSections() {
   const sections = {
     pending: document.getElementById("section-pending"),
     accepted: document.getElementById("section-accepted"),
@@ -286,156 +254,173 @@ function renderOwnerOrders() {
     cancelled: document.getElementById("section-cancelled"),
   };
 
-  if (
-    !sections.pending ||
-    !sections.accepted ||
-    !sections.ready ||
-    !sections.delivery ||
-    !sections.delivered ||
-    !sections.cancelled
-  ) {
-    console.warn("[ownerOrders.js] One or more order sections are missing.");
-    return;
+  const missing = Object.entries(sections).filter(([, value]) => !value);
+
+  if (missing.length) {
+    console.error("[ownerOrders.js] Missing HTML sections:", missing);
+    return null;
   }
+
+  return sections;
+}
+
+function renderLoadingState() {
+  const sections = getSections();
+  if (!sections) return;
+
+  sections.pending.innerHTML = getEmptyStateHTML(
+    "Loading orders",
+    "Checking restaurant orders from backend..."
+  );
+}
+
+function renderErrorState(message) {
+  const sections = getSections();
+  if (!sections) return;
+
+  sections.pending.innerHTML = getEmptyStateHTML(
+    "Could not load orders",
+    message || "Please check backend connection."
+  );
+}
+
+function getVisibleOrders() {
+  const searchInput = document.getElementById("orderSearchInput");
+  const statusFilter = document.getElementById("ownerStatusFilter");
+
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+  const filter = statusFilter ? statusFilter.value : "all";
+
+  let orders = [...ownerOrdersCache];
+
+  if (query) {
+    orders = orders.filter((order) => {
+      const searchText = [
+        order.orderNumber,
+        order.customerName,
+        order.customerEmail,
+        order.phoneNumber,
+        order.restaurantName,
+        order.address,
+        order.city,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchText.includes(query);
+    });
+  }
+
+  if (filter !== "all") {
+    orders = orders.filter((order) => {
+      const status = getOwnerOrderStatus(order);
+
+      if (filter === "delivery") {
+        return ["picked_up", "on_the_way"].includes(status);
+      }
+
+      return status === filter;
+    });
+  }
+
+  orders.sort((a, b) => {
+    if (currentSortMode === "oldest") return toTime(a.createdAt) - toTime(b.createdAt);
+    if (currentSortMode === "highest") return Number(b.total || 0) - Number(a.total || 0);
+    if (currentSortMode === "urgent") return getWaitMinutes(b) - getWaitMinutes(a);
+    return toTime(b.createdAt) - toTime(a.createdAt);
+  });
+
+  return orders;
+}
+
+function renderOwnerOrders() {
+  const sections = getSections();
+  if (!sections) return;
 
   Object.values(sections).forEach((section) => {
     section.innerHTML = "";
   });
 
-  const searchedOrders = applySearchFilter(ownerOrdersCache);
+  const orders = getVisibleOrders();
 
-  if (!searchedOrders.length) {
+  console.log("[ownerOrders.js] Rendering orders:", orders.length);
+
+  if (!orders.length) {
     sections.pending.innerHTML = getEmptyStateHTML(
-      "No orders yet",
-      "No orders found for this restaurant yet."
+      "No orders found",
+      "No matching orders for this restaurant right now."
     );
-    fillAllEmptySections(sections);
-    updateOrderTabCounts();
+    fillEmptySections(sections);
+    updateTabCounts();
     return;
   }
 
-  const sortedOrders = [...searchedOrders].sort((a, b) => {
-    const aTime = new Date(a.createdAt || a.created_at || 0).getTime();
-    const bTime = new Date(b.createdAt || b.created_at || 0).getTime();
-    return bTime - aTime;
-  });
+  orders.forEach((order) => {
+    const status = getOwnerOrderStatus(order);
+    const cardHTML = createOrderCardHTML(order, status);
 
-  sortedOrders.forEach((order) => {
-    const normalizedStatus = getOwnerOrderStatus(order);
-    const cardHTML = createOrderCardHTML(order, normalizedStatus);
-
-    if (normalizedStatus === "pending") {
+    if (status === "pending") {
       sections.pending.insertAdjacentHTML("beforeend", cardHTML);
-    } else if (
-      normalizedStatus === "confirmed" ||
-      normalizedStatus === "preparing"
-    ) {
+    } else if (["confirmed", "preparing"].includes(status)) {
       sections.accepted.insertAdjacentHTML("beforeend", cardHTML);
-    } else if (normalizedStatus === "ready_for_pickup") {
+    } else if (status === "ready_for_pickup") {
       sections.ready.insertAdjacentHTML("beforeend", cardHTML);
-    } else if (
-      normalizedStatus === "picked_up" ||
-      normalizedStatus === "on_the_way"
-    ) {
+    } else if (["picked_up", "on_the_way"].includes(status)) {
       sections.delivery.insertAdjacentHTML("beforeend", cardHTML);
-    } else if (normalizedStatus === "delivered") {
+    } else if (status === "delivered") {
       sections.delivered.insertAdjacentHTML("beforeend", cardHTML);
-    } else if (normalizedStatus === "cancelled") {
+    } else if (status === "cancelled") {
       sections.cancelled.insertAdjacentHTML("beforeend", cardHTML);
     } else {
       sections.pending.insertAdjacentHTML("beforeend", cardHTML);
     }
   });
 
-  fillAllEmptySections(sections);
+  fillEmptySections(sections);
   attachOrderActions();
-  updateOrderTabCounts();
+  updateTabCounts();
 }
 
-function fillAllEmptySections(sections) {
-  if (!sections.pending.children.length) {
-    sections.pending.innerHTML = getEmptyStateHTML(
-      "No pending orders",
-      "New incoming orders will show here."
-    );
-  }
+function fillEmptySections(sections) {
+  const copy = {
+    pending: ["No pending orders", "New customer orders appear here first."],
+    accepted: ["No orders in progress", "Confirmed and preparing orders show here."],
+    ready: ["No orders ready for pickup", "Ready orders wait here until a rider accepts."],
+    delivery: ["No orders with riders", "Picked-up orders show here for restaurant visibility."],
+    delivered: ["No completed orders", "Delivered orders will appear here."],
+    cancelled: ["No cancelled orders", "Rejected or cancelled orders will appear here."],
+  };
 
-  if (!sections.accepted.children.length) {
-    sections.accepted.innerHTML = getEmptyStateHTML(
-      "No orders in progress",
-      "Confirmed and preparing orders will show here."
-    );
-  }
-
-  if (!sections.ready.children.length) {
-    sections.ready.innerHTML = getEmptyStateHTML(
-      "No orders ready for pickup",
-      "Orders marked ready by the restaurant will wait here for riders."
-    );
-  }
-
-  if (!sections.delivery.children.length) {
-    sections.delivery.innerHTML = getEmptyStateHTML(
-      "No orders in delivery",
-      "Orders picked up by riders will show here until delivered."
-    );
-  }
-
-  if (!sections.delivered.children.length) {
-    sections.delivered.innerHTML = getEmptyStateHTML(
-      "No completed orders",
-      "Delivered orders will show here."
-    );
-  }
-
-  if (!sections.cancelled.children.length) {
-    sections.cancelled.innerHTML = getEmptyStateHTML(
-      "No cancelled orders",
-      "Rejected or cancelled orders will show here."
-    );
-  }
+  Object.entries(sections).forEach(([key, section]) => {
+    if (!section.children.length) {
+      section.innerHTML = getEmptyStateHTML(copy[key][0], copy[key][1]);
+    }
+  });
 }
 
 function createOrderCardHTML(order, status) {
   const orderId = order.id || order.orderId;
-
-  const orderNumber =
-    order.orderNumber || order.order_number || orderId || "N/A";
-
-  const customerName =
-    order.customerName ||
-    order.customer_name ||
-    order.fullName ||
-    order.name ||
-    "Guest User";
-
-  const customerPhone =
-    order.phoneNumber || order.phone || order.phone_number || "No phone";
-
-  const customerAddress = buildCustomerAddress(order);
-  const total = Number(order.total || 0).toFixed(2);
-  const orderTime = formatTimeAgo(order.createdAt || order.created_at);
+  const orderNumber = order.orderNumber || order.id || "N/A";
+  const badge = statusBadgeMap[status] || statusBadgeMap.pending;
+  const waitMinutes = getWaitMinutes(order);
+  const urgent = ["pending", "confirmed", "preparing"].includes(status) && waitMinutes >= 8;
 
   const itemsHTML =
     Array.isArray(order.items) && order.items.length
       ? order.items
+          .slice(0, 4)
           .map((item) => {
             const quantity = Number(item.quantity || item.qty || 1);
+            const name =
+              item.product_name || item.name || item.title || "Food Item";
 
-            const itemName =
-              item.name || item.product_name || item.title || "Food Item";
-
-            return `<div class="order-item">${quantity}x ${escapeHtml(
-              itemName
-            )}</div>`;
+            return `<div class="order-item">${quantity}x ${escapeHtml(name)}</div>`;
           })
           .join("")
       : `<div class="order-item">Items saved in order</div>`;
 
-  const badgeInfo = statusBadgeMap[status] || statusBadgeMap.pending;
-
   return `
-    <div class="order-card" data-order-id="${escapeHtml(
+    <article class="order-card ${urgent ? "order-card-urgent" : ""}" data-order-id="${escapeHtml(
       String(orderId)
     )}" data-status="${escapeHtml(status)}">
       <div class="owner-order-icon">
@@ -446,20 +431,32 @@ function createOrderCardHTML(order, status) {
         <div class="order-top">
           <div>
             <div class="order-id">#${escapeHtml(String(orderNumber))}</div>
-            <div class="order-time">${escapeHtml(orderTime)}</div>
+            <div class="order-time">
+              ${escapeHtml(formatTimeAgo(order.createdAt))}
+              ${urgent ? ` • ${waitMinutes} mins waiting` : ""}
+            </div>
           </div>
 
-          <span class="badge ${escapeHtml(badgeInfo.css)}">${escapeHtml(
-    badgeInfo.label
-  )}</span>
+          <span class="badge ${escapeHtml(badge.css)}">
+            ${escapeHtml(badge.label)}
+          </span>
         </div>
+
+        ${
+          urgent
+            ? `<div class="owner-urgent-alert">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Delay risk: prioritize this order.
+              </div>`
+            : ""
+        }
 
         <div class="details-grid">
           <div>
             <div class="detail-label">Customer Details</div>
-            <div class="detail-name">${escapeHtml(customerName)}</div>
-            <div class="detail-text">${escapeHtml(customerPhone)}</div>
-            <div class="detail-text">${escapeHtml(customerAddress)}</div>
+            <div class="detail-name">${escapeHtml(order.customerName)}</div>
+            <div class="detail-text">${escapeHtml(order.phoneNumber)}</div>
+            <div class="detail-text">${escapeHtml(buildCustomerAddress(order))}</div>
           </div>
 
           <div>
@@ -470,10 +467,14 @@ function createOrderCardHTML(order, status) {
 
         ${getRiderInfoHTML(order, status)}
 
+        <div class="owner-mini-timeline">
+          ${createMiniTimeline(status)}
+        </div>
+
         <div class="order-footer">
           <div>
             <div class="total-label">Total Amount</div>
-            <div class="total-amount">Rs. ${escapeHtml(total)}</div>
+            <div class="total-amount">Rs. ${Number(order.total || 0).toFixed(2)}</div>
           </div>
 
           <div class="actions">
@@ -481,29 +482,28 @@ function createOrderCardHTML(order, status) {
           </div>
         </div>
       </div>
-    </div>
+    </article>
   `;
 }
 
 function getRiderInfoHTML(order, status) {
-  const riderName = order.riderName || order.rider_name || "";
-  const riderPhone = order.riderPhone || order.rider_phone || "";
+  const show =
+    ["ready_for_pickup", "picked_up", "on_the_way", "delivered"].includes(status) ||
+    order.riderName ||
+    order.riderPhone;
 
-  if (
-    !riderName &&
-    !riderPhone &&
-    !["picked_up", "on_the_way", "delivered"].includes(status)
-  ) {
-    return "";
-  }
+  if (!show) return "";
 
   return `
-    <div class="details-grid" style="margin-top: 14px;">
+    <div class="details-grid rider-row">
       <div>
         <div class="detail-label">Rider Details</div>
-        <div class="detail-name">${escapeHtml(riderName || "Rider assigned")}</div>
-        <div class="detail-text">${escapeHtml(riderPhone || "Phone not available")}</div>
+        <div class="detail-name">${
+          escapeHtml(order.riderName || (status === "ready_for_pickup" ? "Waiting for rider" : "Rider assigned"))
+        }</div>
+        <div class="detail-text">${escapeHtml(order.riderPhone || "Phone not available")}</div>
       </div>
+
       <div>
         <div class="detail-label">Delivery Progress</div>
         <div class="detail-text">${escapeHtml(formatStatusLabel(status))}</div>
@@ -512,106 +512,72 @@ function getRiderInfoHTML(order, status) {
   `;
 }
 
-/* ===============================
-   ACTION BUTTONS
-================================ */
+function createMiniTimeline(status) {
+  if (status === "cancelled") {
+    return `
+      <span class="owner-step done">Received</span>
+      <span class="owner-step danger">Cancelled</span>
+    `;
+  }
+
+  const steps = [
+    "pending",
+    "confirmed",
+    "preparing",
+    "ready_for_pickup",
+    "picked_up",
+    "on_the_way",
+    "delivered",
+  ];
+
+  const currentIndex = steps.indexOf(status);
+
+  return steps
+    .map((step, index) => {
+      return `<span class="owner-step ${
+        currentIndex >= index ? "done" : ""
+      }">${escapeHtml(formatStatusLabel(step))}</span>`;
+    })
+    .join("");
+}
 
 function getActionButtonsHTML(status) {
   if (status === "pending") {
     return `
-      <button class="btn-reject" type="button">
-        <i class="fa fa-xmark"></i> Reject
-      </button>
-      <button class="btn-confirm" type="button">
-        <i class="fa fa-check"></i> Confirm
-      </button>
+      <button class="btn-view" type="button">View</button>
+      <button class="btn-reject" type="button">Reject</button>
+      <button class="btn-confirm" type="button">Confirm</button>
     `;
   }
 
   if (status === "confirmed") {
     return `
-      <button class="btn-prepare" type="button">
-        <i class="fa fa-utensils"></i> Start Preparing
-      </button>
+      <button class="btn-view" type="button">View</button>
+      <button class="btn-reject" type="button">Cancel</button>
+      <button class="btn-prepare" type="button">Start Preparing</button>
     `;
   }
 
   if (status === "preparing") {
     return `
-      <button class="btn-ready-pickup" type="button">
-        <i class="fa fa-box-open"></i> Mark Ready for Pickup
-      </button>
+      <button class="btn-view" type="button">View</button>
+      <button class="btn-ready-pickup" type="button">Mark Ready</button>
     `;
   }
 
-  if (status === "ready_for_pickup") {
-    return `
-      <button class="btn-waiting-rider" type="button" disabled>
-        <i class="fa fa-clock"></i> Waiting for Rider
-      </button>
-      <button class="btn-view" type="button">
-        <i class="fa fa-eye"></i> View Details
-      </button>
-    `;
-  }
-
-  if (status === "picked_up") {
-    return `
-      <button class="btn-waiting-rider" type="button" disabled>
-        <i class="fa fa-motorcycle"></i> Picked Up by Rider
-      </button>
-      <button class="btn-view" type="button">
-        <i class="fa fa-eye"></i> View Details
-      </button>
-    `;
-  }
-
-  if (status === "on_the_way") {
-    return `
-      <button class="btn-waiting-rider" type="button" disabled>
-        <i class="fa fa-location-arrow"></i> Rider On The Way
-      </button>
-      <button class="btn-view" type="button">
-        <i class="fa fa-eye"></i> View Details
-      </button>
-    `;
-  }
-
-  if (status === "delivered") {
-    return `
-      <button class="btn-waiting-rider" type="button" disabled>
-        <i class="fa fa-circle-check"></i> Completed
-      </button>
-      <button class="btn-view" type="button">
-        <i class="fa fa-eye"></i> View Details
-      </button>
-    `;
-  }
-
-  if (status === "cancelled") {
-    return `
-      <button class="btn-waiting-rider" type="button" disabled>
-        <i class="fa fa-circle-xmark"></i> Cancelled
-      </button>
-      <button class="btn-view" type="button">
-        <i class="fa fa-eye"></i> View Details
-      </button>
-    `;
-  }
-
-  return `
-    <button class="btn-view" type="button">
-      <i class="fa fa-eye"></i> View Details
-    </button>
-  `;
+  return `<button class="btn-view" type="button">View Details</button>`;
 }
 
 function attachOrderActions() {
   document.querySelectorAll(".order-card").forEach((card) => {
     const orderId = card.dataset.orderId;
 
+    card.querySelector(".btn-view")?.addEventListener("click", () => {
+      openOrderModal(orderId);
+    });
+
     card.querySelector(".btn-reject")?.addEventListener("click", () => {
-      updateOrderStatus(orderId, "cancelled");
+      openCancelModal(orderId);
     });
 
     card.querySelector(".btn-confirm")?.addEventListener("click", () => {
@@ -625,31 +591,20 @@ function attachOrderActions() {
     card.querySelector(".btn-ready-pickup")?.addEventListener("click", () => {
       updateOrderStatus(orderId, "ready_for_pickup");
     });
-
-    card.querySelector(".btn-view")?.addEventListener("click", () => {
-      openOwnerOrderModal(orderId);
-    });
   });
 }
 
-async function updateOrderStatus(orderId, nextStatus) {
-  if (!orderId) {
-    alert("Order ID missing.");
-    return;
-  }
+async function updateOrderStatus(orderId, nextStatus, cancelReason = "") {
+  if (!orderId || isOwnerOrderUpdating) return;
 
-  if (isOwnerOrderUpdating) {
-    console.warn("[ownerOrders.js] Update already in progress.");
-    return;
-  }
-
+  const { restaurantId, ownerUserId } = getCurrentOwnerRestaurant();
   const card = document.querySelector(
     `.order-card[data-order-id="${safeCssEscape(orderId)}"]`
   );
 
   try {
     isOwnerOrderUpdating = true;
-    setCardUpdating(card, true);
+    card?.classList.add("is-updating");
 
     const response = await fetch(`${OWNER_ORDER_API}?action=update_status`, {
       method: "POST",
@@ -658,541 +613,317 @@ async function updateOrderStatus(orderId, nextStatus) {
       },
       body: JSON.stringify({
         order_id: Number(orderId),
+        restaurant_id: Number(restaurantId),
+        owner_user_id: ownerUserId ? Number(ownerUserId) : null,
         status: nextStatus,
+        cancel_reason: cancelReason,
       }),
     });
 
-    const raw = await response.text();
-
-    let result;
-    try {
-      result = JSON.parse(raw);
-    } catch (error) {
-      console.error("[ownerOrders.js] Raw update response:", raw);
-      throw new Error("Server did not return valid JSON.");
-    }
+    const result = await readJsonResponse(response);
 
     if (!result.success) {
-      throw new Error(result.message || "Failed to update order status.");
+      throw new Error(result.message || "Failed to update order.");
     }
 
-    console.log("[ownerOrders.js] Order status updated:", {
-      orderId,
-      nextStatus,
-    });
+    showToast(getSuccessMessage(nextStatus), "success");
+    await loadOwnerOrdersFromBackend({ force: true, silent: true });
   } catch (error) {
-    console.error("[ownerOrders.js] Order status update failed:", error);
-    alert(`Could not update order status: ${error.message}`);
+    console.error("[ownerOrders.js] Update failed:", error);
+    showToast(error.message, "error");
   } finally {
     isOwnerOrderUpdating = false;
-    setCardUpdating(card, false);
-    await loadOwnerOrdersFromBackend({ force: true });
+    card?.classList.remove("is-updating");
   }
 }
 
-function setCardUpdating(card, isUpdating) {
-  if (!card) return;
+function getSuccessMessage(status) {
+  const map = {
+    confirmed: "Order confirmed. Customer was notified.",
+    preparing: "Order moved to preparing. Customer tracking updated.",
+    ready_for_pickup: "Order is ready for pickup. Riders can now see it.",
+    cancelled: "Order cancelled with reason. Customer was notified.",
+  };
 
-  card.classList.toggle("is-updating", isUpdating);
-
-  card.querySelectorAll("button").forEach((button) => {
-    button.disabled = isUpdating;
-    button.classList.toggle("loading", isUpdating);
-  });
+  return map[status] || "Order updated successfully.";
 }
 
-/* ===============================
-   OWNER-SIDE ORDER MODAL
-================================ */
+function ensureModals() {
+  ensureOrderModal();
+  ensureCancelModal();
+}
 
-function ensureOwnerOrderModal() {
+function ensureOrderModal() {
   if (document.getElementById("ownerOrderModal")) return;
 
   const modal = document.createElement("div");
   modal.id = "ownerOrderModal";
-  modal.className = "owner-order-modal";
+  modal.className = "owner-modal";
   modal.innerHTML = `
-    <div class="owner-order-modal-backdrop" data-close-owner-modal="true"></div>
-    <div class="owner-order-modal-panel">
-      <div class="owner-order-modal-header">
+    <div class="owner-modal-backdrop" data-close-owner-modal="true"></div>
+    <div class="owner-modal-panel">
+      <div class="owner-modal-header">
         <div>
-          <p class="owner-order-modal-kicker">Restaurant Order Details</p>
+          <p>Restaurant Order Details</p>
           <h2 id="ownerOrderModalTitle">Order Details</h2>
         </div>
-        <button type="button" class="owner-order-modal-close" data-close-owner-modal="true">
+        <button type="button" data-close-owner-modal="true">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
-
-      <div id="ownerOrderModalBody" class="owner-order-modal-body"></div>
+      <div id="ownerOrderModalBody" class="owner-modal-body"></div>
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  injectOwnerOrderModalStyles();
-
   modal.addEventListener("click", (event) => {
     if (event.target.closest("[data-close-owner-modal='true']")) {
-      closeOwnerOrderModal();
-    }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeOwnerOrderModal();
+      closeOrderModal();
     }
   });
 }
 
-function injectOwnerOrderModalStyles() {
-  if (document.getElementById("ownerOrderModalStyles")) return;
-
-  const style = document.createElement("style");
-  style.id = "ownerOrderModalStyles";
-  style.textContent = `
-    .owner-order-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-
-    .owner-order-modal.show {
-      display: flex;
-    }
-
-    .owner-order-modal-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.58);
-      backdrop-filter: blur(8px);
-    }
-
-    .owner-order-modal-panel {
-      position: relative;
-      width: min(860px, 100%);
-      max-height: 88vh;
-      overflow: auto;
-      background: #ffffff;
-      border-radius: 28px;
-      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
-      border: 1px solid rgba(226, 232, 240, 0.9);
-    }
-
-    .owner-order-modal-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 20px;
-      padding: 28px 30px 20px;
-      border-bottom: 1px solid #edf0f5;
-    }
-
-    .owner-order-modal-kicker {
-      margin: 0 0 6px;
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #ef4444;
-    }
-
-    .owner-order-modal-header h2 {
-      margin: 0;
-      font-size: 28px;
-      line-height: 1.1;
-      color: #111827;
-    }
-
-    .owner-order-modal-close {
-      width: 44px;
-      height: 44px;
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-      color: #111827;
-      cursor: pointer;
-      font-size: 18px;
-    }
-
-    .owner-order-modal-close:hover {
-      background: #fee2e2;
-      color: #dc2626;
-      border-color: #fecaca;
-    }
-
-    .owner-order-modal-body {
-      padding: 26px 30px 30px;
-    }
-
-    .owner-modal-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-
-    .owner-modal-card {
-      border: 1px solid #e5e7eb;
-      border-radius: 20px;
-      padding: 18px;
-      background: #f9fafb;
-    }
-
-    .owner-modal-card h3 {
-      margin: 0 0 12px;
-      font-size: 15px;
-      color: #111827;
-    }
-
-    .owner-modal-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 8px 0;
-      border-bottom: 1px solid #edf0f5;
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-    .owner-modal-row:last-child {
-      border-bottom: none;
-    }
-
-    .owner-modal-row strong {
-      color: #111827;
-      text-align: right;
-    }
-
-    .owner-modal-items {
-      display: grid;
-      gap: 10px;
-    }
-
-    .owner-modal-item {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      border: 1px solid #e5e7eb;
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 14px;
-    }
-
-    .owner-modal-item-name {
-      font-weight: 800;
-      color: #111827;
-    }
-
-    .owner-modal-item-meta {
-      margin-top: 4px;
-      color: #6b7280;
-      font-size: 13px;
-    }
-
-    .owner-modal-price {
-      font-weight: 900;
-      color: #111827;
-      white-space: nowrap;
-    }
-
-    .owner-modal-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border-radius: 999px;
-      padding: 8px 12px;
-      font-size: 13px;
-      font-weight: 900;
-      background: #fff1f2;
-      color: #e11d48;
-    }
-
-    @media (max-width: 720px) {
-      .owner-order-modal {
-        padding: 14px;
-      }
-
-      .owner-order-modal-header,
-      .owner-order-modal-body {
-        padding-left: 20px;
-        padding-right: 20px;
-      }
-
-      .owner-modal-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .owner-order-modal-header h2 {
-        font-size: 22px;
-      }
-    }
-  `;
-
-  document.head.appendChild(style);
-}
-
-function openOwnerOrderModal(orderId) {
-  ensureOwnerOrderModal();
-
-  const order = ownerOrdersCache.find(
-    (item) => String(item.id || item.orderId) === String(orderId)
-  );
+function openOrderModal(orderId) {
+  const order = ownerOrdersCache.find((item) => String(item.id) === String(orderId));
 
   if (!order) {
-    alert("Order details not found. Please refresh orders.");
+    showToast("Order not found.", "error");
     return;
   }
 
   const status = getOwnerOrderStatus(order);
-  const orderNumber = order.orderNumber || order.order_number || order.id || "N/A";
-
+  const modal = document.getElementById("ownerOrderModal");
   const title = document.getElementById("ownerOrderModalTitle");
   const body = document.getElementById("ownerOrderModalBody");
-  const modal = document.getElementById("ownerOrderModal");
 
-  if (title) {
-    title.textContent = `#${orderNumber}`;
-  }
+  title.textContent = `#${order.orderNumber || order.id}`;
 
-  if (body) {
-    body.innerHTML = createOwnerOrderModalHTML(order, status);
-  }
-
-  modal?.classList.add("show");
-  document.body.style.overflow = "hidden";
-}
-
-function closeOwnerOrderModal() {
-  const modal = document.getElementById("ownerOrderModal");
-  modal?.classList.remove("show");
-  document.body.style.overflow = "";
-}
-
-function createOwnerOrderModalHTML(order, status) {
-  const orderNumber = order.orderNumber || order.order_number || order.id || "N/A";
-  const customerName = order.customerName || order.customer_name || "Guest User";
-  const customerEmail = order.customerEmail || order.customer_email || "Not available";
-  const customerPhone = order.phoneNumber || order.phone_number || "No phone";
-  const customerAddress = buildCustomerAddress(order);
-
-  const riderName = order.riderName || order.rider_name || "Not assigned yet";
-  const riderEmail = order.riderEmail || order.rider_email || "Not available";
-  const riderPhone = order.riderPhone || order.rider_phone || "Not available";
-
-  const paymentMethod = formatPaymentMethod(order.paymentMethod || order.payment_method);
-  const createdAt = formatFullDate(order.createdAt || order.created_at);
-  const updatedAt = formatFullDate(order.updatedAt || order.updated_at);
-
-  const subtotal = Number(order.subtotal || 0).toFixed(2);
-  const tax = Number(order.tax || 0).toFixed(2);
-  const deliveryFee = Number(order.deliveryFee || order.delivery_fee || 0).toFixed(2);
-  const total = Number(order.total || 0).toFixed(2);
-
-  return `
-    <div style="margin-bottom: 20px;">
-      <span class="owner-modal-status">
-        <i class="fa-solid fa-circle-info"></i>
-        ${escapeHtml(formatStatusLabel(status))}
-      </span>
-    </div>
-
+  body.innerHTML = `
     <div class="owner-modal-grid">
       <div class="owner-modal-card">
-        <h3><i class="fa-solid fa-user"></i> Customer</h3>
-        <div class="owner-modal-row"><span>Name</span><strong>${escapeHtml(customerName)}</strong></div>
-        <div class="owner-modal-row"><span>Email</span><strong>${escapeHtml(customerEmail)}</strong></div>
-        <div class="owner-modal-row"><span>Phone</span><strong>${escapeHtml(customerPhone)}</strong></div>
-        <div class="owner-modal-row"><span>Address</span><strong>${escapeHtml(customerAddress)}</strong></div>
+        <h3>Customer</h3>
+        ${modalRow("Name", order.customerName)}
+        ${modalRow("Email", order.customerEmail || "Not available")}
+        ${modalRow("Phone", order.phoneNumber)}
+        ${modalRow("Address", buildCustomerAddress(order))}
       </div>
 
       <div class="owner-modal-card">
-        <h3><i class="fa-solid fa-motorcycle"></i> Rider</h3>
-        <div class="owner-modal-row"><span>Name</span><strong>${escapeHtml(riderName)}</strong></div>
-        <div class="owner-modal-row"><span>Email</span><strong>${escapeHtml(riderEmail)}</strong></div>
-        <div class="owner-modal-row"><span>Phone</span><strong>${escapeHtml(riderPhone)}</strong></div>
-        <div class="owner-modal-row"><span>Delivery</span><strong>${escapeHtml(order.deliveryStatus || order.delivery_status || "searching")}</strong></div>
-      </div>
-
-      <div class="owner-modal-card">
-        <h3><i class="fa-solid fa-receipt"></i> Order Info</h3>
-        <div class="owner-modal-row"><span>Order No.</span><strong>#${escapeHtml(orderNumber)}</strong></div>
-        <div class="owner-modal-row"><span>Payment</span><strong>${escapeHtml(paymentMethod)}</strong></div>
-        <div class="owner-modal-row"><span>Placed</span><strong>${escapeHtml(createdAt)}</strong></div>
-        <div class="owner-modal-row"><span>Updated</span><strong>${escapeHtml(updatedAt)}</strong></div>
-      </div>
-
-      <div class="owner-modal-card">
-        <h3><i class="fa-solid fa-wallet"></i> Payment Summary</h3>
-        <div class="owner-modal-row"><span>Subtotal</span><strong>Rs. ${escapeHtml(subtotal)}</strong></div>
-        <div class="owner-modal-row"><span>Tax</span><strong>Rs. ${escapeHtml(tax)}</strong></div>
-        <div class="owner-modal-row"><span>Delivery Fee</span><strong>Rs. ${escapeHtml(deliveryFee)}</strong></div>
-        <div class="owner-modal-row"><span>Total</span><strong>Rs. ${escapeHtml(total)}</strong></div>
+        <h3>Order Info</h3>
+        ${modalRow("Status", formatStatusLabel(status))}
+        ${modalRow("Payment", formatPaymentMethod(order.paymentMethod))}
+        ${modalRow("Placed", formatFullDate(order.createdAt))}
+        ${modalRow("Total", `Rs. ${Number(order.total || 0).toFixed(2)}`)}
       </div>
     </div>
 
     <div class="owner-modal-card">
-      <h3><i class="fa-solid fa-bowl-food"></i> Order Items</h3>
-      <div class="owner-modal-items">
-        ${createOwnerModalItemsHTML(order)}
-      </div>
+      <h3>Order Items</h3>
+      ${
+        order.items.length
+          ? order.items
+              .map((item) => {
+                const name = item.product_name || item.name || "Food Item";
+                const qty = Number(item.quantity || 1);
+                const price = Number(item.price || 0);
+                const subtotal = Number(item.subtotal || qty * price);
+
+                return `
+                  <div class="owner-modal-item">
+                    <div>
+                      <strong>${escapeHtml(name)}</strong>
+                      <span>Qty ${qty} × Rs. ${price.toFixed(2)}</span>
+                    </div>
+                    <b>Rs. ${subtotal.toFixed(2)}</b>
+                  </div>
+                `;
+              })
+              .join("")
+          : `<p>Items saved in order.</p>`
+      }
     </div>
 
-    ${
-      order.notes
-        ? `
-          <div class="owner-modal-card" style="margin-top:16px;">
-            <h3><i class="fa-solid fa-note-sticky"></i> Customer Note</h3>
-            <p style="margin:0; color:#6b7280; line-height:1.6;">${escapeHtml(order.notes)}</p>
-          </div>
-        `
-        : ""
-    }
+    <div class="owner-modal-card">
+      <h3>Status Timeline</h3>
+      <div class="owner-status-timeline">
+        ${createMiniTimeline(status)}
+      </div>
+    </div>
+  `;
+
+  modal.classList.add("show");
+}
+
+function closeOrderModal() {
+  document.getElementById("ownerOrderModal")?.classList.remove("show");
+}
+
+function modalRow(label, value) {
+  return `
+    <div class="owner-modal-row">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value || "Not available")}</strong>
+    </div>
   `;
 }
 
-function createOwnerModalItemsHTML(order) {
-  if (!Array.isArray(order.items) || !order.items.length) {
-    return `
-      <div class="owner-modal-item">
+function ensureCancelModal() {
+  if (document.getElementById("ownerCancelModal")) return;
+
+  const modal = document.createElement("div");
+  modal.id = "ownerCancelModal";
+  modal.className = "owner-modal";
+  modal.innerHTML = `
+    <div class="owner-modal-backdrop" data-close-cancel-modal="true"></div>
+    <form class="owner-modal-panel owner-cancel-panel" id="ownerCancelForm">
+      <div class="owner-modal-header">
         <div>
-          <div class="owner-modal-item-name">Items saved in order</div>
-          <div class="owner-modal-item-meta">Backend did not return item details in this order list response yet.</div>
+          <p>Cancel Order</p>
+          <h2>Reject / Cancel order?</h2>
+        </div>
+        <button type="button" data-close-cancel-modal="true">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="owner-modal-body">
+        <p class="cancel-help">
+          This will notify the customer. Please select a clear restaurant-side reason.
+        </p>
+
+        <select id="ownerCancelReasonSelect" required>
+          <option value="">Select reason</option>
+          <option value="Item unavailable">Item unavailable</option>
+          <option value="Restaurant too busy">Restaurant too busy</option>
+          <option value="Restaurant closing soon">Restaurant closing soon</option>
+          <option value="Cannot fulfil special instruction">Cannot fulfil special instruction</option>
+          <option value="Other restaurant issue">Other restaurant issue</option>
+        </select>
+
+        <textarea
+          id="ownerCancelReasonText"
+          placeholder="Optional note for customer/support"
+        ></textarea>
+
+        <div class="owner-cancel-actions">
+          <button type="button" class="btn-view" data-close-cancel-modal="true">
+            Keep Order
+          </button>
+          <button type="submit" class="btn-reject">
+            Cancel Order
+          </button>
         </div>
       </div>
-    `;
-  }
+    </form>
+  `;
 
-  return order.items
-    .map((item) => {
-      const name = item.name || item.product_name || item.title || "Food Item";
-      const quantity = Number(item.quantity || item.qty || 1);
-      const price = Number(item.price || 0);
-      const lineTotal = Number(item.subtotal || price * quantity).toFixed(2);
+  document.body.appendChild(modal);
 
-      return `
-        <div class="owner-modal-item">
-          <div>
-            <div class="owner-modal-item-name">${escapeHtml(name)}</div>
-            <div class="owner-modal-item-meta">Qty ${quantity} • Rs. ${price.toFixed(2)} each</div>
-          </div>
-          <div class="owner-modal-price">Rs. ${escapeHtml(lineTotal)}</div>
-        </div>
-      `;
-    })
-    .join("");
+  modal.addEventListener("click", (event) => {
+    if (event.target.closest("[data-close-cancel-modal='true']")) {
+      closeCancelModal();
+    }
+  });
+
+  document.getElementById("ownerCancelForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const orderId = modal.dataset.orderId;
+    const selected = document.getElementById("ownerCancelReasonSelect").value;
+    const extra = document.getElementById("ownerCancelReasonText").value.trim();
+
+    if (!selected) {
+      showToast("Please select a cancellation reason.", "error");
+      return;
+    }
+
+    const reason = [selected, extra].filter(Boolean).join(" - ");
+
+    closeCancelModal();
+    await updateOrderStatus(orderId, "cancelled", reason);
+  });
 }
 
-/* ===============================
-   TAB COUNTS + SEARCH
-================================ */
+function openCancelModal(orderId) {
+  const modal = document.getElementById("ownerCancelModal");
+  modal.dataset.orderId = orderId;
 
-function updateOrderTabCounts() {
+  document.getElementById("ownerCancelReasonSelect").value = "";
+  document.getElementById("ownerCancelReasonText").value = "";
+
+  modal.classList.add("show");
+}
+
+function closeCancelModal() {
+  document.getElementById("ownerCancelModal")?.classList.remove("show");
+}
+
+function ensureToastHost() {
+  if (document.getElementById("ownerToastHost")) return;
+
+  const host = document.createElement("div");
+  host.id = "ownerToastHost";
+  host.className = "owner-toast-host";
+  document.body.appendChild(host);
+}
+
+function showToast(message, type = "info") {
+  ensureToastHost();
+
+  const toast = document.createElement("div");
+  toast.className = `owner-toast ${type}`;
+  toast.textContent = message;
+
+  document.getElementById("ownerToastHost").appendChild(toast);
+
+  setTimeout(() => toast.remove(), 4200);
+}
+
+function updateTabCounts() {
   const counts = {
-    pending: document.querySelectorAll('.order-card[data-status="pending"]')
-      .length,
-
+    pending: document.querySelectorAll('.order-card[data-status="pending"]').length,
     accepted:
       document.querySelectorAll('.order-card[data-status="confirmed"]').length +
       document.querySelectorAll('.order-card[data-status="preparing"]').length,
-
-    ready: document.querySelectorAll('.order-card[data-status="ready_for_pickup"]')
-      .length,
-
+    ready: document.querySelectorAll('.order-card[data-status="ready_for_pickup"]').length,
     delivery:
       document.querySelectorAll('.order-card[data-status="picked_up"]').length +
       document.querySelectorAll('.order-card[data-status="on_the_way"]').length,
-
-    delivered: document.querySelectorAll('.order-card[data-status="delivered"]')
-      .length,
-
-    cancelled: document.querySelectorAll('.order-card[data-status="cancelled"]')
-      .length,
+    delivered: document.querySelectorAll('.order-card[data-status="delivered"]').length,
+    cancelled: document.querySelectorAll('.order-card[data-status="cancelled"]').length,
   };
 
-  const tabs = document.querySelectorAll(".tab");
+  const tabs = document.querySelectorAll(".owner-order-tabs .tab");
 
-  if (tabs[0]) {
-    tabs[0].innerHTML = `<i class="fa fa-clock"></i> Pending (${counts.pending})`;
-  }
+  if (tabs[0]) tabs[0].innerHTML = `<i class="fa fa-clock"></i><span>Pending (${counts.pending})</span>`;
+  if (tabs[1]) tabs[1].innerHTML = `<i class="fa fa-utensils"></i><span>In Progress (${counts.accepted})</span>`;
+  if (tabs[2]) tabs[2].innerHTML = `<i class="fa fa-box-open"></i><span>Ready for Pickup (${counts.ready})</span>`;
+  if (tabs[3]) tabs[3].innerHTML = `<i class="fa fa-motorcycle"></i><span>In Delivery (${counts.delivery})</span>`;
+  if (tabs[4]) tabs[4].innerHTML = `<i class="fa fa-circle-check"></i><span>Completed (${counts.delivered})</span>`;
+  if (tabs[5]) tabs[5].innerHTML = `<i class="fa fa-circle-xmark"></i><span>Cancelled (${counts.cancelled})</span>`;
+}
 
-  if (tabs[1]) {
-    tabs[1].innerHTML = `<i class="fa fa-utensils"></i> In Progress (${counts.accepted})`;
-  }
+function startAutoRefresh() {
+  stopAutoRefresh();
 
-  if (tabs[2]) {
-    tabs[2].innerHTML = `<i class="fa fa-box-open"></i> Ready for Pickup (${counts.ready})`;
-  }
+  ownerOrdersRefreshTimer = setInterval(() => {
+    if (document.hidden || isOwnerOrderUpdating) return;
+    loadOwnerOrdersFromBackend({ silent: true });
+  }, OWNER_ORDERS_POLL_INTERVAL);
+}
 
-  if (tabs[3]) {
-    tabs[3].innerHTML = `<i class="fa fa-motorcycle"></i> In Delivery (${counts.delivery})`;
-  }
-
-  if (tabs[4]) {
-    tabs[4].innerHTML = `<i class="fa fa-circle-check"></i> Completed (${counts.delivered})`;
-  }
-
-  if (tabs[5]) {
-    tabs[5].innerHTML = `<i class="fa fa-circle-xmark"></i> Cancelled (${counts.cancelled})`;
+function stopAutoRefresh() {
+  if (ownerOrdersRefreshTimer) {
+    clearInterval(ownerOrdersRefreshTimer);
+    ownerOrdersRefreshTimer = null;
   }
 }
 
-function initializeOrderSearch() {
-  const searchInput = document.getElementById("orderSearchInput");
-  if (!searchInput) return;
-
-  searchInput.addEventListener("input", () => {
-    renderOwnerOrders();
-  });
-}
-
-function applySearchFilter(orders) {
-  const searchInput = document.getElementById("orderSearchInput");
-  const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
-
-  if (!query) return orders;
-
-  return orders.filter((order) => {
-    const orderNumber = String(
-      order.orderNumber || order.order_number || order.id || ""
-    ).toLowerCase();
-
-    const customerName = String(
-      order.customerName || order.customer_name || ""
-    ).toLowerCase();
-
-    const customerPhone = String(
-      order.phoneNumber || order.phone_number || ""
-    ).toLowerCase();
-
-    const restaurantName = String(
-      order.restaurantName || order.restaurant_name || ""
-    ).toLowerCase();
-
-    return (
-      orderNumber.includes(query) ||
-      customerName.includes(query) ||
-      customerPhone.includes(query) ||
-      restaurantName.includes(query)
-    );
-  });
-}
-
-/* ===============================
-   SMALL UTILITIES
-================================ */
+window.addEventListener("beforeunload", stopAutoRefresh);
 
 function getOwnerOrderStatus(order) {
-  const deliveryStatus = String(
-    order.deliveryStatus || order.delivery_status || ""
-  )
-    .toLowerCase()
-    .trim();
-
+  const deliveryStatus = String(order.deliveryStatus || "").toLowerCase().trim();
   const status = normalizeStatus(order.status);
 
   if (deliveryStatus === "picked_up") return "picked_up";
@@ -1204,15 +935,25 @@ function getOwnerOrderStatus(order) {
 
 function normalizeStatus(status) {
   const value = String(status || "pending").toLowerCase().trim();
-
   if (value === "accepted") return "confirmed";
-
   return value;
 }
 
 function formatStatusLabel(status) {
-  const info = statusBadgeMap[status] || statusBadgeMap.pending;
-  return info.label;
+  const normalized = normalizeStatus(status);
+
+  const labels = {
+    pending: "Pending",
+    confirmed: "Confirmed",
+    preparing: "Preparing",
+    ready_for_pickup: "Ready for Pickup",
+    picked_up: "Picked Up",
+    on_the_way: "On The Way",
+    delivered: "Delivered",
+    cancelled: "Cancelled",
+  };
+
+  return labels[normalized] || "Pending";
 }
 
 function buildCustomerAddress(order) {
@@ -1235,6 +976,8 @@ function formatPaymentMethod(method) {
     card: "Card Payment",
     digital: "Digital Wallet",
     wallet: "Digital Wallet",
+    esewa: "eSewa",
+    khalti: "Khalti",
   };
 
   return map[value] || method || "Cash on Delivery";
@@ -1244,24 +987,20 @@ function formatTimeAgo(timestamp) {
   if (!timestamp) return "Just now";
 
   const time = new Date(timestamp).getTime();
-  const now = Date.now();
-  const diffMinutes = Math.floor((now - time) / (1000 * 60));
 
-  if (Number.isNaN(time) || diffMinutes < 1) return "Just now";
+  if (Number.isNaN(time)) return "Just now";
 
-  if (diffMinutes < 60) {
-    return `${diffMinutes} min${diffMinutes > 1 ? "s" : ""} ago`;
-  }
+  const diffMinutes = Math.floor((Date.now() - time) / 60000);
 
-  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes} min${diffMinutes > 1 ? "s" : ""} ago`;
 
-  if (diffHours < 24) {
-    return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
-  }
+  const hours = Math.floor(diffMinutes / 60);
 
-  const diffDays = Math.floor(diffHours / 24);
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
 
-  return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days > 1 ? "s" : ""} ago`;
 }
 
 function formatFullDate(timestamp) {
@@ -1269,11 +1008,9 @@ function formatFullDate(timestamp) {
 
   const date = new Date(timestamp);
 
-  if (Number.isNaN(date.getTime())) {
-    return "Not available";
-  }
+  if (Number.isNaN(date.getTime())) return "Not available";
 
-  return date.toLocaleString("en-NP", {
+  return date.toLocaleString("en-AU", {
     year: "numeric",
     month: "short",
     day: "2-digit",
@@ -1282,31 +1019,37 @@ function formatFullDate(timestamp) {
   });
 }
 
-function getEmptyStateHTML(title, text) {
+function toTime(timestamp) {
+  const time = new Date(timestamp || 0).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function getWaitMinutes(order) {
+  const time = toTime(order.createdAt);
+
+  if (!time) return 0;
+
+  return Math.max(0, Math.floor((Date.now() - time) / 60000));
+}
+
+function getEmptyStateHTML(title, message) {
   return `
-    <div class="order-card" style="padding: 24px; display: block;">
-      <div class="order-body">
-        <div class="order-top">
-          <div>
-            <div class="order-id">${escapeHtml(title)}</div>
-            <div class="order-time">${escapeHtml(text)}</div>
-          </div>
-        </div>
+    <div class="empty-state">
+      <div class="empty-icon">
+        <i class="fa-solid fa-clipboard-list"></i>
       </div>
+      <h3>${escapeHtml(title)}</h3>
+      <p>${escapeHtml(message)}</p>
     </div>
   `;
 }
 
-function renderErrorState(message) {
-  const pending = document.getElementById("section-pending");
-  if (!pending) return;
+function safeCssEscape(value) {
+  if (window.CSS && typeof window.CSS.escape === "function") {
+    return CSS.escape(String(value));
+  }
 
-  pending.innerHTML = getEmptyStateHTML(
-    "Failed to load orders",
-    message || "Please refresh the page."
-  );
-
-  updateOrderTabCounts();
+  return String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
 }
 
 function escapeHtml(value) {
@@ -1317,21 +1060,66 @@ function escapeHtml(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+// ======================================================
+// FINAL FIX: Reliable owner tab switching
+// Paste this at the bottom of ownerOrders.js
+// ======================================================
 
-function safeCssEscape(value) {
-  if (window.CSS && typeof window.CSS.escape === "function") {
-    return window.CSS.escape(String(value));
+window.switchOwnerOrderTab = function (type) {
+  const tabClassMap = {
+    pending: "active-pending",
+    accepted: "active-accepted",
+    ready: "active-ready",
+    delivery: "active-delivery",
+    delivered: "active-delivered",
+    cancelled: "active-cancelled",
+  };
+
+  document.querySelectorAll(".owner-order-tabs .tab, .tabs .tab").forEach((button) => {
+    Object.values(tabClassMap).forEach((className) => {
+      button.classList.remove(className);
+    });
+
+    const tabType =
+      button.dataset.tab ||
+      button.getAttribute("onclick")?.match(/'([^']+)'/)?.[1];
+
+    if (tabType === type) {
+      button.classList.add(tabClassMap[type] || "active-pending");
+    }
+  });
+
+  document.querySelectorAll(".order-section").forEach((section) => {
+    section.classList.remove("active");
+    section.style.display = "none";
+  });
+
+  const target = document.getElementById("section-" + type);
+
+  if (target) {
+    target.classList.add("active");
+    target.style.display = "block";
   }
 
-  return String(value).replace(/"/g, '\\"');
-}
+  console.log("[ownerOrders.js] Switched to tab:", type);
+};
 
-/* ===============================
-   GLOBAL EXPORTS
-================================ */
+document.addEventListener("click", function (event) {
+  const tab = event.target.closest(".owner-order-tabs .tab, .tabs .tab");
 
-window.updateOrderTabCounts = updateOrderTabCounts;
-window.attachOrderActions = attachOrderActions;
-window.loadOwnerOrdersFromBackend = loadOwnerOrdersFromBackend;
-window.startOwnerOrdersAutoRefresh = startOwnerOrdersAutoRefresh;
-window.stopOwnerOrdersAutoRefresh = stopOwnerOrdersAutoRefresh;
+  if (!tab) return;
+
+  event.preventDefault();
+
+  let type = tab.dataset.tab;
+
+  if (!type) {
+    const onclick = tab.getAttribute("onclick") || "";
+    const match = onclick.match(/switchTab\('([^']+)'/);
+    type = match ? match[1] : null;
+  }
+
+  if (!type) return;
+
+  window.switchOwnerOrderTab(type);
+});
