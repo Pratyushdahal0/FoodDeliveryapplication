@@ -405,32 +405,44 @@
             </div>
 
             <div class="restaurant-action">
-              <button type="button" onclick="viewRestaurantMenu(${Number(
-                restaurant.id || 0,
-              )})">
-                View Menu
-              </button>
+              <button
+  type="button"
+  onclick="viewRestaurantMenu(
+    ${Number(restaurant.id || 0)},
+    '${escapeAttribute(restaurant.restaurant_name || "Restaurant")}'
+  )"
+>
+  View Menu
+</button>
             </div>
           </article>
         `;
       }
 
-      function viewRestaurantMenu(id) {
+      function viewRestaurantMenu(id, restaurantName = "Restaurant") {
         if (!id) {
           alert("Restaurant ID not found.");
           return;
         }
 
+        const selectedRestaurant = {
+          id: Number(id),
+          restaurant_id: Number(id),
+          name: restaurantName,
+          restaurant_name: restaurantName,
+          selectedAt: new Date().toISOString(),
+        };
+
         localStorage.setItem("selectedRestaurantId", String(id));
+        localStorage.setItem("selectedRestaurantName", restaurantName);
+        localStorage.setItem(
+          "foodExpressSelectedRestaurant",
+          JSON.stringify(selectedRestaurant),
+        );
 
-        /*
-          Real-world next step:
-          Later, this should open the selected restaurant menu page.
-          Example:
-          window.location.href = `restaurant-menu.html?id=${id}`;
-        */
-
-        alert("Next step: show menu for restaurant ID " + id);
+        window.location.href = `food.html?restaurant_id=${encodeURIComponent(
+          id,
+        )}&restaurant=${encodeURIComponent(restaurantName)}`;
       }
 
       function isRestaurantOpen(restaurant) {
