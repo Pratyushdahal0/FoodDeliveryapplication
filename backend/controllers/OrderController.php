@@ -998,6 +998,194 @@ switch ($action) {
         }
         break;
 
+            case 'customer_orders':
+        $email = trim($_GET['email'] ?? '');
+        $limit = intval($_GET['limit'] ?? 30);
+
+        if ($limit <= 0 || $limit > 100) {
+            $limit = 30;
+        }
+
+        if ($email === "" || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Valid customer email is required.",
+                "data" => []
+            ]);
+            break;
+        }
+
+        try {
+            $stmt = $conn->prepare("
+                SELECT
+                    o.id,
+                    o.order_number,
+                    o.user_id,
+                    o.restaurant_id,
+                    r.restaurant_name,
+                    o.customer_name,
+                    o.customer_email,
+                    o.phone_number,
+                    o.address,
+                    o.city,
+                    o.postal_code,
+                    o.payment_method,
+                    o.subtotal,
+                    o.tax,
+                    o.delivery_fee,
+                    o.total,
+                    o.notes,
+                    o.status,
+                    o.delivery_status,
+                    o.rider_id,
+                    o.rider_name,
+                    o.rider_email,
+                    o.rider_phone,
+                    o.created_at,
+                    o.updated_at,
+                    o.confirmed_at,
+                    o.preparing_at,
+                    o.ready_for_pickup_at,
+                    o.picked_up_at,
+                    o.on_the_way_at,
+                    o.delivered_at,
+                    o.cancel_reason
+                FROM orders o
+                LEFT JOIN restaurants r ON o.restaurant_id = r.id
+                WHERE LOWER(o.customer_email) = LOWER(?)
+                ORDER BY o.created_at DESC
+                LIMIT ?
+            ");
+
+            if (!$stmt) {
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Failed to prepare customer orders query: " . $conn->error,
+                    "data" => []
+                ]);
+                break;
+            }
+
+            $stmt->bind_param("si", $email, $limit);
+            $stmt->execute();
+
+            $result = $stmt->get_result();
+            $orders = [];
+
+            while ($row = $result->fetch_assoc()) {
+                $items = $order->getItems($row["id"]);
+
+                $orders[] = [
+                    "id" => intval($row["id"]),
+                    "orderId" => intval($row["id"]),
+                    "order_id" => intval($row["id"]),
+
+                    "orderNumber" => $row["order_number"],
+                    "order_number" => $row["order_number"],
+
+                    "user_id" => $row["user_id"],
+                    "restaurantId" => intval($row["restaurant_id"]),
+                    "restaurant_id" => intval($row["restaurant_id"]),
+                    "restaurantName" => $row["restaurant_name"] ?: ("Restaurant #" . $row["restaurant_id"]),
+                    "restaurant_name" => $row["restaurant_name"] ?: ("Restaurant #" . $row["restaurant_id"]),
+
+                    "customerName" => $row["customer_name"],
+                    "customer_name" => $row["customer_name"],
+                    "customerEmail" => $row["customer_email"],
+                    "customer_email" => $row["customer_email"],
+                    "phoneNumber" => $row["phone_number"],
+                    "phone_number" => $row["phone_number"],
+
+                    "address" => $row["address"],
+                    "city" => $row["city"],
+                    "postalCode" => $row["postal_code"],
+                    "postal_code" => $row["postal_code"],
+
+                    "paymentMethod" => $row["payment_method"],
+                    "payment_method" => $row["payment_method"],
+
+                    "subtotal" => floatval($row["subtotal"]),
+                    "tax" => floatval($row["tax"]),
+                    "deliveryFee" => floatval($row["delivery_fee"]),
+                    "delivery_fee" => floatval($row["delivery_fee"]),
+                    "total" => floatval($row["total"]),
+
+                    "notes" => $row["notes"],
+                    "status" => $row["status"],
+                    "deliveryStatus" => $row["delivery_status"],
+                    "delivery_status" => $row["delivery_status"],
+
+                    "riderId" => $row["rider_id"],
+                    "rider_id" => $row["rider_id"],
+                    "riderName" => $row["rider_name"],
+                    "rider_name" => $row["rider_name"],
+                    "riderEmail" => $row["rider_email"],
+                    "rider_email" => $row["rider_email"],
+                    "riderPhone" => $row["rider_phone"],
+                    "rider_phone" => $row["rider_phone"],
+
+                    "createdAt" => $row["created_at"],
+                    "created_at" => $row["created_at"],
+                    "updatedAt" => $row["updated_at"],
+                    "updated_at" => $row["updated_at"],
+                    "timestamp" => $row["created_at"],
+
+                    "confirmedAt" => $row["confirmed_at"],
+                    "confirmed_at" => $row["confirmed_at"],
+                    "preparingAt" => $row["preparing_at"],
+                    "preparing_at" => $row["preparing_at"],
+                    "readyForPickupAt" => $row["ready_for_pickup_at"],
+                    "ready_for_pickup_at" => $row["ready_for_pickup_at"],
+                    "pickedUpAt" => $row["picked_up_at"],
+                    "picked_up_at" => $row["picked_up_at"],
+                    "onTheWayAt" => $row["on_the_way_at"],
+                    "on_the_way_at" => $row["on_the_way_at"],
+                    "deliveredAt" => $row["delivered_at"],
+                    "delivered_at" => $row["delivered_at"],
+
+                    "cancelReason" => $row["cancel_reason"],
+                    "cancel_reason" => $row["cancel_reason"],
+
+                    "items" => $items,
+                    "itemCount" => count($items)
+                ];
+            }
+
+            $stmt->close();
+
+            $deliveredOrders = array_filter($orders, function ($item) {
+                return strtolower($item["status"] ?? "") === "delivered"
+                    || strtolower($item["delivery_status"] ?? "") === "delivered";
+            });
+
+            $points = count($deliveredOrders) * 100;
+
+            $savings = 0;
+            foreach ($orders as $customerOrder) {
+                $savings += floatval($customerOrder["discount_amount"] ?? 0);
+            }
+
+            echo json_encode([
+                "success" => true,
+                "data" => $orders,
+                "count" => count($orders),
+                "stats" => [
+                    "total_orders" => count($orders),
+                    "delivered_orders" => count($deliveredOrders),
+                    "points" => $points,
+                    "savings" => $savings
+                ]
+            ]);
+        } catch (Throwable $e) {
+            echo json_encode([
+                "success" => false,
+                "message" => "Failed to load customer orders: " . $e->getMessage(),
+                "data" => []
+            ]);
+        }
+
+        break;
+        
     case 'all':
         $limit = intval($_GET['limit'] ?? 50);
         $offset = intval($_GET['offset'] ?? 0);

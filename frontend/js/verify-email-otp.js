@@ -1,9 +1,7 @@
-console.log("VERIFY EMAIL OTP JS LOADED - LOWERCASE PATH FIX");
+console.log("VERIFY EMAIL OTP JS LOADED - HOSTED SAFE PATH FIX");
 
 function getAuthUrl() {
-  const url =
-    "http://localhost/fooddeliveryapp/backend/controllers/AuthController.php";
-
+  const url = "../../backend/controllers/AuthController.php";
   console.log("OTP Auth URL:", url);
   return url;
 }
@@ -48,6 +46,19 @@ function setLoading(button, loading, text) {
   }
 }
 
+async function parseJsonResponse(response) {
+  const raw = await response.text();
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error("OTP backend returned non-JSON:", raw);
+    throw new Error(
+      "Server did not return valid JSON. Please refresh and try again."
+    );
+  }
+}
+
 async function verifyOtp() {
   const email = getPendingEmail();
   const otp = document.getElementById("otpInput")?.value.trim();
@@ -74,10 +85,9 @@ async function verifyOtp() {
     const response = await fetch(getAuthUrl(), {
       method: "POST",
       body: formData,
-      credentials: "same-origin",
     });
 
-    const result = await response.json();
+    const result = await parseJsonResponse(response);
 
     if (!result.success) {
       showOtpError(result.message || "Verification failed.");
@@ -120,10 +130,9 @@ async function resendOtp() {
     const response = await fetch(getAuthUrl(), {
       method: "POST",
       body: formData,
-      credentials: "same-origin",
     });
 
-    const result = await response.json();
+    const result = await parseJsonResponse(response);
 
     if (!result.success) {
       showOtpError(result.message || "Could not resend OTP.");

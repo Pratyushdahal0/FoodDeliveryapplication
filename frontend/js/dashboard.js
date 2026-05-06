@@ -6,6 +6,18 @@ const REWARDS_STORAGE_KEY = "foodexpressRewards";
 const CART_ITEMS_KEY = "foodDeliveryCartItems";
 const CART_COUNT_KEY = "foodDeliveryCartCount";
 
+const CUSTOMER_ORDER_API =
+  "../../backend/controllers/OrderController.php?action=customer_orders";
+
+const DASHBOARD_HIDDEN_ORDERS_KEY = "foodExpressHiddenDashboardOrders";
+
+let dashboardServerStats = {
+  total_orders: 0,
+  delivered_orders: 0,
+  points: 0,
+  savings: 0,
+};
+
 const DASHBOARD_DEFAULT_IMAGE =
   "data:image/svg+xml;charset=UTF-8," +
   encodeURIComponent(`
@@ -90,24 +102,142 @@ window.addEventListener("storage", async (event) => {
 ================================ */
 
 async function refreshDashboardData() {
-  allOrdersCache = getSortedOrders();
+  const profile = getDashboardProfile();
+
+  allOrdersCache = await loadCustomerOrdersForDashboard(profile.email);
+
   renderOrdersList();
   await loadFavoritesData();
 }
 
+
+
 function loadDashboardStats() {
   const profile = getDashboardProfile();
-  const orders = getSortedOrders();
+  const orders = allOrdersCache.length ? allOrdersCache : getSortedOrders();
 
-  const totalOrders = orders.length;
-  const realisticSavings = calculateRealisticSavings(orders);
-  const points = getCurrentRewardPoints(profile);
+  const totalOrders =
+    Number(dashboardServerStats.total_orders || 0) || orders.length;
+
+  const realisticSavings =
+    Number(dashboardServerStats.savings || 0) ||
+    calculateRealisticSavings(orders);
+
+  const points =
+    Number(dashboardServerStats.points || 0) || getCurrentRewardPoints(profile);
 
   setText("ordersCount", totalOrders);
   setText("pointsCount", points);
   setText("savingsAmount", formatRs(realisticSavings));
 
+  syncDashboardRewards(points, realisticSavings);
   bindDashboardProfileInfo();
+}
+
+
+
+
+function normalizeDashboardOrder(order = {}) {
+  const items = Array.isArray(order.items) ? order.items : [];
+
+  return {
+    ...order,
+
+    id: order.id || order.order_id || order.orderId,
+    orderId: order.orderId || order.order_id || order.id,
+    order_id: order.order_id || order.orderId || order.id,
+
+    orderNumber:
+      order.orderNumber ||
+      order.order_number ||
+      order.orderId ||
+      order.order_id ||
+      order.id,
+
+    order_number:
+      order.order_number ||
+      order.orderNumber ||
+      order.orderId ||
+      order.order_id ||
+      order.id,
+
+    restaurantName:
+      order.restaurantName ||
+      order.restaurant_name ||
+      order.storeName ||
+      "Spicy Grill",
+
+    restaurant_name:
+      order.restaurant_name ||
+      order.restaurantName ||
+      order.storeName ||
+      "Spicy Grill",
+
+    customerName: order.customerName || order.customer_name || "",
+    customer_name: order.customer_name || order.customerName || "",
+
+    customerEmail: order.customerEmail || order.customer_email || "",
+    customer_email: order.customer_email || order.customerEmail || "",
+
+    total: Number(order.total || 0),
+    status: order.status || "pending",
+
+    deliveryStatus: order.deliveryStatus || order.delivery_status || "",
+    delivery_status: order.delivery_status || order.deliveryStatus || "",
+
+    riderName: order.riderName || order.rider_name || "",
+    rider_name: order.rider_name || order.riderName || "",
+
+    riderPhone: order.riderPhone || order.rider_phone || "",
+    rider_phone: order.rider_phone || order.riderPhone || "",
+
+    createdAt: order.createdAt || order.created_at || order.timestamp,
+    created_at: order.created_at || order.createdAt || order.timestamp,
+    timestamp: order.timestamp || order.created_at || order.createdAt,
+
+    items: items.map((item) => ({
+      ...item,
+      name: item.name || item.product_name || item.title || "Food item",
+      product_name: item.product_name || item.name || item.title || "Food item",
+      quantity: Number(item.quantity || 1),
+      price: Number(item.price || item.unit_price || 0),
+      restaurant_name:
+        item.restaurant_name ||
+        item.restaurantName ||
+        order.restaurant_name ||
+        order.restaurantName ||
+        "Spicy Grill",
+    })),
+
+    itemCount: Number(order.itemCount || order.item_count || items.length),
+  };
+}
+
+function sortDashboardOrders(orders) {
+  return [...orders].sort((a, b) => {
+    const aTime = new Date(a.timestamp || a.created_at || a.createdAt || 0).getTime();
+    const bTime = new Date(b.timestamp || b.created_at || b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
+function syncDashboardRewards(points, savings) {
+  const currentRewards = readJson(REWARDS_STORAGE_KEY, {});
+
+  const nextRewards = {
+    ...currentRewards,
+    currentPoints: Number(points || 0),
+    totalSavings: Number(savings || 0),
+    updatedAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem(REWARDS_STORAGE_KEY, JSON.stringify(nextRewards));
+  localStorage.setItem("foodExpressRewardPoints", String(Number(points || 0)));
+  localStorage.setItem("userPoints", String(Number(points || 0)));
+}
+
+function getHiddenDashboardOrderNumbers() {
+  return readJson(DASHBOARD_HIDDEN_ORDERS_KEY, []);
 }
 
 function calculateRealisticSavings(orders) {
@@ -181,6 +311,12 @@ function updateRewardsUI() {
 }
 
 function getCurrentRewardPoints(profile = {}) {
+  const serverPoints = Number(dashboardServerStats.points || 0);
+
+  if (serverPoints > 0) {
+    return serverPoints;
+  }
+
   const rewardsData = readJson(REWARDS_STORAGE_KEY, null);
 
   return Number(
@@ -191,6 +327,8 @@ function getCurrentRewardPoints(profile = {}) {
       0
   );
 }
+
+
 
 /* ===============================
    TABS
@@ -708,15 +846,30 @@ function showRemoveOrderConfirm(order) {
 
 function removeDashboardOrder(order) {
   const orderNumber = getOrderNumber(order);
-  const orders = readJson(ORDER_HISTORY_KEY, []);
+  const hiddenOrderNumbers = getHiddenDashboardOrderNumbers();
 
-  if (!Array.isArray(orders)) return;
+  if (!hiddenOrderNumbers.includes(orderNumber)) {
+    hiddenOrderNumbers.push(orderNumber);
+  }
 
-  const filteredOrders = orders.filter((item) => {
+  localStorage.setItem(
+    DASHBOARD_HIDDEN_ORDERS_KEY,
+    JSON.stringify(hiddenOrderNumbers)
+  );
+
+  allOrdersCache = allOrdersCache.filter((item) => {
     return getOrderNumber(item) !== orderNumber;
   });
 
-  localStorage.setItem(ORDER_HISTORY_KEY, JSON.stringify(filteredOrders));
+  const localOrders = readJson(ORDER_HISTORY_KEY, []);
+
+  if (Array.isArray(localOrders)) {
+    const filteredOrders = localOrders.filter((item) => {
+      return getOrderNumber(item) !== orderNumber;
+    });
+
+    localStorage.setItem(ORDER_HISTORY_KEY, JSON.stringify(filteredOrders));
+  }
 
   const lastOrder = readJson("lastOrder", null);
   const latestOrder = readJson("latestOrder", null);
@@ -729,7 +882,6 @@ function removeDashboardOrder(order) {
     localStorage.removeItem("latestOrder");
   }
 
-  allOrdersCache = getSortedOrders();
   renderOrdersList();
   loadDashboardStats();
 
@@ -739,6 +891,8 @@ function removeDashboardOrder(order) {
     "success"
   );
 }
+
+
 
 /* ===============================
    FAVORITES
@@ -932,7 +1086,7 @@ function setupDashboardActions() {
   });
 
   bindClick("actionTrackOrder", () => {
-    const orders = getSortedOrders();
+    const orders = allOrdersCache.length ? allOrdersCache : getSortedOrders();
     const activeOrder = orders.find((order) => {
       const status = getDisplayOrderStatus(order);
       return !["delivered", "cancelled", "canceled"].includes(status);
@@ -1024,11 +1178,35 @@ function bindClick(id, handler) {
 ================================ */
 
 function getDashboardProfile() {
+  const currentUser =
+    readJson("foodExpressCurrentUser", null) ||
+    readJson("currentUser", null) ||
+    readJson("loggedInUser", null) ||
+    readJson("foodExpressUser", null) ||
+    {};
+
   if (typeof window.getSavedUserProfile === "function") {
     const savedProfile = window.getSavedUserProfile();
 
     return {
       ...savedProfile,
+      name:
+        savedProfile.name ||
+        currentUser.name ||
+        currentUser.full_name ||
+        currentUser.fullName ||
+        "User",
+      email:
+        savedProfile.email ||
+        currentUser.email ||
+        localStorage.getItem("userEmail") ||
+        "No email added",
+      phone:
+        savedProfile.phone ||
+        currentUser.phone ||
+        currentUser.phone_number ||
+        localStorage.getItem("userPhone") ||
+        "",
       points: getCurrentRewardPoints(savedProfile),
     };
   }
@@ -1037,22 +1215,37 @@ function getDashboardProfile() {
 
   return {
     name:
+      currentUser.name ||
+      currentUser.full_name ||
+      currentUser.fullName ||
       profile.name ||
       localStorage.getItem("userName") ||
       localStorage.getItem("pendingVerificationName") ||
       "User",
 
     email:
+      currentUser.email ||
       profile.email ||
       localStorage.getItem("userEmail") ||
       localStorage.getItem("pendingVerificationEmail") ||
       "No email added",
 
-    phone: profile.phone || localStorage.getItem("userPhone") || "",
+    phone:
+      currentUser.phone ||
+      currentUser.phone_number ||
+      profile.phone ||
+      localStorage.getItem("userPhone") ||
+      "",
 
-    address: profile.address || localStorage.getItem("userAddress") || "",
+    address:
+      currentUser.address ||
+      profile.address ||
+      localStorage.getItem("userAddress") ||
+      "",
 
     profileImage:
+      currentUser.profile_image ||
+      currentUser.profileImage ||
       profile.profileImage ||
       profile.image ||
       localStorage.getItem("userProfileImage") ||
@@ -1071,46 +1264,50 @@ function getSortedOrders() {
 
   if (!Array.isArray(orders)) return [];
 
-  const cleanedOrders = orders.map((order) => {
-    const firstItem = Array.isArray(order.items) ? order.items[0] : null;
+  const hiddenOrderNumbers = getHiddenDashboardOrderNumbers();
 
-    const restaurantName =
-      order.restaurantName ||
-      order.restaurant_name ||
-      firstItem?.restaurant_name ||
-      firstItem?.restaurantName ||
-      "Spicy Grill";
+  const cleanedOrders = orders
+    .map((order) => {
+      const firstItem = Array.isArray(order.items) ? order.items[0] : null;
 
-    const cleanRestaurantName =
-      String(restaurantName || "").toLowerCase() === "restaurant" ||
-      String(restaurantName || "").toLowerCase() === "unknown restaurant"
-        ? "Spicy Grill"
-        : restaurantName;
+      const restaurantName =
+        order.restaurantName ||
+        order.restaurant_name ||
+        firstItem?.restaurant_name ||
+        firstItem?.restaurantName ||
+        "Spicy Grill";
 
-    return {
-      ...order,
-      restaurantName: cleanRestaurantName,
-      restaurant_name: cleanRestaurantName,
-      items: Array.isArray(order.items)
-        ? order.items.map((item) => ({
-            ...item,
-            restaurant_name:
-              item.restaurant_name ||
-              item.restaurantName ||
-              cleanRestaurantName,
-          }))
-        : [],
-    };
-  });
+      const cleanRestaurantName =
+        String(restaurantName || "").toLowerCase() === "restaurant" ||
+        String(restaurantName || "").toLowerCase() === "unknown restaurant"
+          ? "Spicy Grill"
+          : restaurantName;
+
+      return {
+        ...order,
+        restaurantName: cleanRestaurantName,
+        restaurant_name: cleanRestaurantName,
+        timestamp: order.timestamp || order.created_at || order.createdAt,
+        items: Array.isArray(order.items)
+          ? order.items.map((item) => ({
+              ...item,
+              restaurant_name:
+                item.restaurant_name ||
+                item.restaurantName ||
+                cleanRestaurantName,
+            }))
+          : [],
+      };
+    })
+    .filter((order) => !hiddenOrderNumbers.includes(getOrderNumber(order)));
 
   localStorage.setItem(ORDER_HISTORY_KEY, JSON.stringify(cleanedOrders));
 
-  return [...cleanedOrders].sort((a, b) => {
-    const aTime = new Date(a.timestamp || a.created_at || 0).getTime();
-    const bTime = new Date(b.timestamp || b.created_at || 0).getTime();
-    return bTime - aTime;
-  });
+  return sortDashboardOrders(cleanedOrders);
 }
+
+
+     
 
 function getFavoriteIdsSafe() {
   const keys = [
@@ -1162,8 +1359,6 @@ function getFavoriteIdsSafe() {
 async function fetchDashboardProducts() {
   const possibleUrls = [
     "../../backend/controllers/ProductController.php?action=all",
-    "../backend/controllers/ProductController.php?action=all",
-    "/fooddeliveryapp/backend/controllers/ProductController.php?action=all",
   ];
 
   for (const url of possibleUrls) {
@@ -1172,7 +1367,15 @@ async function fetchDashboardProducts() {
 
       if (!res.ok) continue;
 
-      const data = await res.json();
+      const raw = await res.text();
+
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch (error) {
+        console.warn("[dashboard.js] Product API returned non-JSON:", raw);
+        continue;
+      }
 
       if (data.success && Array.isArray(data.data)) {
         return data.data;
