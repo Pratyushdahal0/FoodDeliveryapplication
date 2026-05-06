@@ -1,0 +1,440 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --fx-red: #ef3b3f;
+  --fx-orange: #ff6b35;
+  --fx-bg: #fff6ec;
+  --fx-card: #ffffff;
+  --fx-text: #111827;
+  --fx-muted: #667085;
+  --fx-border: #e5e7eb;
+  --fx-green: #16a34a;
+  --fx-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+}
+
+body {
+  min-height: 100vh;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(239, 59, 63, 0.08), transparent 34%),
+    linear-gradient(135deg, #fff7f0 0%, #fff2e3 42%, #fff9ef 100%);
+  color: var(--fx-text);
+}
+
+.settings-shell {
+  width: min(1180px, calc(100vw - 48px));
+  margin: 0 auto;
+  padding: 36px 0 80px;
+}
+
+.settings-hero {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  border-radius: 28px;
+  padding: 34px 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 28px;
+  box-shadow: var(--fx-shadow);
+}
+
+.eyebrow {
+  display: inline-flex;
+  color: var(--fx-red);
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 10px;
+}
+
+.settings-hero h1 {
+  font-size: clamp(2rem, 2.8vw, 3rem);
+  line-height: 1.08;
+  font-weight: 950;
+  letter-spacing: -0.05em;
+}
+
+.settings-hero p {
+  color: var(--fx-muted);
+  margin-top: 10px;
+  font-size: 1rem;
+  line-height: 1.55;
+  max-width: 700px;
+}
+
+.status-card {
+  min-width: 210px;
+  background: #f8fafc;
+  border: 1px solid var(--fx-border);
+  border-radius: 22px;
+  padding: 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.status-card strong {
+  font-size: 1rem;
+}
+
+.status-card small {
+  color: var(--fx-muted);
+  line-height: 1.4;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.status-card.open .status-dot {
+  background: var(--fx-green);
+}
+
+.status-card.closed .status-dot {
+  background: #ef4444;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.settings-card {
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  border-radius: 26px;
+  padding: 28px;
+  box-shadow: var(--fx-shadow);
+}
+
+.settings-card.wide {
+  grid-column: 1 / -1;
+}
+
+.card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.card-heading h2 {
+  font-size: 1.35rem;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+}
+
+.card-heading p {
+  color: var(--fx-muted);
+  font-size: 0.92rem;
+  margin-top: 5px;
+}
+
+.card-heading i {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: #fff1f2;
+  color: var(--fx-red);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.form-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid.compact {
+  gap: 14px;
+}
+
+label,
+.full-label {
+  display: grid;
+  gap: 8px;
+  color: #344054;
+  font-size: 0.88rem;
+  font-weight: 850;
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid var(--fx-border);
+  background: #ffffff;
+  outline: none;
+  border-radius: 16px;
+  padding: 13px 15px;
+  color: #111827;
+  font-size: 0.94rem;
+  font-weight: 650;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+input:focus,
+textarea:focus {
+  border-color: rgba(239, 59, 63, 0.55);
+  box-shadow: 0 0 0 4px rgba(239, 59, 63, 0.1);
+}
+
+.full-label {
+  margin-top: 18px;
+}
+
+.switch-list {
+  display: grid;
+  gap: 14px;
+}
+
+.switch-row {
+  border: 1px solid var(--fx-border);
+  background: #fbfcfe;
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.switch-row span {
+  display: grid;
+  gap: 4px;
+}
+
+.switch-row strong {
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+.switch-row small {
+  color: var(--fx-muted);
+  font-weight: 550;
+  line-height: 1.4;
+}
+
+.switch-row input[type="checkbox"] {
+  width: 44px;
+  height: 24px;
+  accent-color: var(--fx-red);
+  cursor: pointer;
+}
+
+.eta-preview {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.settings-actions {
+  grid-column: 1 / -1;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  border-radius: 24px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  box-shadow: var(--fx-shadow);
+}
+
+#settingsMessage {
+  color: var(--fx-muted);
+  font-weight: 750;
+}
+
+#settingsMessage.success {
+  color: var(--fx-green);
+}
+
+#settingsMessage.error {
+  color: #dc2626;
+}
+
+.settings-actions div {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-primary,
+.btn-secondary {
+  min-height: 46px;
+  border: none;
+  border-radius: 999px;
+  padding: 0 22px;
+  font-size: 0.92rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--fx-red), var(--fx-orange));
+  color: #ffffff;
+  box-shadow: 0 14px 30px rgba(239, 59, 63, 0.22);
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+@media (max-width: 900px) {
+  .settings-shell {
+    width: min(100vw - 28px, 1180px);
+  }
+
+  .settings-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 28px;
+  }
+
+  .status-card {
+    width: 100%;
+  }
+
+  .settings-grid,
+  .form-grid.two {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-actions div {
+    width: 100%;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    flex: 1;
+  }
+}
+/* =========================================================
+   FIX: Owner Settings navbar overlap / content cut issue
+   Add at the very bottom of ownerSettings.css
+   ========================================================= */
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Your owner navbar is acting like a fixed/sticky top bar */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  background: #ffffff;
+}
+
+/* Give settings page safe space below navbar */
+.settings-shell {
+  padding-top: 42px !important;
+  padding-bottom: 80px !important;
+}
+
+/* Prevent first card from touching navbar */
+.settings-hero {
+  margin-top: 0 !important;
+}
+
+/* Make cards stay inside page width */
+.settings-shell,
+.settings-grid,
+.settings-card,
+.settings-hero,
+.settings-actions {
+  max-width: 100%;
+}
+
+/* Fix checkbox alignment issue inside availability rows */
+.switch-row input[type="checkbox"] {
+  width: 22px !important;
+  height: 22px !important;
+  flex: 0 0 22px !important;
+  accent-color: #ef3b3f;
+}
+
+/* Fix input height consistency */
+.settings-card input,
+.settings-card textarea {
+  max-width: 100%;
+}
+
+/* Mobile safety */
+@media (max-width: 768px) {
+  .settings-shell {
+    width: min(100vw - 24px, 1180px) !important;
+    padding-top: 28px !important;
+  }
+
+  .settings-hero,
+  .settings-card,
+  .settings-actions {
+    border-radius: 22px !important;
+  }
+}
+.form-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.compact-switches {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: grid;
+}
+
+.full-label select {
+  width: 100%;
+  border: 1px solid var(--fx-border);
+  background: #ffffff;
+  outline: none;
+  border-radius: 16px;
+  padding: 13px 15px;
+  color: #111827;
+  font-size: 0.94rem;
+  font-weight: 650;
+}
+
+@media (max-width: 900px) {
+  .form-grid.three,
+  .compact-switches {
+    grid-template-columns: 1fr;
+  }
+}

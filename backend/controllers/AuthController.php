@@ -419,25 +419,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         |--------------------------------------------------------------------------
         */
 
-        $allowedRoles = [
-            "customer",
-            "owner",
-            "restaurant-owner",
-            "restaurant_owner",
-            "rider"
-        ];
+        $role = strtolower(trim($role));
 
-        if (!in_array($role, $allowedRoles, true)) {
-            $role = "customer";
-        }
+$roleAliases = [
+    "customer" => "customer",
 
-        if (in_array($role, ["owner", "restaurant-owner", "restaurant_owner"], true)) {
-            $normalizedRole = "restaurant_owner";
-        } elseif ($role === "rider") {
-            $normalizedRole = "rider";
-        } else {
-            $normalizedRole = "customer";
-        }
+    "owner" => "restaurant-owner",
+    "restaurant" => "restaurant-owner",
+    "restaurant_owner" => "restaurant-owner",
+    "restaurant-owner" => "restaurant-owner",
+
+    "rider" => "delivery-rider",
+    "driver" => "delivery-rider",
+    "delivery_rider" => "delivery-rider",
+    "delivery-rider" => "delivery-rider",
+];
+
+$normalizedRole = $roleAliases[$role] ?? "customer";
 
         $result = $user->register(
             $name,

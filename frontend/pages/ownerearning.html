@@ -44,14 +44,16 @@
       <!-- Earnings Overview Header -->
       <div class="overview-header">
         <div class="overview-header-left">
-          <h1>Earnings Overview</h1>
-          <p>Track your restaurant income this week and month</p>
+          <h1 id="earningsTitle">Earnings Overview</h1>
+          <p id="earningsSubtitle">
+            Track real restaurant income from completed orders.
+          </p>
         </div>
         <div class="overview-header-right">
           <button class="bell-btn"><i class="fa fa-bell"></i></button>
           <div class="user-badge">
-            <div class="user-avatar">RO</div>
-            <span>Restaurant Owner</span>
+            <div class="user-avatar" id="ownerAvatar">RO</div>
+            <span id="ownerName">Restaurant Owner</span>
           </div>
         </div>
       </div>
@@ -59,24 +61,40 @@
       <!-- Stat Cards -->
       <div class="stat-cards">
         <div class="stat-card">
-          <div class="stat-icon"><i class="fa fa-dollar-sign"></i></div>
-          <span class="stat-badge">+12%</span>
+          <div class="stat-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+          <span class="stat-badge">Today</span>
           <div class="stat-label">Today Earnings</div>
-          <div class="stat-value">$485.60</div>
+          <div class="stat-value" id="todayEarnings">Rs. 0</div>
         </div>
 
         <div class="stat-card">
-          <div class="stat-icon"><i class="fa fa-arrow-trend-up"></i></div>
-          <span class="stat-badge">+8%</span>
+          <div class="stat-icon">
+            <i class="fa-solid fa-arrow-trend-up"></i>
+          </div>
+          <span class="stat-badge">7 days</span>
           <div class="stat-label">This Week Earnings</div>
-          <div class="stat-value">$3,240.00</div>
+          <div class="stat-value" id="weekEarnings">Rs. 0</div>
         </div>
 
         <div class="stat-card">
-          <div class="stat-icon"><i class="fa fa-wallet"></i></div>
-          <span class="stat-badge">+2%</span>
+          <div class="stat-icon"><i class="fa-solid fa-wallet"></i></div>
+          <span class="stat-badge">Month</span>
           <div class="stat-label">This Month Earnings</div>
-          <div class="stat-value">$12,850.00</div>
+          <div class="stat-value" id="monthEarnings">Rs. 0</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+          <span class="stat-badge">Done</span>
+          <div class="stat-label">Completed Orders</div>
+          <div class="stat-value" id="completedOrders">0</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fa-solid fa-receipt"></i></div>
+          <span class="stat-badge">Avg</span>
+          <div class="stat-label">Average Order Value</div>
+          <div class="stat-value" id="averageOrderValue">Rs. 0</div>
         </div>
       </div>
 
@@ -84,6 +102,9 @@
       <div class="chart-card">
         <h2>Weekly Earnings</h2>
         <p>Revenue earned from completed orders</p>
+        <p class="earnings-note" id="earningsNote">
+          Only delivered orders are counted as final earnings.
+        </p>
         <div class="chart-wrapper">
           <canvas id="earningsChart"></canvas>
         </div>
@@ -101,36 +122,11 @@
               <th>Date</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="earningsTableBody">
             <tr>
-              <td>#7834</td>
-              <td>Sarah Johnson</td>
-              <td class="amount">$45.80</td>
-              <td class="date">Apr 12, 2:30 PM</td>
-            </tr>
-            <tr>
-              <td>#7833</td>
-              <td>Mike Chen</td>
-              <td class="amount">$62.50</td>
-              <td class="date">Apr 12, 1:45 PM</td>
-            </tr>
-            <tr>
-              <td>#7832</td>
-              <td>Emily Davis</td>
-              <td class="amount">$38.20</td>
-              <td class="date">Apr 12, 12:15 PM</td>
-            </tr>
-            <tr>
-              <td>#7831</td>
-              <td>James Wilson</td>
-              <td class="amount">$55.90</td>
-              <td class="date">Apr 12, 11:30 AM</td>
-            </tr>
-            <tr>
-              <td>#7830</td>
-              <td>Lisa Anderson</td>
-              <td class="amount">$41.30</td>
-              <td class="date">Apr 12, 10:20 AM</td>
+              <td colspan="4" class="empty-row">
+                Loading real earnings data...
+              </td>
             </tr>
           </tbody>
         </table>
@@ -188,62 +184,6 @@
     </footer>
 
     <script src="../js/shared.js"></script>
-    <script src="../js/ownerEarnings.js"></script>
-    <script>
-      const ctx = document.getElementById("earningsChart").getContext("2d");
-
-      new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-          datasets: [
-            {
-              data: [1200, 1750, 1480, 2200, 2650, 3100, 2500],
-              borderColor: "#e8192c",
-              borderWidth: 2.5,
-              pointBackgroundColor: "#e8192c",
-              pointRadius: 5,
-              pointHoverRadius: 7,
-              fill: false,
-              tension: 0.45,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => " $" + ctx.parsed.y.toLocaleString(),
-              },
-              backgroundColor: "#fff",
-              titleColor: "#333",
-              bodyColor: "#e8192c",
-              borderColor: "#eee",
-              borderWidth: 1,
-              padding: 10,
-            },
-          },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: "#aaa", font: { size: 13 } },
-              border: { display: false },
-            },
-            y: {
-              grid: { color: "#f0f0f0" },
-              ticks: {
-                color: "#aaa",
-                font: { size: 12 },
-                callback: (val) => "$" + val.toLocaleString(),
-              },
-              border: { display: false },
-            },
-          },
-        },
-      });
-    </script>
+    <script src="../js/ownerEarnings.js?v=real-owner-earnings-1"></script>
   </body>
 </html>

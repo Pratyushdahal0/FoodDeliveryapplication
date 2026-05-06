@@ -491,3 +491,382 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+.menu-status-stack {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  z-index: 2;
+}
+
+.owner-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.owner-badge.available {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.owner-badge.unavailable {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.owner-badge.popular {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.owner-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.owner-action-btn {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #334155;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.owner-action-btn i {
+  font-size: 0.9rem;
+}
+
+.owner-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+.owner-action-btn.edit {
+  color: #2563eb;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.owner-action-btn.toggle {
+  color: #ea580c;
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.owner-action-btn.delete {
+  color: #dc2626;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+@media (max-width: 768px) {
+  .owner-card-actions {
+    width: 100%;
+  }
+
+  .owner-action-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .menu-status-stack {
+    top: 14px;
+    right: 14px;
+  }
+}
+/* =========================================================
+   FoodExpress Owner Menu - Production SaaS Card Polish
+   Add at the very bottom of ownerMenu.css
+   ========================================================= */
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  align-items: stretch;
+}
+
+.menu-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.menu-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(248, 113, 113, 0.35);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+}
+
+.card-img-wrap {
+  position: relative;
+  height: 230px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.card-img-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.08) 0%,
+    rgba(15, 23, 42, 0.02) 45%,
+    rgba(15, 23, 42, 0.12) 100%
+  );
+  pointer-events: none;
+}
+
+.card-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.menu-status-stack {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  z-index: 5;
+}
+
+.owner-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+
+.owner-badge.available {
+  background: rgba(220, 252, 231, 0.94);
+  color: #166534;
+}
+
+.owner-badge.unavailable {
+  background: rgba(254, 226, 226, 0.94);
+  color: #991b1b;
+}
+
+.owner-badge.popular {
+  background: rgba(255, 247, 237, 0.96);
+  color: #c2410c;
+}
+
+.badge {
+  display: none !important;
+}
+
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 26px 26px;
+}
+
+.card-body h3 {
+  color: #0f172a;
+  font-size: 1.24rem;
+  line-height: 1.2;
+  font-weight: 900;
+  margin-bottom: 10px;
+  letter-spacing: -0.02em;
+}
+
+.item-desc {
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin-bottom: 14px;
+  min-height: 44px;
+}
+
+.cat-tag {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 7px 13px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: capitalize;
+  margin-bottom: 18px;
+}
+
+.card-footer {
+  margin-top: auto;
+  display: grid !important;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.price {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: #ef4444;
+  font-size: 1.45rem;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.owner-card-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.owner-action-btn {
+  min-height: 42px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #334155;
+  padding: 0 12px;
+  font-size: 0.84rem;
+  font-weight: 850;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.owner-action-btn i {
+  font-size: 0.88rem;
+}
+
+.owner-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+}
+
+.owner-action-btn.edit {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+.owner-action-btn.toggle {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #ea580c;
+}
+
+.owner-action-btn.delete {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.owner-action-btn.edit:hover {
+  background: #dbeafe;
+}
+
+.owner-action-btn.toggle:hover {
+  background: #ffedd5;
+}
+
+.owner-action-btn.delete:hover {
+  background: #fee2e2;
+}
+
+.empty-menu-state {
+  grid-column: 1 / -1;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 26px;
+  padding: 56px 28px;
+  text-align: center;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+}
+
+.empty-menu-state h3 {
+  color: #0f172a;
+  font-size: 1.35rem;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.empty-menu-state p {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 1100px) {
+  .menu-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .menu-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .card-img-wrap {
+    height: 210px;
+  }
+
+  .card-body {
+    padding: 22px;
+  }
+
+  .owner-card-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-action-btn {
+    justify-content: center;
+  }
+}
+
