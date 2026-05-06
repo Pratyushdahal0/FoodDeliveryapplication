@@ -1,12 +1,13 @@
 (() => {
-  console.log("[track-order.js] Loaded - backend live tracking + delivered review fixed");
+  console.log("[track-order.js] Loaded - backend live tracking + delivered review fixed (loop-safe v2)");
 
   const ORDER_API_URL = "../../backend/controllers/OrderController.php";
   const ORDER_REVIEW_API_URL = "../../backend/controllers/OrderReviewController.php";
   const TRACK_ORDER_HISTORY_KEY = "foodExpressOrders";
   const TRACK_LAST_ORDER_KEY = "lastOrder";
   const DEFAULT_IMAGE = "";
-  const SYNC_INTERVAL_MS = 2500;
+  const SYNC_INTERVAL_MS = 4000;          // up from 2.5s — reduces base polling rate
+  const STORAGE_REACT_DEBOUNCE_MS = 1500; // debounce cross-tab storage events
 
   const STATUS_FLOW = [
     "pending",
@@ -22,8 +23,35 @@
   let latestOrder = null;
   let syncInterval = null;
 
+  // ---- Loop-safety guards (Priority #4 fix) ----
+  // fetchInFlight: prevent overlapping fetches when interval + storage event
+  //   + manual call all race. If a fetch is already running, others wait.
+  // skipNextStorageReact: when WE write to localStorage, we still get a
+  //   storage event in OTHER tabs. We use a timestamp to avoid reacting
+  //   to our own recent writes.
+  // storageReactTimer: debounce so a burst of cross-tab writes only
+  //   triggers one fetch, not 20.
+  let fetchInFlight = null;
+  let lastSelfWriteAt = 0;
+  let storageReactTimer = null;
+  let consecutiveFailures = 0;
+
   document.addEventListener("DOMContentLoaded", () => {
     initializeTrackingPage();
+  });
+
+  // Stop polling when the tab is hidden (battery + network savings) and
+  // resume when visible. This also reduces the multi-tab amplification
+  // because backgrounded tabs don't fetch.
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      if (syncInterval) {
+        clearInterval(syncInterval);
+        syncInterval = null;
+      }
+    } else if (latestOrder && !syncInterval) {
+      startTrackingSync();
+    }
   });
 
   async function initializeTrackingPage() {
@@ -43,6 +71,8 @@
     if (syncInterval) clearInterval(syncInterval);
 
     syncInterval = setInterval(async () => {
+      if (document.hidden) return; // safety net
+
       const updatedOrder = await getLatestTrackedOrder();
       if (!updatedOrder) return;
 
@@ -65,52 +95,130 @@
       }
     }, SYNC_INTERVAL_MS);
 
-    window.addEventListener("storage", async (event) => {
+    // ---- Cross-tab storage handler (loop-safe) ----
+    // Old version called getLatestTrackedOrder() on EVERY storage event,
+    // and getLatestTrackedOrder writes to localStorage on success, which
+    // re-fires storage events in the other tab → infinite ping-pong with
+    // 2+ tabs open. New version: debounce, ignore our own recent writes,
+    // and re-render from cached data without re-fetching.
+    window.addEventListener("storage", (event) => {
       if (
-        event.key === TRACK_ORDER_HISTORY_KEY ||
-        event.key === TRACK_LAST_ORDER_KEY ||
-        event.key === "foodExpressOrdersUpdatedAt"
+        event.key !== TRACK_ORDER_HISTORY_KEY &&
+        event.key !== TRACK_LAST_ORDER_KEY &&
+        event.key !== "foodExpressOrdersUpdatedAt"
       ) {
-        const updatedOrder = await getLatestTrackedOrder();
-        if (!updatedOrder) return;
-
-        latestOrder = updatedOrder;
-        renderTrackingPage(latestOrder);
+        return;
       }
+
+      // Ignore events that arrived within 2s of our own write — they're
+      // very likely echoes of our own activity from another tab.
+      if (Date.now() - lastSelfWriteAt < 2000) {
+        return;
+      }
+
+      // Debounce: collapse a burst of writes into a single re-render.
+      if (storageReactTimer) clearTimeout(storageReactTimer);
+
+      storageReactTimer = setTimeout(() => {
+        storageReactTimer = null;
+
+        // Re-render from the freshly-written localStorage WITHOUT
+        // triggering another network fetch. The interval will catch up
+        // on backend changes within SYNC_INTERVAL_MS.
+        const lastOrder = readJson(TRACK_LAST_ORDER_KEY, null);
+        if (lastOrder) {
+          latestOrder = normalizeOrder(lastOrder);
+          renderTrackingPage(latestOrder);
+        }
+      }, STORAGE_REACT_DEBOUNCE_MS);
     });
   }
 
   async function getLatestTrackedOrder() {
-    const queryOrder = getQueryOrderNumber();
-
-    if (queryOrder) {
-      const backendOrder = await fetchOrderByNumberOrId(queryOrder);
-      if (backendOrder) return backendOrder;
+    // Single-flight guard: if a fetch is already running, await it
+    // instead of starting a new one. This collapses overlapping
+    // calls from interval + storage + manual triggers.
+    if (fetchInFlight) {
+      try {
+        return await fetchInFlight;
+      } catch (_) {
+        return null;
+      }
     }
 
-    const lastOrder = readJson(TRACK_LAST_ORDER_KEY, null);
-    const allOrders = readJson(TRACK_ORDER_HISTORY_KEY, []);
+    fetchInFlight = (async () => {
+      try {
+        const queryOrder = getQueryOrderNumber();
 
-    const localOrder = findLocalOrder(queryOrder, lastOrder, allOrders);
+        if (queryOrder) {
+          const backendOrder = await fetchOrderByNumberOrId(queryOrder);
+          if (backendOrder) {
+            consecutiveFailures = 0;
+            return backendOrder;
+          }
+        }
 
-    const localOrderNumber =
-      localOrder?.orderNumber ||
-      localOrder?.order_number ||
-      localOrder?.orderId ||
-      localOrder?.id ||
-      "";
+        const lastOrder = readJson(TRACK_LAST_ORDER_KEY, null);
+        const allOrders = readJson(TRACK_ORDER_HISTORY_KEY, []);
 
-    if (localOrderNumber) {
-      const backendOrder = await fetchOrderByNumberOrId(localOrderNumber);
-      if (backendOrder) return backendOrder;
-    }
+        const localOrder = findLocalOrder(queryOrder, lastOrder, allOrders);
 
-    if (localOrder) return normalizeOrder(localOrder);
+        const localOrderNumber =
+          localOrder?.orderNumber ||
+          localOrder?.order_number ||
+          localOrder?.orderId ||
+          localOrder?.id ||
+          "";
 
-    const newestBackend = await fetchNewestBackendOrder();
-    if (newestBackend) return newestBackend;
+        if (localOrderNumber) {
+          const backendOrder = await fetchOrderByNumberOrId(localOrderNumber);
+          if (backendOrder) {
+            consecutiveFailures = 0;
+            return backendOrder;
+          }
+        }
 
-    return null;
+        if (localOrder) {
+          consecutiveFailures = 0;
+          return normalizeOrder(localOrder);
+        }
+
+        const newestBackend = await fetchNewestBackendOrder();
+        if (newestBackend) {
+          consecutiveFailures = 0;
+          return newestBackend;
+        }
+
+        return null;
+      } catch (error) {
+        consecutiveFailures += 1;
+        console.warn(
+          "[track-order.js] getLatestTrackedOrder failed (#" +
+            consecutiveFailures +
+            "):",
+          error
+        );
+
+        // After 5 consecutive failures, slow polling way down so we
+        // don't keep hammering a broken backend.
+        if (consecutiveFailures >= 5 && syncInterval) {
+          clearInterval(syncInterval);
+          syncInterval = setInterval(async () => {
+            if (document.hidden) return;
+            await getLatestTrackedOrder();
+          }, 30000);
+          console.warn(
+            "[track-order.js] Backend unreachable — slowing polling to 30s."
+          );
+        }
+
+        return null;
+      } finally {
+        fetchInFlight = null;
+      }
+    })();
+
+    return await fetchInFlight;
   }
 
   function getQueryOrderNumber() {
@@ -346,6 +454,11 @@
 
   function saveLatestOrderLocally(order) {
     try {
+      // Mark that WE are about to write — so storage events arriving in
+      // other tabs from these writes can be filtered out (they're echoes
+      // of our own activity, not new info).
+      lastSelfWriteAt = Date.now();
+
       localStorage.setItem(TRACK_LAST_ORDER_KEY, JSON.stringify(order));
 
       const existing = readJson(TRACK_ORDER_HISTORY_KEY, []);
@@ -860,11 +973,13 @@
       const time = historyMap[status];
 
       if (status === "pending") {
-        el.textContent = formatClockTime(new Date(time || order.createdAt || Date.now()));
+        el.textContent = formatClockTime(
+          parseOrderDate(time || order.createdAt) || new Date()
+        );
         return;
       }
 
-      el.textContent = time ? formatClockTime(new Date(time)) : "--:--";
+      el.textContent = time ? formatClockTime(parseOrderDate(time)) : "--:--";
     });
   }
 
@@ -1611,8 +1726,8 @@ function saveReviewLocally(order, review) {
   function formatPlacedTime(timestamp) {
     if (!timestamp) return "Just now";
 
-    const date = new Date(timestamp);
-    if (Number.isNaN(date.getTime())) return "Just now";
+    const date = parseOrderDate(timestamp);
+    if (!date) return "Just now";
 
     return date.toLocaleString([], {
       month: "short",
@@ -1620,6 +1735,49 @@ function saveReviewLocally(order, review) {
       hour: "numeric",
       minute: "2-digit",
     });
+  }
+
+  /**
+   * Parses a timestamp that may come from:
+   *   - MySQL: "2026-05-06 13:50:00"          (local server time, no TZ)
+   *   - ISO:   "2026-05-06T13:50:00.000Z"     (UTC)
+   *   - JS Date object
+   *   - epoch millis number
+   *
+   * MySQL strings have NO timezone marker. Different browsers parse
+   * "YYYY-MM-DD HH:MM:SS" inconsistently (some local, some invalid).
+   * This helper forces a deterministic local interpretation by
+   * converting the space to "T", which all modern browsers treat
+   * as local-time when no Z is present.
+   */
+  function parseOrderDate(value) {
+    if (!value) return null;
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    if (typeof value === "number") {
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    let str = String(value).trim();
+    if (!str) return null;
+
+    // Pure date "2026-05-06" — treat as local midnight.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      str = str + "T00:00:00";
+    }
+
+    // MySQL DATETIME: "2026-05-06 13:50:00" → "2026-05-06T13:50:00"
+    // (local, no Z, no offset).
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(str)) {
+      str = str.replace(" ", "T");
+    }
+
+    const d = new Date(str);
+    return Number.isNaN(d.getTime()) ? null : d;
   }
 
   function formatClockTime(date) {

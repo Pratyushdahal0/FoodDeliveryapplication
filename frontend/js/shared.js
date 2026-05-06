@@ -303,6 +303,101 @@ function initFavoriteButtons(root = document) {
 }
 
 /* ===============================
+   CANONICAL CURRENT USER
+
+   Priority #3 fix: one source of truth for the logged-in customer.
+
+   Reads `foodExpressCurrentUser` first (set by login.js at login),
+   then falls back to legacy keys. Returns a normalized object with
+   stable shape: { id, name, email, phone, address, role, ... } or
+   null if no user is logged in. Use this anywhere you need to know
+   "who is the current customer" — checkout, order creation, dashboard,
+   profile, etc.
+================================ */
+
+function getCurrentLoggedInUser() {
+  function readJsonSafe(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // Priority order: canonical → legacy mirrors → flat keys
+  const canonical = readJsonSafe("foodExpressCurrentUser");
+  const currentUser = readJsonSafe("currentUser");
+  const loggedInUser = readJsonSafe("loggedInUser");
+  const userProfile = readJsonSafe("userProfile");
+  const foodExpressUser = readJsonSafe("foodExpressUser");
+  const foodExpressProfile = readJsonSafe("foodExpressProfile");
+
+  const flatEmail = localStorage.getItem("userEmail") || "";
+  const flatName = localStorage.getItem("userName") || "";
+  const flatPhone = localStorage.getItem("userPhone") || "";
+  const flatAddress = localStorage.getItem("userAddress") || "";
+  const flatRole = localStorage.getItem("userRole") || "";
+
+  const source =
+    canonical ||
+    currentUser ||
+    loggedInUser ||
+    userProfile ||
+    foodExpressUser ||
+    foodExpressProfile ||
+    null;
+
+  if (!source && !flatEmail) {
+    return null;
+  }
+
+  const safeSource = source || {};
+
+  const merged = {
+    id: safeSource.id || safeSource.user_id || "",
+    name:
+      safeSource.name ||
+      safeSource.full_name ||
+      safeSource.fullName ||
+      flatName ||
+      "",
+    email: (
+      safeSource.email ||
+      safeSource.user_email ||
+      safeSource.email_address ||
+      flatEmail ||
+      ""
+    )
+      .toString()
+      .trim()
+      .toLowerCase(),
+    phone:
+      safeSource.phone ||
+      safeSource.phone_number ||
+      flatPhone ||
+      "",
+    address: safeSource.address || flatAddress || "",
+    role: safeSource.role || flatRole || "customer",
+    status: safeSource.status || "active",
+    profile_image:
+      safeSource.profile_image ||
+      safeSource.profileImage ||
+      localStorage.getItem("userProfileImage") ||
+      "",
+  };
+
+  // Treat as "not logged in" if the merged object has no email at all.
+  if (!merged.email) {
+    return null;
+  }
+
+  return merged;
+}
+
+/* ===============================
    GLOBAL EXPORTS
 ================================ */
 
@@ -310,6 +405,7 @@ window.logout = logout;
 window.requireAuth = requireAuth;
 window.getCurrentUserEmail = getCurrentUserEmail;
 window.getCurrentUserRole = getCurrentUserRole;
+window.getCurrentLoggedInUser = getCurrentLoggedInUser;
 window.requireOwnerAuth = requireOwnerAuth;
 window.requireCustomerAuth = requireCustomerAuth;
 window.requireRiderAuth = requireRiderAuth;

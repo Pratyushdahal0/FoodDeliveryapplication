@@ -6,7 +6,7 @@
 
   window.__FOODEXPRESS_FOOD_JS_LOADED__ = true;
 
-  console.log("[food.js] Loaded - Nepal Rs currency version fixed");
+  console.log("[food.js] Loaded - restaurant menu v2 (restaurant filter + NPR)");
 
   const FOOD_FAVORITES_KEY_SAFE = "foodDeliveryFavorites";
   const DEFAULT_FOOD_IMAGE =
@@ -21,6 +21,9 @@
   let currentSort = "recommended";
   let currentPopularOnly = false;
 
+  // selectedRestaurant: { id, name } or null when showing all items
+  let selectedRestaurant = null;
+
   /* ===============================
      MONEY FORMAT
   ================================ */
@@ -31,6 +34,154 @@
     return `Rs. ${value.toLocaleString("en-NP", {
       maximumFractionDigits: 0,
     })}`;
+  }
+
+  /* ===============================
+     RESTAURANT DETECTION
+     Priority:
+       1. URL params (restaurant_id / restaurantId / id)
+       2. localStorage object (foodExpressSelectedRestaurant)
+       3. localStorage flat keys (selectedRestaurantId / selectedRestaurantName)
+       4. null = show all
+  ================================ */
+
+  function readRestaurantFromUrl() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+
+      const id =
+        params.get("restaurant_id") ||
+        params.get("restaurantId") ||
+        params.get("id");
+
+      const name =
+        params.get("restaurant") ||
+        params.get("restaurant_name") ||
+        params.get("name");
+
+      if (id) {
+        return {
+          id: String(id),
+          name: name ? decodeURIComponent(name) : "",
+        };
+      }
+    } catch (error) {
+      console.warn("[food.js] Failed to parse URL params:", error);
+    }
+
+    return null;
+  }
+
+  function readRestaurantFromStorage() {
+    try {
+      const raw = localStorage.getItem("foodExpressSelectedRestaurant");
+
+      if (raw) {
+        const obj = JSON.parse(raw);
+
+        if (obj && (obj.id || obj.restaurant_id)) {
+          return {
+            id: String(obj.id || obj.restaurant_id),
+            name: obj.name || obj.restaurant_name || "",
+          };
+        }
+      }
+    } catch (error) {
+      console.warn("[food.js] Failed to parse stored restaurant:", error);
+    }
+
+    const flatId = localStorage.getItem("selectedRestaurantId");
+    const flatName = localStorage.getItem("selectedRestaurantName");
+
+    if (flatId) {
+      return {
+        id: String(flatId),
+        name: flatName || "",
+      };
+    }
+
+    return null;
+  }
+
+  function detectSelectedRestaurant() {
+    // URL wins, but if URL has id without name, try storage to fill name.
+    const fromUrl = readRestaurantFromUrl();
+    const fromStorage = readRestaurantFromStorage();
+
+    if (fromUrl) {
+      // If URL gave id but no name, try to fill name from storage if it matches.
+      if (!fromUrl.name && fromStorage && String(fromStorage.id) === String(fromUrl.id)) {
+        fromUrl.name = fromStorage.name;
+      }
+
+      // Persist the selection back so other pages stay in sync.
+      try {
+        localStorage.setItem("selectedRestaurantId", String(fromUrl.id));
+        if (fromUrl.name) {
+          localStorage.setItem("selectedRestaurantName", fromUrl.name);
+        }
+        localStorage.setItem(
+          "foodExpressSelectedRestaurant",
+          JSON.stringify({
+            id: Number(fromUrl.id),
+            restaurant_id: Number(fromUrl.id),
+            name: fromUrl.name || "Restaurant",
+            restaurant_name: fromUrl.name || "Restaurant",
+            selectedAt: new Date().toISOString(),
+          })
+        );
+      } catch (error) {
+        console.warn("[food.js] Failed to persist selected restaurant:", error);
+      }
+
+      return fromUrl;
+    }
+
+    return fromStorage;
+  }
+
+  function updateRestaurantHero() {
+    const heroTitle = document.getElementById("heroTitle");
+    const heroSubtitle = document.getElementById("heroSubtitle");
+    const pageTitle = document.getElementById("pageTitle");
+    const backStrip = document.getElementById("restaurantBackStrip");
+
+    if (selectedRestaurant && selectedRestaurant.id) {
+      const name = selectedRestaurant.name || "Restaurant";
+
+      if (heroTitle) {
+        heroTitle.innerHTML = `${escapeHtml(name)} <span>Menu</span>`;
+      }
+
+      if (heroSubtitle) {
+        heroSubtitle.textContent = `Fresh dishes prepared by ${name}`;
+      }
+
+      if (pageTitle) {
+        pageTitle.textContent = `FoodExpress — ${name} Menu`;
+      }
+
+      if (backStrip) {
+        backStrip.style.display = "block";
+      }
+    } else {
+      if (heroTitle) {
+        heroTitle.innerHTML = `Our <span>Menu</span>`;
+      }
+
+      if (heroSubtitle) {
+        heroSubtitle.textContent =
+          "Explore our delicious selection of freshly prepared dishes";
+      }
+
+      if (pageTitle) {
+        pageTitle.textContent = "FoodExpress — Menu";
+      }
+
+      if (backStrip) {
+        backStrip.style.display = "none";
+      }
+    }
   }
 
   /* ===============================
@@ -141,7 +292,7 @@
 
     if (currentPriceFilter === "all") return true;
 
-    // These keep your old dropdown values but convert the meaning to Nepal prices.
+    // Buckets keyed in NPR (legacy keys preserved so existing dropdown values work).
     if (currentPriceFilter === "under10") return amount < 300;
     if (currentPriceFilter === "10to20") return amount >= 300 && amount <= 500;
     if (currentPriceFilter === "20to50") return amount > 500 && amount <= 1000;
@@ -153,6 +304,11 @@
   function matchesRating(rating) {
     if (currentRatingFilter === "all") return true;
     return rating >= Number(currentRatingFilter);
+  }
+
+  function matchesRestaurant(item) {
+    if (!selectedRestaurant || !selectedRestaurant.id) return true;
+    return String(item.restaurant_id) === String(selectedRestaurant.id);
   }
 
   function getFilteredItems() {
@@ -180,6 +336,7 @@
         String(item.originalCategory || "").toLowerCase().includes(query);
 
       return (
+        matchesRestaurant(item) &&
         matchesCategory &&
         matchesDiet &&
         matchesPopular &&
@@ -238,11 +395,14 @@
     if (currentPriceFilter !== "all") parts.push("price filtered");
     if (currentRatingFilter !== "all") parts.push(`${currentRatingFilter}+ rated`);
 
-    const label = parts.length
-      ? `Filtered by ${parts.join(", ")}`
-      : "Showing all items";
+    const restaurantPrefix =
+      selectedRestaurant && selectedRestaurant.id
+        ? `Showing ${selectedRestaurant.name || "this restaurant"}`
+        : "Showing all items";
 
-    summary.textContent = `${label} • ${items.length} item${
+    const filterSuffix = parts.length ? ` • Filtered by ${parts.join(", ")}` : "";
+
+    summary.textContent = `${restaurantPrefix}${filterSuffix} • ${items.length} item${
       items.length !== 1 ? "s" : ""
     }`;
   }
@@ -258,10 +418,21 @@
     updateResultsSummary(items);
 
     if (!items.length) {
+      const showBackButton = selectedRestaurant && selectedRestaurant.id;
+
       grid.innerHTML = `
         <div class="empty-menu-state">
           <h3>No items found</h3>
-          <p>Try changing the category, filters, or search term.</p>
+          <p>${
+            showBackButton
+              ? "This restaurant has no items matching your filters."
+              : "Try changing the category, filters, or search term."
+          }</p>
+          ${
+            showBackButton
+              ? '<a href="shop.html" class="empty-back-link">← Browse other restaurants</a>'
+              : ""
+          }
         </div>
       `;
       return;
@@ -457,6 +628,25 @@
     }
 
     allMenuItems = products.map(normalizeMenuItem);
+
+    // If user opened food.html for a specific restaurant but we never got a name
+    // from URL/storage, derive it from the loaded products (first matching item).
+    if (selectedRestaurant && selectedRestaurant.id && !selectedRestaurant.name) {
+      const sample = allMenuItems.find(
+        (it) => String(it.restaurant_id) === String(selectedRestaurant.id)
+      );
+
+      if (sample && sample.restaurant_name) {
+        selectedRestaurant.name = sample.restaurant_name;
+
+        try {
+          localStorage.setItem("selectedRestaurantName", sample.restaurant_name);
+        } catch (_) {}
+
+        updateRestaurantHero();
+      }
+    }
+
     rerenderMenu();
   }
 
@@ -552,6 +742,10 @@
       return;
     }
 
+    // Detect restaurant FIRST so hero/title render correctly while products load.
+    selectedRestaurant = detectSelectedRestaurant();
+    updateRestaurantHero();
+
     setupSearch();
     setupFilterControls();
 
@@ -601,5 +795,11 @@
   window.logout = logout;
   window.formatNpr = formatNpr;
 
-  document.addEventListener("DOMContentLoaded", setupPage);
+  // Run setup on DOMContentLoaded; if the script loaded after DOM is already
+  // parsed (e.g. cached), run immediately so we don't miss the event.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupPage);
+  } else {
+    setupPage();
+  }
 })();

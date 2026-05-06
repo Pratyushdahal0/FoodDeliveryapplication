@@ -1,5 +1,12 @@
 (function () {
-  console.log("[modules/cart.js] Loaded - stable global cart helpers");
+  if (window.__FOODEXPRESS_CART_MODULE_LOADED__) {
+    console.warn("[modules/cart.js] Already loaded, skipping duplicate script.");
+    return;
+  }
+
+  window.__FOODEXPRESS_CART_MODULE_LOADED__ = true;
+
+  console.log("[modules/cart.js] Loaded - stable global cart helpers + restaurant lock");
 
   const CART_COUNT_KEY = "foodDeliveryCartCount";
   const CART_ITEMS_KEY = "foodDeliveryCartItems";
@@ -70,6 +77,30 @@
     return count;
   }
 
+  /**
+   * Returns the restaurant_id of items already in the cart, or "" if cart is empty.
+   * If the cart has mixed restaurants somehow, returns the FIRST one's id.
+   */
+  function getCurrentCartRestaurantId() {
+    const items = readCartItems();
+
+    for (const item of items) {
+      if (item.restaurant_id) return String(item.restaurant_id);
+    }
+
+    return "";
+  }
+
+  function getCurrentCartRestaurantName() {
+    const items = readCartItems();
+
+    for (const item of items) {
+      if (item.restaurant_name) return String(item.restaurant_name);
+    }
+
+    return "another restaurant";
+  }
+
   function addItemToCart(product) {
     const normalized = normalizeCartProduct(product);
 
@@ -87,6 +118,37 @@
       alert("Unable to add item: restaurant information is missing.");
       return false;
     }
+
+    // ---- RESTAURANT LOCK ----
+    // If cart has items from another restaurant, ask the user to confirm
+    // clearing the cart before adding this new item. This is how Uber Eats /
+    // Foodmandu / DoorDash all behave.
+    const existingRestaurantId = getCurrentCartRestaurantId();
+
+    if (
+      existingRestaurantId &&
+      existingRestaurantId !== normalized.restaurant_id
+    ) {
+      const existingName = getCurrentCartRestaurantName();
+      const newName = normalized.restaurant_name || "this restaurant";
+
+      const confirmed = window.confirm(
+        `Your cart has items from ${existingName}. ` +
+          `Adding "${normalized.name}" from ${newName} will clear your current cart. ` +
+          `Continue?`
+      );
+
+      if (!confirmed) {
+        console.log(
+          "[modules/cart.js] User declined to clear cart for new restaurant"
+        );
+        return false;
+      }
+
+      // User confirmed — clear cart and continue with the new item.
+      saveCartItems([]);
+    }
+    // ---- END RESTAURANT LOCK ----
 
     const items = readCartItems();
 
@@ -197,6 +259,8 @@
   window.setupNavbarCartIcon = setupNavbarCartIcon;
   window.initializeCartCount = initializeCartCount;
   window.incrementCartCount = incrementCartCount;
+  window.getCurrentCartRestaurantId = getCurrentCartRestaurantId;
+  window.getCurrentCartRestaurantName = getCurrentCartRestaurantName;
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initializeCartCount);

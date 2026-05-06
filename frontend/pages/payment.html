@@ -472,7 +472,7 @@
     <footer class="footer" id="footer"></footer>
 
     <script src="../js/profile.js?v=profile1"></script>
-    <script src="../js/shared.js?v=shared1"></script>
+    <script src="../js/shared.js?v=shared-canonical-user-1"></script>
     <script src="../js/modules/cart.js?v=cartstable1"></script>
     <script src="../js/components/notifications.js?v=routefix4"></script>
     <script src="../js/components/navbar.js?v=paymentnav1"></script>
@@ -1039,6 +1039,15 @@
       function prefillUserDetails() {
         const settings = getAccountSettings();
 
+        // ---- Priority #3: canonical session is the SOURCE OF TRUTH. ----
+        // If a real user is logged in, their identity wins over every
+        // other localStorage key. This prevents stale data from a
+        // previous user/session leaking into a new user's checkout.
+        const canonicalUser =
+          typeof window.getCurrentLoggedInUser === "function"
+            ? window.getCurrentLoggedInUser()
+            : null;
+
         const profileFromGlobal =
           typeof window.getSavedUserProfile === "function"
             ? window.getSavedUserProfile()
@@ -1050,6 +1059,11 @@
         const loggedInUser = readJson("loggedInUser", {});
         const authUser = readJson("foodExpressAuthUser", {});
 
+        // Merge order: legacy keys first, then global profile, then
+        // canonicalUser LAST so its identity (id, email, name) overrides
+        // anything stale from older keys. Field-level fallbacks below
+        // still let saved address/phone/etc. fill in if canonicalUser
+        // doesn't have them.
         const profile = {
           ...authUser,
           ...loggedInUser,
@@ -1057,15 +1071,18 @@
           ...foodExpressProfile,
           ...userProfile,
           ...profileFromGlobal,
+          ...(canonicalUser || {}),
         };
 
         const fallbackEmail =
+          (canonicalUser && canonicalUser.email) ||
           localStorage.getItem("userEmail") ||
           localStorage.getItem("pendingVerificationEmail") ||
           localStorage.getItem("foodExpressUserEmail") ||
           "";
 
         const fallbackName =
+          (canonicalUser && canonicalUser.name) ||
           localStorage.getItem("userName") ||
           localStorage.getItem("pendingVerificationName") ||
           localStorage.getItem("foodExpressUserName") ||
@@ -1091,12 +1108,28 @@
         if (fullNameInput) fullNameInput.value = derivedName;
 
         if (emailInput) {
-          emailInput.value =
-            profile.email ||
-            profile.user_email ||
-            profile.email_address ||
-            fallbackEmail ||
-            "";
+          // If a real user is logged in, force their canonical email and
+          // lock the field so a typo can never create an order under a
+          // different identity.
+          if (canonicalUser && canonicalUser.email) {
+            emailInput.value = canonicalUser.email;
+            emailInput.readOnly = true;
+            emailInput.title =
+              "This is your account email. Edit your profile to change it.";
+            emailInput.style.backgroundColor = "#f5f5f5";
+            emailInput.style.cursor = "not-allowed";
+          } else {
+            emailInput.value =
+              profile.email ||
+              profile.user_email ||
+              profile.email_address ||
+              fallbackEmail ||
+              "";
+            emailInput.readOnly = false;
+            emailInput.removeAttribute("title");
+            emailInput.style.backgroundColor = "";
+            emailInput.style.cursor = "";
+          }
         }
 
         if (phoneInput) {
@@ -1541,6 +1574,29 @@
           delivery_status: "searching",
           items: checkoutItems,
         };
+
+        // ---- Priority #3: stamp the order with the logged-in user's
+        // canonical identity. This guarantees the order ends up tied
+        // to the user who actually placed it (so dashboard, profile,
+        // and customer_orders queries all match), regardless of what
+        // the form fields contain.
+        const canonicalUserForOrder =
+          typeof window.getCurrentLoggedInUser === "function"
+            ? window.getCurrentLoggedInUser()
+            : null;
+
+        if (canonicalUserForOrder) {
+          if (canonicalUserForOrder.id) {
+            orderData.user_id = canonicalUserForOrder.id;
+          }
+
+          if (canonicalUserForOrder.email) {
+            // Force the canonical email — never trust an editable form
+            // field for identity.
+            orderData.customer_email = canonicalUserForOrder.email;
+          }
+        }
+        // ---- end Priority #3 stamp ----
 
         try {
           const response = await fetch(

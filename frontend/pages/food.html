@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FoodExpress — Our Menu</title>
+    <title id="pageTitle">FoodExpress — Menu</title>
 
     <link
       rel="icon"
@@ -35,9 +35,23 @@
   <body>
     <div id="navbarContainer"></div>
 
+    <!-- Back-to-restaurants strip (only visible when a restaurant is selected) -->
+    <div
+      class="restaurant-back-strip"
+      id="restaurantBackStrip"
+      style="display: none"
+    >
+      <a href="shop.html" class="back-link">
+        <i class="fa-solid fa-arrow-left"></i>
+        Back to restaurants
+      </a>
+    </div>
+
     <section class="food-hero">
-      <h1>Our <span>Menu</span></h1>
-      <p>Explore our delicious selection of freshly prepared dishes</p>
+      <h1 id="heroTitle">Our <span>Menu</span></h1>
+      <p id="heroSubtitle">
+        Explore our delicious selection of freshly prepared dishes
+      </p>
 
       <div class="hero-search">
         <svg viewBox="0 0 24 24">
@@ -77,10 +91,10 @@
       <div class="filter-toolbar">
         <select id="priceFilter" class="filter-select">
           <option value="all">All Prices</option>
-          <option value="under10">Under $10</option>
-          <option value="10to20">$10 – $20</option>
-          <option value="20to50">$20 – $50</option>
-          <option value="above50">Above $50</option>
+          <option value="under10">Under Rs. 300</option>
+          <option value="10to20">Rs. 300 – Rs. 500</option>
+          <option value="20to50">Rs. 500 – Rs. 1000</option>
+          <option value="above50">Above Rs. 1000</option>
         </select>
 
         <select id="ratingFilter" class="filter-select">
@@ -168,8 +182,8 @@
       <div class="special-offers">
         <h2>Special Offers</h2>
         <p>
-          Get 20% off on orders above $50 &nbsp;•&nbsp; Free delivery on first
-          order
+          Get 20% off on orders above Rs. 1500 &nbsp;•&nbsp; Free delivery on
+          first order
         </p>
         <button class="btn-offers" type="button">View All Offers</button>
       </div>
@@ -224,6 +238,32 @@
     </footer>
 
     <style>
+      .restaurant-back-strip {
+        max-width: 1200px;
+        margin: 18px auto 0;
+        padding: 0 24px;
+      }
+
+      .restaurant-back-strip .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #e53935;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 8px 14px;
+        border-radius: 50px;
+        background: #fff5f5;
+        border: 1px solid #ffd5d5;
+        transition: all 0.2s ease;
+      }
+
+      .restaurant-back-strip .back-link:hover {
+        background: #ffe5e5;
+        transform: translateX(-2px);
+      }
+
       .filter-toolbar {
         display: flex;
         justify-content: center;
@@ -305,6 +345,22 @@
         font-size: 15px;
       }
 
+      .empty-menu-state .empty-back-link {
+        display: inline-block;
+        margin-top: 18px;
+        padding: 10px 22px;
+        border-radius: 50px;
+        background: #e53935;
+        color: #fff;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+      }
+
+      .empty-menu-state .empty-back-link:hover {
+        background: #c62828;
+      }
+
       @media (max-width: 768px) {
         .filter-toolbar {
           gap: 10px;
@@ -322,12 +378,12 @@
     <script src="../js/api/productApi2.js?v=safe1"></script>
     <script src="../js/profile.js"></script>
     <script src="../js/shared.js"></script>
-    <script src="../js/modules/cart.js"></script>
+    <script src="../js/modules/cart.js?v=restaurantlock1"></script>
     <script src="../js/components/notifications.js?v=backendnotif3"></script>
     <script src="../js/components/navbar.js"></script>
 
-    <!-- Page-specific JS -->
-    <script src="../js/food.js?v=restaurant-menu-1"></script>
+    <!-- Page-specific JS (cache-busted) -->
+    <script src="../js/food.js?v=restaurant-menu-2"></script>
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {

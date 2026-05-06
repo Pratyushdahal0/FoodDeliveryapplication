@@ -110,6 +110,103 @@ async function refreshDashboardData() {
   await loadFavoritesData();
 }
 
+/* ===============================================================
+   loadCustomerOrdersForDashboard
+   ---------------------------------------------------------------
+   Fetches the logged-in customer's orders from the DB via
+   OrderController.php?action=customer_orders, updates
+   dashboardServerStats, and returns normalized orders.
+   Falls back to localStorage on any failure so the dashboard
+   never goes blank during a backend outage.
+=============================================================== */
+async function loadCustomerOrdersForDashboard(email) {
+  // Reset stats so a stale value from a previous user doesn't leak.
+  dashboardServerStats = {
+    total_orders: 0,
+    delivered_orders: 0,
+    points: 0,
+    savings: 0,
+  };
+
+  if (!email || email === "No email added") {
+    console.warn(
+      "[dashboard.js] No customer email available; falling back to local orders."
+    );
+    return getSortedOrders().map(normalizeDashboardOrder);
+  }
+
+  try {
+    const url = `${CUSTOMER_ORDER_API}&email=${encodeURIComponent(email)}`;
+    console.log("[dashboard.js] Fetching customer orders:", url);
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+
+    // Robust JSON parse — InfinityFree sometimes injects a non-JSON
+    // anti-bot HTML page. Read as text first, then parse.
+    const raw = await response.text();
+
+    let payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch (parseError) {
+      console.error(
+        "[dashboard.js] customer_orders returned non-JSON response:",
+        raw.slice(0, 200)
+      );
+      return getSortedOrders().map(normalizeDashboardOrder);
+    }
+
+    if (!payload || payload.success !== true) {
+      console.warn(
+        "[dashboard.js] customer_orders API returned failure:",
+        payload && payload.message
+      );
+      return getSortedOrders().map(normalizeDashboardOrder);
+    }
+
+    const dbOrders = Array.isArray(payload.data) ? payload.data : [];
+
+    if (payload.stats && typeof payload.stats === "object") {
+      dashboardServerStats = {
+        total_orders: Number(payload.stats.total_orders || 0),
+        delivered_orders: Number(payload.stats.delivered_orders || 0),
+        points: Number(payload.stats.points || 0),
+        savings: Number(payload.stats.savings || 0),
+      };
+    } else {
+      const deliveredCount = dbOrders.filter((o) => {
+        const status = String(o.status || o.delivery_status || "").toLowerCase();
+        return status === "delivered";
+      }).length;
+
+      dashboardServerStats = {
+        total_orders: dbOrders.length,
+        delivered_orders: deliveredCount,
+        points: deliveredCount * 100,
+        savings: 0,
+      };
+    }
+
+    console.log(
+      "[dashboard.js] Loaded",
+      dbOrders.length,
+      "DB orders for",
+      email,
+      "stats:",
+      dashboardServerStats
+    );
+
+    return dbOrders.map(normalizeDashboardOrder);
+  } catch (error) {
+    console.error("[dashboard.js] Error fetching customer orders:", error);
+    return getSortedOrders().map(normalizeDashboardOrder);
+  }
+}
+
 
 
 function loadDashboardStats() {
