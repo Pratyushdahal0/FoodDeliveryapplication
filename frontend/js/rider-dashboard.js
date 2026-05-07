@@ -1,89 +1,686 @@
-console.log("Rider dashboard JS loaded");
+console.log("[rider-dashboard.js] Loaded - real backend dashboard");
 
 /* ================================
-   STORAGE KEYS
+   API + STORAGE
 ================================ */
+
+const ORDER_API_URL = "../../backend/controllers/OrderController.php";
+
 const RIDER_STATUS_KEY = "foodExpressRiderStatus";
 const RIDER_SETTINGS_KEY = "foodExpressRiderSettings";
+const ACTIVE_RIDER_DELIVERY_KEY = "foodExpressActiveRiderDelivery";
+const RIDER_HISTORY_KEY = "foodexpress_rider_history";
+const RIDER_EARNINGS_KEY = "foodexpress_rider_earnings";
+
+let dashboardAvailableOrders = [];
+let dashboardActiveOrder = null;
+let dashboardHistory = [];
 
 /* ================================
-   FAKE RIDER DASHBOARD DATA
+   INIT
 ================================ */
-let riderData = JSON.parse(localStorage.getItem("riderData")) || {
-  deliveriesToday: 8,
-  activeDelivery: 0,
-  earningsToday: 720,
-};
 
-function saveRiderData() {
-  localStorage.setItem("riderData", JSON.stringify(riderData));
-}
-
-/* ================================
-   MAIN INIT
-================================ */
-document.addEventListener("DOMContentLoaded", () => {
-  updateUI();
+document.addEventListener("DOMContentLoaded", async () => {
+  bindSidebarToggle();
   applyRiderAvailabilityState();
-  bindDeliveryProgress();
-  bindAcceptButtons();
+  updateRiderIdentityUI();
+
+  await loadDashboardData();
+
   bindRefreshButton();
   bindOldStatusButtonIfExists();
 
-  // If Settings updates in same browser session, dashboard can respond.
-  window.addEventListener("foodExpressRiderSettingsUpdated", () => {
+  window.addEventListener("foodExpressRiderSettingsUpdated", async () => {
     applyRiderAvailabilityState();
+    await loadDashboardData();
+  });
+
+  window.addEventListener("storage", async (event) => {
+    if (
+      event.key === RIDER_STATUS_KEY ||
+      event.key === RIDER_SETTINGS_KEY ||
+      event.key === ACTIVE_RIDER_DELIVERY_KEY ||
+      event.key === RIDER_HISTORY_KEY
+    ) {
+      applyRiderAvailabilityState();
+      await loadDashboardData();
+    }
   });
 });
 
 /* ================================
-   UPDATE STATS
+   LOAD DASHBOARD
 ================================ */
-function updateUI() {
-  const todayDelivery = document.querySelector(".stat-card:nth-child(1) h2");
-  const activeDelivery = document.querySelector(".stat-card:nth-child(2) h2");
-  const todayEarnings = document.querySelector(".stat-card:nth-child(3) h2");
 
-  if (todayDelivery) todayDelivery.innerText = riderData.deliveriesToday;
-  if (activeDelivery) activeDelivery.innerText = riderData.activeDelivery;
+async function loadDashboardData() {
+  renderLoadingState();
 
-  if (todayEarnings) {
-    todayEarnings.innerText = `Rs. ${Number(
-      riderData.earningsToday
-    ).toLocaleString("en-IN")}`;
+  await Promise.all([
+    loadAvailableDeliveriesFromBackend(),
+    loadActiveDeliveryFromBackend(),
+  ]);
+
+  dashboardHistory = readJson(RIDER_HISTORY_KEY, []);
+  if (!Array.isArray(dashboardHistory)) dashboardHistory = [];
+
+  renderDashboard();
+}
+
+function renderLoadingState() {
+  const activePanel = document.querySelector(".active-delivery");
+  const availablePanel = getAvailablePanel();
+  const recentPanel = getRecentPanel();
+
+  if (activePanel) {
+    activePanel.innerHTML = `
+      <div class="panel-header">
+        <h3>Active Delivery</h3>
+        <span>Loading...</span>
+      </div>
+      <div class="dashboard-loading-card">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <p>Checking your current delivery...</p>
+      </div>
+    `;
+  }
+
+  if (availablePanel) {
+    availablePanel.innerHTML = `
+      <div class="panel-header">
+        <h3>Available Deliveries</h3>
+        <button class="refresh-btn">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+      <div class="dashboard-loading-card">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <p>Loading ready pickup orders...</p>
+      </div>
+    `;
+  }
+
+  if (recentPanel) {
+    recentPanel.innerHTML = `
+      <div class="panel-header">
+        <h3>Recent Deliveries</h3>
+        <a href="rider-history.html">View All</a>
+      </div>
+      <div class="dashboard-loading-card">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <p>Loading recent completed trips...</p>
+      </div>
+    `;
+  }
+}
+
+async function loadAvailableDeliveriesFromBackend() {
+  try {
+    const response = await fetch(`${ORDER_API_URL}?action=available_deliveries&_=${Date.now()}`);
+    const raw = await response.text();
+
+    let result;
+    try {
+      result = JSON.parse(raw);
+    } catch (error) {
+      console.error("[rider-dashboard.js] Available deliveries non-JSON:", raw);
+      throw new Error("Backend did not return valid JSON.");
+    }
+
+    if (!result.success) {
+      throw new Error(result.message || "Could not load available deliveries.");
+    }
+
+    dashboardAvailableOrders = Array.isArray(result.data)
+      ? result.data.map(normalizeOrderForDashboard)
+      : [];
+
+    return dashboardAvailableOrders;
+  } catch (error) {
+    console.error("[rider-dashboard.js] Failed to load available deliveries:", error);
+    dashboardAvailableOrders = [];
+    showToast("Could not load available deliveries.", "error");
+    return [];
+  }
+}
+
+async function loadActiveDeliveryFromBackend() {
+  const rider = getCurrentRider();
+
+  try {
+    const response = await fetch(
+      `${ORDER_API_URL}?action=active_delivery&rider_id=${encodeURIComponent(rider.id)}&_=${Date.now()}`
+    );
+
+    const raw = await response.text();
+
+    let result;
+    try {
+      result = JSON.parse(raw);
+    } catch (error) {
+      console.error("[rider-dashboard.js] Active delivery non-JSON:", raw);
+      throw new Error("Backend did not return valid JSON.");
+    }
+
+    if (!result.success) {
+      throw new Error(result.message || "Could not load active delivery.");
+    }
+
+    if (result.data) {
+      dashboardActiveOrder = normalizeOrderForDashboard(result.data);
+      writeJson(ACTIVE_RIDER_DELIVERY_KEY, dashboardActiveOrder);
+    } else {
+      dashboardActiveOrder = null;
+      localStorage.removeItem(ACTIVE_RIDER_DELIVERY_KEY);
+    }
+
+    return dashboardActiveOrder;
+  } catch (error) {
+    console.error("[rider-dashboard.js] Failed to load active delivery:", error);
+
+    const cached = readJson(ACTIVE_RIDER_DELIVERY_KEY, null);
+    dashboardActiveOrder = cached ? normalizeOrderForDashboard(cached) : null;
+
+    return dashboardActiveOrder;
   }
 }
 
 /* ================================
-   TOAST
+   RENDER DASHBOARD
 ================================ */
-function showToast(message, type = "success") {
-  const toast = document.getElementById("toast");
-  if (!toast) return;
 
-  const icon =
-    type === "success"
-      ? "fa-circle-check"
-      : type === "warning"
-      ? "fa-circle-exclamation"
-      : "fa-circle-info";
+function renderDashboard() {
+  updateRiderIdentityUI();
+  updateStats();
+  renderActiveDelivery();
+  renderAvailableDeliveries();
+  renderRecentDeliveries();
+  applyRiderAvailabilityState();
+  bindRefreshButton();
+}
 
-  toast.innerHTML = `
-    <i class="fa-solid ${icon}"></i>
-    <span>${message}</span>
+function updateStats() {
+  const todayDelivered = getTodayDeliveredOrders();
+  const todayEarnings = todayDelivered.reduce(
+    (sum, order) => sum + estimateEarning(order),
+    0
+  );
+
+  const todayDeliveryCard = document.querySelector(".stat-card:nth-child(1) h2");
+  const activeDeliveryCard = document.querySelector(".stat-card:nth-child(2) h2");
+  const todayEarningsCard = document.querySelector(".stat-card:nth-child(3) h2");
+  const weeklyCard = document.querySelector(".stat-card:nth-child(4) h2");
+
+  if (todayDeliveryCard) todayDeliveryCard.innerText = todayDelivered.length;
+  if (activeDeliveryCard) activeDeliveryCard.innerText = dashboardActiveOrder ? "1" : "0";
+  if (todayEarningsCard) todayEarningsCard.innerText = formatMoney(todayEarnings);
+
+  if (weeklyCard) {
+    const weeklyDelivered = dashboardHistory.filter((order) => {
+      const date = getOrderDate(order);
+      if (!date) return false;
+
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      return date >= sevenDaysAgo && isDelivered(order);
+    });
+
+    weeklyCard.innerText = weeklyDelivered.length;
+  }
+}
+
+function renderActiveDelivery() {
+  const activePanel = document.querySelector(".active-delivery");
+  if (!activePanel) return;
+
+  if (!dashboardActiveOrder) {
+    activePanel.innerHTML = `
+      <div class="panel-header">
+        <h3>Active Delivery</h3>
+        <span>No active trip</span>
+      </div>
+
+      <div class="empty-active-dashboard">
+        <i class="fa-solid fa-box-open"></i>
+        <h4>No active delivery</h4>
+        <p>Ready pickup orders will appear in Available Deliveries. Accept one to start your trip.</p>
+        <a href="rider-deliveries.html" class="primary-dashboard-link">
+          <i class="fa-solid fa-motorcycle"></i>
+          Go to Deliveries
+        </a>
+      </div>
+    `;
+
+    return;
+  }
+
+  const order = normalizeOrderForDashboard(dashboardActiveOrder);
+  const currentStep = getStepIndex(order);
+  const nextLabel = getNextActionLabel(order);
+  const disabled = shouldDisableNextStep(order);
+
+  activePanel.innerHTML = `
+    <div class="panel-header">
+      <h3>Active Delivery</h3>
+      <span>${escapeHtml(order.orderNumber)}</span>
+    </div>
+
+    <div class="dashboard-active-status">
+      <span class="status-pill ${escapeHtml(getDeliveryStatus(order))}">
+        ${escapeHtml(formatStatusLabel(getDeliveryStatus(order)))}
+      </span>
+      <strong>${formatMoney(estimateEarning(order))}</strong>
+    </div>
+
+    <div class="delivery-route">
+      <div class="route-point">
+        <div class="route-icon restaurant">
+          <i class="fa-solid fa-store"></i>
+        </div>
+        <small>Restaurant</small>
+        <h4>${escapeHtml(getRestaurantName(order))}</h4>
+        <p>
+          <i class="fa-solid fa-location-dot"></i>
+          ${escapeHtml(getPickupAddress(order))}
+        </p>
+      </div>
+
+      <div class="route-middle">
+        <div class="dashed-line"></div>
+        <i class="fa-solid fa-motorcycle"></i>
+        <strong>${escapeHtml(order.distance || "2.5 km")}</strong>
+      </div>
+
+      <div class="route-point right">
+        <div class="route-icon customer">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <small>Customer</small>
+        <h4>${escapeHtml(getCustomerName(order))}</h4>
+        <p>
+          <i class="fa-solid fa-location-dot"></i>
+          ${escapeHtml(getDropoffAddress(order))}
+        </p>
+      </div>
+    </div>
+
+    <div class="progress-steps">
+      ${["Accepted", "Food Ready", "Picked Up", "On The Way", "Delivered"]
+        .map((label, index) => {
+          return `
+            <div class="step ${index <= currentStep ? "done" : ""}">
+              <span>${index <= currentStep ? `<i class="fa-solid fa-check"></i>` : ""}</span>
+              <p>${escapeHtml(label)}</p>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+
+    ${
+      getDeliveryStatus(order) === "assigned" && getOrderStatus(order) !== "ready_for_pickup"
+        ? `
+          <div class="note-box warning-note">
+            <i class="fa-solid fa-clock"></i>
+            Restaurant is still preparing this order. Pickup will unlock once it is ready.
+          </div>
+        `
+        : `
+          <div class="note-box">
+            <i class="fa-solid fa-circle-info"></i>
+            Follow the steps in order so the customer tracking page stays updated.
+          </div>
+        `
+    }
+
+    <div class="delivery-actions">
+      <button class="outline" id="dashboardViewDetailsBtn">
+        <i class="fa-solid fa-circle-info"></i>
+        View Details
+      </button>
+
+      <button class="outline" id="dashboardNavigateBtn">
+        <i class="fa-solid fa-location-arrow"></i>
+        Navigate
+      </button>
+
+      <button class="primary" id="dashboardNextStepBtn" ${disabled ? "disabled" : ""}>
+        <i class="fa-solid fa-circle-check"></i>
+        ${escapeHtml(nextLabel)}
+      </button>
+    </div>
   `;
 
-  toast.className = `toast show ${type}`;
+  document
+    .getElementById("dashboardViewDetailsBtn")
+    ?.addEventListener("click", () => openOrderDetails(order));
 
-  clearTimeout(window.__riderDashboardToastTimer);
-  window.__riderDashboardToastTimer = setTimeout(() => {
-    toast.classList.remove("show");
-  }, 2600);
+  document
+    .getElementById("dashboardNavigateBtn")
+    ?.addEventListener("click", () => openGoogleMaps(order));
+
+  document
+    .getElementById("dashboardNextStepBtn")
+    ?.addEventListener("click", () => nextDeliveryStep(order));
+}
+
+function renderAvailableDeliveries() {
+  const availablePanel = getAvailablePanel();
+  if (!availablePanel) return;
+
+  const status = getRiderStatus();
+
+  if (status === "offline" || status === "break") {
+    availablePanel.innerHTML = `
+      <div class="panel-header">
+        <h3>Available Deliveries</h3>
+        <button class="refresh-btn">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+
+      <div class="offline-state">
+        <i class="fa-solid fa-power-off"></i>
+        <h4>${status === "break" ? "You are on break" : "You are offline"}</h4>
+        <p>Go online from Settings to receive new delivery requests.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const available = dashboardAvailableOrders
+    .filter((order) => {
+      const orderStatus = getOrderStatus(order);
+      const deliveryStatus = getDeliveryStatus(order);
+
+      return (
+        orderStatus === "ready_for_pickup" &&
+        ["", "searching", "unassigned", "pending"].includes(deliveryStatus)
+      );
+    })
+    .slice(0, 3);
+
+  if (!available.length) {
+    availablePanel.innerHTML = `
+      <div class="panel-header">
+        <h3>Available Deliveries</h3>
+        <button class="refresh-btn">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+
+      <div class="empty-active-dashboard compact">
+        <i class="fa-solid fa-magnifying-glass-location"></i>
+        <h4>No ready pickup orders</h4>
+        <p>When restaurants mark orders as ready, they will appear here.</p>
+        <a href="rider-deliveries.html" class="view-all">
+          Open Deliveries <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      </div>
+    `;
+
+    return;
+  }
+
+  availablePanel.innerHTML = `
+    <div class="panel-header">
+      <h3>Available Deliveries</h3>
+      <button class="refresh-btn">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+    </div>
+
+    ${available
+      .map((order) => {
+        return `
+          <div class="order-card" data-order-id="${escapeHtml(getOrderId(order))}">
+            <div>
+              <span>${escapeHtml(order.orderNumber)}</span>
+              <h4>${escapeHtml(getRestaurantName(order))}</h4>
+              <p>${escapeHtml(getPickupAddress(order))}</p>
+            </div>
+
+            <div class="order-meta">
+              <small>${escapeHtml(order.distance || "2.5 km")}</small>
+              <strong>${formatMoney(estimateEarning(order))}</strong>
+              <button class="accept-btn" data-order-id="${escapeHtml(getOrderId(order))}">
+                Accept
+              </button>
+            </div>
+          </div>
+        `;
+      })
+      .join("")}
+
+    <a class="view-all" href="rider-deliveries.html">
+      View All Available Orders <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  `;
+
+  availablePanel.querySelectorAll(".accept-btn").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.stopPropagation();
+
+      const id = button.dataset.orderId;
+      const order = available.find((item) => String(getOrderId(item)) === String(id));
+
+      if (order) {
+        await acceptOrderFromDashboard(order, button);
+      }
+    });
+  });
+
+  bindRefreshButton();
+}
+
+function renderRecentDeliveries() {
+  const recentPanel = getRecentPanel();
+  if (!recentPanel) return;
+
+  const delivered = dashboardHistory
+    .filter(isDelivered)
+    .sort((a, b) => {
+      const bDate = getOrderDate(b)?.getTime() || 0;
+      const aDate = getOrderDate(a)?.getTime() || 0;
+      return bDate - aDate;
+    })
+    .slice(0, 3);
+
+  if (!delivered.length) {
+    recentPanel.innerHTML = `
+      <div class="panel-header">
+        <h3>Recent Deliveries</h3>
+        <a href="rider-history.html">View All</a>
+      </div>
+
+      <div class="empty-active-dashboard compact">
+        <i class="fa-solid fa-receipt"></i>
+        <h4>No completed trips yet</h4>
+        <p>Delivered orders will appear here after your first completed trip.</p>
+      </div>
+    `;
+    return;
+  }
+
+  recentPanel.innerHTML = `
+    <div class="panel-header">
+      <h3>Recent Deliveries</h3>
+      <a href="rider-history.html">View All</a>
+    </div>
+
+    ${delivered
+      .map((order) => {
+        return `
+          <div class="recent-item">
+            <div class="recent-left">
+              <i class="fa-solid fa-circle-check"></i>
+              <div>
+                <h4>${escapeHtml(order.orderNumber || order.order_number || "Order")}</h4>
+                <p>${escapeHtml(getRestaurantName(order))}</p>
+              </div>
+            </div>
+
+            <strong>${formatMoney(estimateEarning(order))}</strong>
+            <span>Delivered</span>
+            <small>${escapeHtml(formatShortTime(getOrderDate(order)))}</small>
+          </div>
+        `;
+      })
+      .join("")}
+  `;
 }
 
 /* ================================
-   RIDER AVAILABILITY FROM SETTINGS
+   BACKEND ACTIONS
 ================================ */
+
+async function acceptOrderFromDashboard(order, button) {
+  const riderStatus = getRiderStatus();
+
+  if (riderStatus === "offline" || riderStatus === "break") {
+    showToast(
+      riderStatus === "break"
+        ? "You are on break. Turn off break mode to accept orders."
+        : "You are offline. Go online to accept orders.",
+      "warning"
+    );
+    return;
+  }
+
+  if (dashboardActiveOrder) {
+    showToast("Complete your active delivery before accepting another one.", "warning");
+    return;
+  }
+
+  const rider = getCurrentRider();
+  const backendOrderId = getBackendOrderId(order);
+
+  if (!backendOrderId) {
+    showToast("This order does not have a backend order ID.", "error");
+    return;
+  }
+
+  try {
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+    }
+
+    const response = await fetch(`${ORDER_API_URL}?action=assign_rider`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        order_id: Number(backendOrderId),
+        rider_id: rider.id,
+        rider_name: rider.name,
+        rider_email: rider.email,
+        rider_phone: rider.phone,
+      }),
+    });
+
+    const raw = await response.text();
+
+    let result;
+    try {
+      result = JSON.parse(raw);
+    } catch (error) {
+      console.error("[rider-dashboard.js] Assign rider non-JSON:", raw);
+      throw new Error("Server did not return valid JSON.");
+    }
+
+    if (!result.success) {
+      throw new Error(result.message || "Could not accept delivery.");
+    }
+
+    showToast(`${order.orderNumber} accepted successfully.`);
+    await loadDashboardData();
+  } catch (error) {
+    console.error("[rider-dashboard.js] Accept order failed:", error);
+    showToast(error.message || "Could not accept delivery.", "error");
+
+    if (button) {
+      button.disabled = false;
+      button.innerText = "Accept";
+    }
+  }
+}
+
+async function nextDeliveryStep(order) {
+  const nextStatus = getNextDeliveryStatus(order);
+  const backendOrderId = getBackendOrderId(order);
+
+  if (!backendOrderId) {
+    showToast("This order does not have a backend order ID.", "error");
+    return;
+  }
+
+  try {
+    const button = document.getElementById("dashboardNextStepBtn");
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Updating...`;
+    }
+
+    const response = await fetch(`${ORDER_API_URL}?action=update_delivery_status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        order_id: Number(backendOrderId),
+        delivery_status: nextStatus,
+      }),
+    });
+
+    const raw = await response.text();
+
+    let result;
+    try {
+      result = JSON.parse(raw);
+    } catch (error) {
+      console.error("[rider-dashboard.js] Delivery status non-JSON:", raw);
+      throw new Error("Server did not return valid JSON.");
+    }
+
+    if (!result.success) {
+      throw new Error(result.message || "Could not update delivery status.");
+    }
+
+    if (nextStatus === "delivered") {
+      addToRiderHistory({
+        ...order,
+        status: "delivered",
+        deliveryStatus: "delivered",
+        delivery_status: "delivered",
+        deliveredAt: new Date().toISOString(),
+        delivered_at: new Date().toISOString(),
+      });
+
+      localStorage.removeItem(ACTIVE_RIDER_DELIVERY_KEY);
+    }
+
+    showToast(
+      nextStatus === "picked_up"
+        ? "Order picked up."
+        : nextStatus === "on_the_way"
+          ? "You are on the way to the customer."
+          : "Delivery completed."
+    );
+
+    await loadDashboardData();
+  } catch (error) {
+    console.error("[rider-dashboard.js] Update status failed:", error);
+    showToast(error.message || "Could not update delivery status.", "error");
+    await loadDashboardData();
+  }
+}
+
+/* ================================
+   RIDER STATUS
+================================ */
+
 function getRiderStatus() {
   try {
     const settings = JSON.parse(localStorage.getItem(RIDER_SETTINGS_KEY));
@@ -94,7 +691,7 @@ function getRiderStatus() {
       return "online";
     }
   } catch (error) {
-    console.warn("Could not read rider settings.", error);
+    console.warn("[rider-dashboard.js] Could not read rider settings.", error);
   }
 
   const status = localStorage.getItem(RIDER_STATUS_KEY);
@@ -113,7 +710,7 @@ function setRiderStatus(status) {
 
   try {
     settings = JSON.parse(localStorage.getItem(RIDER_SETTINGS_KEY)) || {};
-  } catch (error) {
+  } catch {
     settings = {};
   }
 
@@ -124,7 +721,7 @@ function setRiderStatus(status) {
     autoAccept:
       status === "online"
         ? Boolean(settings.availability?.autoAccept)
-        : false
+        : false,
   };
 
   localStorage.setItem(RIDER_SETTINGS_KEY, JSON.stringify(settings));
@@ -135,7 +732,6 @@ function applyRiderAvailabilityState() {
 
   updateTopbarStatus(status);
   updateSidebarBottomStatus(status);
-  updateAvailableDeliveriesState(status);
 }
 
 function updateTopbarStatus(status) {
@@ -150,65 +746,29 @@ function updateTopbarStatus(status) {
   if (status === "offline") onlinePill.classList.add("offline");
   if (status === "break") onlinePill.classList.add("break");
 
-  // Your HTML is like: <span class="online-pill"><span></span> Online</span>
   onlinePill.innerHTML = `<span></span> ${label}`;
 }
 
 function updateSidebarBottomStatus(status) {
   const bottomStatus = document.querySelector(".sidebar-status, .rider-bottom-status");
-
   if (!bottomStatus) return;
 
-  const label =
-    status === "offline" ? "You are Offline" : status === "break" ? "You are On Break" : "You are Online";
-
-  bottomStatus.textContent = label;
+  bottomStatus.textContent =
+    status === "offline"
+      ? "You are Offline"
+      : status === "break"
+        ? "You are On Break"
+        : "You are Online";
 }
 
-function updateAvailableDeliveriesState(status) {
-  const availableList =
-    document.getElementById("availableList") ||
-    document.querySelector(".available-list");
-
-  if (!availableList) return;
-
-  // Save original available orders once so they can come back when online.
-  if (!availableList.dataset.originalHtml) {
-    availableList.dataset.originalHtml = availableList.innerHTML;
-  }
-
-  if (status === "offline" || status === "break") {
-    availableList.innerHTML = `
-      <div class="offline-state">
-        <i class="fa-solid fa-power-off"></i>
-        <h4>${status === "break" ? "You are on break" : "You are offline"}</h4>
-        <p>Go online from Settings to receive new delivery requests.</p>
-      </div>
-    `;
-
-    return;
-  }
-
-  // Restore orders when online.
-  if (availableList.dataset.originalHtml) {
-    availableList.innerHTML = availableList.dataset.originalHtml;
-    bindAcceptButtons();
-  }
-}
-
-/* ================================
-   OLD DASHBOARD STATUS BUTTON SUPPORT
-   Only works if #toggleStatus exists
-================================ */
 function bindOldStatusButtonIfExists() {
   const toggleBtn = document.getElementById("toggleStatus");
-
   if (!toggleBtn) return;
 
   const status = getRiderStatus();
   toggleBtn.innerText = status === "offline" ? "Go Online" : "Go Offline";
 
-  toggleBtn.addEventListener("click", () => {
+  toggleBtn.addEventListener("click", async () => {
     const currentStatus = getRiderStatus();
     const nextStatus = currentStatus === "offline" ? "online" : "offline";
 
@@ -222,174 +782,544 @@ function bindOldStatusButtonIfExists() {
         ? "You are now offline."
         : "You are back online."
     );
+
+    await loadDashboardData();
   });
 }
 
 /* ================================
-   DELIVERY PROGRESS
+   RIDER IDENTITY
 ================================ */
-function bindDeliveryProgress() {
-  const steps = document.querySelectorAll(".progress-steps .step");
-  const actionButtons = document.querySelectorAll(".delivery-actions button");
 
-  let currentStep = 1;
+function getCurrentRider() {
+  const storedRider =
+    readJson("foodExpressCurrentRider", null) ||
+    readJson("foodExpressRiderProfile", null) ||
+    readJson("riderProfile", null) ||
+    {};
 
-  function updateSteps(stepIndex) {
-    steps.forEach((step, index) => {
-      const circle = step.querySelector("span");
+  const name =
+    localStorage.getItem("riderName") ||
+    localStorage.getItem("foodExpressRiderName") ||
+    storedRider.name ||
+    storedRider.fullName ||
+    storedRider.full_name ||
+    storedRider.riderName ||
+    storedRider.rider_name ||
+    "";
 
-      if (index <= stepIndex) {
-        step.classList.add("done");
-        if (circle) circle.innerHTML = `<i class="fa-solid fa-check"></i>`;
+  const email =
+    localStorage.getItem("riderEmail") ||
+    localStorage.getItem("foodExpressRiderEmail") ||
+    storedRider.email ||
+    storedRider.riderEmail ||
+    storedRider.rider_email ||
+    "";
+
+  const phone =
+    localStorage.getItem("riderPhone") ||
+    localStorage.getItem("foodExpressRiderPhone") ||
+    storedRider.phone ||
+    storedRider.phoneNumber ||
+    storedRider.phone_number ||
+    storedRider.riderPhone ||
+    storedRider.rider_phone ||
+    "";
+
+  const id =
+    storedRider.id ||
+    storedRider.rider_id ||
+    localStorage.getItem("riderUserId") ||
+    localStorage.getItem("foodExpressRiderId") ||
+    1;
+
+  const cleanName = String(name || "").trim();
+  const cleanEmail = String(email || "").trim();
+
+  return {
+    id: Number(id || 1),
+    name:
+      cleanName && !/owner/i.test(cleanName)
+        ? cleanName
+        : "FoodExpress Rider",
+    email:
+      cleanEmail && !/owner/i.test(cleanEmail)
+        ? cleanEmail
+        : "rider@foodexpress.local",
+    phone: String(phone || "").trim(),
+  };
+}
+
+function updateRiderIdentityUI() {
+  const rider = getCurrentRider();
+
+  const heroTitle = document.querySelector(".dashboard-hero h1");
+  if (heroTitle) {
+    heroTitle.innerHTML = `${getGreeting()}, ${escapeHtml(rider.name)}! 👋`;
+  }
+
+  const profileName = document.querySelector(".rider-profile h4");
+  const profileId = document.querySelector(".rider-profile p");
+
+  if (profileName) profileName.innerText = rider.name;
+  if (profileId) profileId.innerText = `Rider ID: RID-${String(rider.id).padStart(4, "0")}`;
+}
+
+/* ================================
+   ORDER NORMALIZATION
+================================ */
+
+function normalizeOrderForDashboard(order) {
+  return {
+    ...order,
+
+    id: order.id || order.orderId || order.order_id,
+    orderId: order.orderId || order.order_id || order.id,
+    order_id: order.order_id || order.orderId || order.id,
+
+    orderNumber:
+      order.orderNumber || order.order_number || order.orderNo || order.id,
+    order_number:
+      order.order_number || order.orderNumber || order.orderNo || order.id,
+
+    restaurantName:
+      order.restaurantName ||
+      order.restaurant_name ||
+      order.restaurant ||
+      "Restaurant",
+
+    restaurant_name:
+      order.restaurant_name ||
+      order.restaurantName ||
+      order.restaurant ||
+      "Restaurant",
+
+    restaurantAddress:
+      order.restaurantAddress ||
+      order.restaurant_address ||
+      order.pickup ||
+      "",
+
+    restaurant_address:
+      order.restaurant_address ||
+      order.restaurantAddress ||
+      order.pickup ||
+      "",
+
+    customerName:
+      order.customerName ||
+      order.customer_name ||
+      order.fullName ||
+      order.name ||
+      "Customer",
+
+    customer_name:
+      order.customer_name ||
+      order.customerName ||
+      order.fullName ||
+      order.name ||
+      "Customer",
+
+    phoneNumber: order.phoneNumber || order.phone_number || order.phone || "",
+    phone_number: order.phone_number || order.phoneNumber || order.phone || "",
+
+    deliveryStatus:
+      order.deliveryStatus || order.delivery_status || "searching",
+    delivery_status:
+      order.delivery_status || order.deliveryStatus || "searching",
+
+    status: order.status || "pending",
+
+    total: Number(order.total || 0),
+    subtotal: Number(order.subtotal || 0),
+    tax: Number(order.tax || 0),
+    deliveryFee: Number(order.deliveryFee || order.delivery_fee || 0),
+    delivery_fee: Number(order.delivery_fee || order.deliveryFee || 0),
+
+    createdAt: order.createdAt || order.created_at || "",
+    created_at: order.created_at || order.createdAt || "",
+    updatedAt: order.updatedAt || order.updated_at || "",
+    updated_at: order.updated_at || order.updatedAt || "",
+
+    deliveredAt: order.deliveredAt || order.delivered_at || "",
+    delivered_at: order.delivered_at || order.deliveredAt || "",
+
+    distance: order.distance || "2.5 km",
+    eta: order.eta || order.estimated_delivery || order.estimatedDelivery || "20 mins",
+
+    items: Array.isArray(order.items) ? order.items : [],
+  };
+}
+
+function getOrderId(order) {
+  return String(order.id || order.orderId || order.order_id || order.orderNumber || "");
+}
+
+function getBackendOrderId(order) {
+  return order.orderId || order.order_id || order.id || "";
+}
+
+function getRestaurantName(order) {
+  return order.restaurantName || order.restaurant_name || order.restaurant || "Restaurant";
+}
+
+function getCustomerName(order) {
+  return order.customerName || order.customer_name || order.fullName || "Customer";
+}
+
+function getPickupAddress(order) {
+  return (
+    order.restaurantAddress ||
+    order.restaurant_address ||
+    order.pickup ||
+    `${getRestaurantName(order)}, Kathmandu`
+  );
+}
+
+function getDropoffAddress(order) {
+  const parts = [
+    order.address,
+    order.city,
+    order.area,
+    order.postalCode || order.postal_code,
+  ].filter(Boolean);
+
+  return parts.length ? parts.join(", ") : order.dropoff || "Customer address";
+}
+
+function getDeliveryStatus(order) {
+  return String(order.deliveryStatus || order.delivery_status || "searching")
+    .toLowerCase()
+    .trim();
+}
+
+function getOrderStatus(order) {
+  return String(order.status || "pending").toLowerCase().trim();
+}
+
+function estimateEarning(order) {
+  const total = Number(order.total || 0);
+  if (total <= 0) return 75;
+
+  return Math.max(75, Math.round(total * 0.08 + 70));
+}
+
+/* ================================
+   STATUS STEPS
+================================ */
+
+function getStepIndex(order) {
+  const deliveryStatus = getDeliveryStatus(order);
+  const orderStatus = getOrderStatus(order);
+
+  if (deliveryStatus === "delivered" || orderStatus === "delivered") return 4;
+  if (deliveryStatus === "on_the_way" || orderStatus === "on_the_way") return 3;
+  if (deliveryStatus === "picked_up" || orderStatus === "picked_up") return 2;
+
+  if (deliveryStatus === "assigned" && orderStatus === "ready_for_pickup") {
+    return 1;
+  }
+
+  if (deliveryStatus === "assigned") return 0;
+
+  return 0;
+}
+
+function getNextActionLabel(order) {
+  const deliveryStatus = getDeliveryStatus(order);
+  const orderStatus = getOrderStatus(order);
+
+  if (deliveryStatus === "assigned" && orderStatus !== "ready_for_pickup") {
+    return "Waiting for Restaurant";
+  }
+
+  if (deliveryStatus === "assigned" && orderStatus === "ready_for_pickup") {
+    return "Pick Up Order";
+  }
+
+  if (deliveryStatus === "picked_up") return "Start Delivery";
+  if (deliveryStatus === "on_the_way") return "Mark Delivered";
+
+  return "Delivery Completed";
+}
+
+function getNextDeliveryStatus(order) {
+  const deliveryStatus = getDeliveryStatus(order);
+
+  if (deliveryStatus === "assigned") return "picked_up";
+  if (deliveryStatus === "picked_up") return "on_the_way";
+  if (deliveryStatus === "on_the_way") return "delivered";
+
+  return "delivered";
+}
+
+function shouldDisableNextStep(order) {
+  const deliveryStatus = getDeliveryStatus(order);
+  const orderStatus = getOrderStatus(order);
+
+  if (deliveryStatus === "delivered" || orderStatus === "delivered") return true;
+
+  if (deliveryStatus === "assigned" && orderStatus !== "ready_for_pickup") {
+    return true;
+  }
+
+  return false;
+}
+
+/* ================================
+   HISTORY
+================================ */
+
+function addToRiderHistory(order) {
+  const history = readJson(RIDER_HISTORY_KEY, []);
+  const safeHistory = Array.isArray(history) ? history : [];
+
+  const normalized = normalizeOrderForDashboard(order);
+  const orderId = getOrderId(normalized);
+
+  const exists = safeHistory.some((item) => String(getOrderId(item)) === String(orderId));
+
+  if (!exists) {
+    safeHistory.unshift({
+      ...normalized,
+      status: "delivered",
+      deliveryStatus: "delivered",
+      delivery_status: "delivered",
+      earning: estimateEarning(normalized),
+      deliveredAt: normalized.deliveredAt || new Date().toISOString(),
+      delivered_at: normalized.delivered_at || new Date().toISOString(),
+    });
+
+    writeJson(RIDER_HISTORY_KEY, safeHistory);
+  }
+
+  const earnings = readJson(RIDER_EARNINGS_KEY, []);
+  const safeEarnings = Array.isArray(earnings) ? earnings : [];
+
+  const earningExists = safeEarnings.some(
+    (entry) => String(entry.orderId || entry.order_id) === String(orderId)
+  );
+
+  if (!earningExists) {
+    safeEarnings.unshift({
+      orderId,
+      orderNumber: normalized.orderNumber || normalized.order_number,
+      amount: estimateEarning(normalized),
+      date: new Date().toISOString(),
+      restaurant: getRestaurantName(normalized),
+      status: "paid_preview",
+    });
+
+    writeJson(RIDER_EARNINGS_KEY, safeEarnings);
+  }
+}
+
+function getTodayDeliveredOrders() {
+  const today = new Date();
+
+  return dashboardHistory.filter((order) => {
+    if (!isDelivered(order)) return false;
+
+    const date = getOrderDate(order);
+    if (!date) return false;
+
+    return (
+      date.getFullYear() === today.getFullYear() &&
+      date.getMonth() === today.getMonth() &&
+      date.getDate() === today.getDate()
+    );
+  });
+}
+
+function isDelivered(order) {
+  return (
+    getDeliveryStatus(order) === "delivered" ||
+    getOrderStatus(order) === "delivered" ||
+    String(order.status || "").toLowerCase() === "delivered"
+  );
+}
+
+function getOrderDate(order) {
+  const value =
+    order.deliveredAt ||
+    order.delivered_at ||
+    order.updatedAt ||
+    order.updated_at ||
+    order.createdAt ||
+    order.created_at ||
+    order.date;
+
+  if (!value) return null;
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/* ================================
+   UI HELPERS
+================================ */
+
+function getAvailablePanel() {
+  const panels = Array.from(document.querySelectorAll(".right-panel .panel"));
+  return (
+    panels.find((panel) =>
+      panel.querySelector(".panel-header h3")?.textContent
+        ?.toLowerCase()
+        .includes("available")
+    ) || null
+  );
+}
+
+function getRecentPanel() {
+  const panels = Array.from(document.querySelectorAll(".right-panel .panel"));
+  return (
+    panels.find((panel) =>
+      panel.querySelector(".panel-header h3")?.textContent
+        ?.toLowerCase()
+        .includes("recent")
+    ) || null
+  );
+}
+
+function bindSidebarToggle() {
+  const menuToggle = document.getElementById("menuToggle");
+  const sidebar = document.querySelector(".sidebar");
+  const main = document.querySelector(".main");
+
+  if (menuToggle && sidebar && main) {
+    menuToggle.addEventListener("click", () => {
+      if (window.innerWidth <= 800) {
+        sidebar.classList.toggle("show");
+      } else {
+        sidebar.classList.toggle("hide");
+        main.classList.toggle("full");
       }
     });
   }
-
-  actionButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const text = btn.innerText.trim();
-
-      if (text === "Picked Up") {
-        currentStep = 2;
-        updateSteps(currentStep);
-        showToast("Order picked up from restaurant.");
-      }
-
-      if (text === "On The Way") {
-        currentStep = 3;
-        updateSteps(currentStep);
-        showToast("You are now on the way to customer.");
-      }
-
-      if (text === "Delivered") {
-        currentStep = 4;
-        updateSteps(currentStep);
-
-        riderData.deliveriesToday += 1;
-        riderData.activeDelivery = 0;
-        riderData.earningsToday += 105;
-
-        saveRiderData();
-        updateUI();
-
-        btn.innerText = "Completed";
-        btn.disabled = true;
-        btn.style.opacity = "0.6";
-
-        showToast("Delivery completed. Rs. 105 added to earnings.");
-      }
-    });
-  });
 }
 
-function resetSteps() {
-  const steps = document.querySelectorAll(".progress-steps .step");
-
-  steps.forEach((step, index) => {
-    const circle = step.querySelector("span");
-
-    if (index <= 1) {
-      step.classList.add("done");
-      if (circle) circle.innerHTML = `<i class="fa-solid fa-check"></i>`;
-    } else {
-      step.classList.remove("done");
-      if (circle) circle.innerHTML = "";
-    }
-  });
-}
-
-/* ================================
-   ACCEPT ORDERS
-================================ */
-function bindAcceptButtons() {
-  const acceptButtons = document.querySelectorAll(".accept-btn");
-
-  acceptButtons.forEach((btn) => {
-    // Prevent duplicate listeners after restoring HTML.
-    if (btn.dataset.bound === "true") return;
-    btn.dataset.bound = "true";
-
-    btn.addEventListener("click", () => {
-      const status = getRiderStatus();
-
-      if (status === "offline" || status === "break") {
-        showToast(
-          status === "break"
-            ? "You are on break. Turn off break mode to accept orders."
-            : "You are offline. Go online to accept orders.",
-          "warning"
-        );
-        return;
-      }
-
-      const orderCard = btn.closest(".order-card");
-      if (!orderCard) return;
-
-      const orderId = orderCard.querySelector("span")?.innerText || "New Order";
-      const restaurantName =
-        orderCard.querySelector("h4")?.innerText || "Restaurant";
-      const location = orderCard.querySelector("p")?.innerText || "Kathmandu";
-      const payout = orderCard.querySelector("strong")?.innerText || "Rs. 95";
-
-      const activeOrderLabel = document.querySelector(
-        ".active-delivery .panel-header span, .panel-header span"
-      );
-      const restaurantTitle = document.querySelector(".route-point h4");
-      const restaurantLocation = document.querySelector(".route-point p");
-
-      if (activeOrderLabel) activeOrderLabel.innerText = `Order ${orderId}`;
-      if (restaurantTitle) restaurantTitle.innerText = restaurantName;
-
-      if (restaurantLocation) {
-        restaurantLocation.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${location}`;
-      }
-
-      riderData.activeDelivery = 1;
-      saveRiderData();
-      updateUI();
-
-      resetSteps();
-
-      btn.innerText = "Accepted";
-      btn.disabled = true;
-      btn.style.opacity = "0.6";
-
-      orderCard.style.opacity = "0.5";
-      orderCard.style.pointerEvents = "none";
-
-      showToast(
-        `${orderId} accepted from ${restaurantName}. Estimated payout: ${payout}`
-      );
-    });
-  });
-}
-
-/* ================================
-   REFRESH BUTTON
-================================ */
 function bindRefreshButton() {
-  const refreshBtn = document.querySelector(".refresh-btn");
+  document.querySelectorAll(".refresh-btn").forEach((refreshBtn) => {
+    if (refreshBtn.dataset.bound === "true") return;
+    refreshBtn.dataset.bound = "true";
 
-  if (!refreshBtn) return;
+    refreshBtn.addEventListener("click", async () => {
+      refreshBtn.classList.add("loading");
 
-  refreshBtn.addEventListener("click", () => {
-    refreshBtn.classList.add("loading");
+      await loadDashboardData();
 
-    setTimeout(() => {
       refreshBtn.classList.remove("loading");
-
-      const status = getRiderStatus();
-
-      if (status === "offline" || status === "break") {
-        showToast(
-          status === "break"
-            ? "You are on break. No new orders loaded."
-            : "You are offline. No new orders loaded.",
-          "warning"
-        );
-      } else {
-        showToast("Available deliveries refreshed.");
-      }
-    }, 1200);
+      showToast("Rider dashboard refreshed.");
+    });
   });
+}
+
+function openOrderDetails(order) {
+  const details = [
+    `Order: ${order.orderNumber || order.order_number}`,
+    `Restaurant: ${getRestaurantName(order)}`,
+    `Customer: ${getCustomerName(order)}`,
+    `Pickup: ${getPickupAddress(order)}`,
+    `Drop-off: ${getDropoffAddress(order)}`,
+    `Status: ${formatStatusLabel(getDeliveryStatus(order))}`,
+  ].join("\n");
+
+  alert(details);
+}
+
+function openGoogleMaps(order) {
+  const deliveryStatus = getDeliveryStatus(order);
+
+  const origin =
+    deliveryStatus === "assigned"
+      ? getPickupAddress(order)
+      : getPickupAddress(order);
+
+  const destination =
+    deliveryStatus === "assigned"
+      ? getPickupAddress(order)
+      : getDropoffAddress(order);
+
+  const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
+    origin
+  )}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+
+  window.open(url, "_blank", "noopener");
+}
+
+function showToast(message, type = "success") {
+  const toast = document.getElementById("toast");
+  if (!toast) {
+    console.log(`[toast:${type}]`, message);
+    return;
+  }
+
+  const icon =
+    type === "success"
+      ? "fa-circle-check"
+      : type === "warning"
+        ? "fa-circle-exclamation"
+        : "fa-circle-info";
+
+  toast.innerHTML = `
+    <i class="fa-solid ${icon}"></i>
+    <span>${escapeHtml(message)}</span>
+  `;
+
+  toast.className = `toast show ${type}`;
+
+  clearTimeout(window.__riderDashboardToastTimer);
+  window.__riderDashboardToastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2600);
+}
+
+function formatMoney(amount) {
+  return `Rs. ${Number(amount || 0).toLocaleString("en-IN")}`;
+}
+
+function formatStatusLabel(status) {
+  return String(status || "Pending")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatShortTime(date) {
+  if (!date) return "Recently";
+
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function readJson(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (error) {
+    console.warn(`[rider-dashboard.js] Could not parse ${key}`, error);
+    return fallback;
+  }
+}
+
+function writeJson(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }

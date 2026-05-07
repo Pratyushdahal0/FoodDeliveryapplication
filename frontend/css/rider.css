@@ -786,3 +786,462 @@
 .online-pill.break span {
   background: #f4a000 !important;
 }
+/* =========================================================
+   REAL RIDER DASHBOARD STATES
+   Add at bottom of frontend/css/rider.css
+========================================================= */
+
+/* ---------- Loading / Empty Dashboard Cards ---------- */
+
+.dashboard-loading-card,
+.empty-active-dashboard {
+  min-height: 220px;
+  border: 1px dashed rgba(255, 91, 53, 0.22);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 91, 53, 0.08), transparent 34%),
+    linear-gradient(135deg, #fffaf7, #ffffff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 30px 28px;
+}
+
+.dashboard-loading-card i,
+.empty-active-dashboard i {
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  background: #fff0ea;
+  color: #ff4b2b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  box-shadow: 0 16px 35px rgba(255, 75, 43, 0.12);
+}
+
+.empty-active-dashboard h4 {
+  margin: 2px 0 0;
+  color: #111827;
+  font-size: 1.08rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.empty-active-dashboard p,
+.dashboard-loading-card p {
+  max-width: 470px;
+  margin: 0;
+  color: #667085;
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.empty-active-dashboard.compact {
+  min-height: 178px;
+  padding: 24px;
+}
+
+.primary-dashboard-link,
+.empty-active-dashboard .view-all {
+  margin-top: 4px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #111827;
+  color: #ffffff !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  text-decoration: none;
+  font-weight: 900;
+  font-size: 0.9rem;
+  box-shadow: 0 16px 34px rgba(17, 24, 39, 0.16);
+}
+
+.primary-dashboard-link:hover,
+.empty-active-dashboard .view-all:hover {
+  transform: translateY(-1px);
+  opacity: 0.94;
+}
+
+/* ---------- Active Delivery Real State ---------- */
+
+.dashboard-active-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0 16px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #f0e5dc;
+}
+
+.dashboard-active-status strong {
+  color: #ff4b2b;
+  font-size: 1.05rem;
+  font-weight: 950;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 0.8rem;
+  font-weight: 950;
+  text-transform: capitalize;
+}
+
+.status-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-pill.assigned {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.status-pill.picked_up,
+.status-pill.on_the_way {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.status-pill.delivered {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* ---------- Make Active Route More Premium ---------- */
+
+.active-delivery .delivery-route {
+  margin-top: 18px;
+  padding: 26px 24px;
+  border-radius: 26px;
+  background:
+    linear-gradient(135deg, rgba(255, 247, 237, 0.9), rgba(255, 255, 255, 0.96)),
+    radial-gradient(circle at 50% 50%, rgba(255, 91, 53, 0.08), transparent 38%);
+  border: 1px solid #f1dfd4;
+}
+
+.active-delivery .route-point h4 {
+  font-size: 1rem;
+  font-weight: 950;
+  color: #111827;
+  margin: 8px 0 5px;
+}
+
+.active-delivery .route-point p {
+  font-size: 0.86rem;
+  color: #667085;
+  font-weight: 650;
+  line-height: 1.45;
+  max-width: 190px;
+}
+
+.active-delivery .route-point small {
+  color: #7c8798;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.68rem;
+}
+
+.active-delivery .route-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 20px;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.1);
+}
+
+.active-delivery .route-middle i {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: #ff4b2b;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 18px 38px rgba(255, 75, 43, 0.22);
+}
+
+.active-delivery .route-middle strong {
+  display: inline-flex;
+  margin-top: 8px;
+  color: #ff4b2b;
+  font-size: 0.86rem;
+  font-weight: 950;
+}
+
+.active-delivery .dashed-line {
+  opacity: 0.45;
+}
+
+/* ---------- Progress Steps Polish ---------- */
+
+.active-delivery .progress-steps {
+  margin-top: 24px;
+  padding: 0 8px;
+}
+
+.active-delivery .step span {
+  width: 42px;
+  height: 42px;
+  border: 3px solid #e8e8e8;
+  background: #ffffff;
+}
+
+.active-delivery .step.done span {
+  border-color: #ff4b2b;
+  background: #ff4b2b;
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(255, 75, 43, 0.2);
+}
+
+.active-delivery .step p {
+  margin-top: 9px;
+  font-size: 0.82rem;
+  font-weight: 850;
+  color: #5f6673;
+}
+
+.active-delivery .step.done p {
+  color: #111827;
+}
+
+/* ---------- Notes ---------- */
+
+.active-delivery .note-box,
+.warning-note {
+  margin-top: 22px;
+  padding: 15px 17px;
+  border-radius: 18px;
+  background: #fff8f3;
+  border: 1px solid #f3ded1;
+  color: #8a4b2b;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.warning-note {
+  background: #fff7ed !important;
+  border-color: #fed7aa !important;
+  color: #9a3412 !important;
+}
+
+/* ---------- Buttons ---------- */
+
+.active-delivery .delivery-actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.active-delivery .delivery-actions button {
+  min-height: 48px;
+  border-radius: 16px;
+  font-weight: 950;
+  padding: 0 18px;
+}
+
+.active-delivery .delivery-actions .primary {
+  background: #ff4b2b;
+  color: #ffffff;
+  border: 1px solid #ff4b2b;
+  box-shadow: 0 18px 34px rgba(255, 75, 43, 0.22);
+}
+
+.active-delivery .delivery-actions .outline {
+  background: #ffffff;
+  color: #ff4b2b;
+  border: 1px solid #ffd2c4;
+}
+
+.delivery-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+/* ---------- Available + Recent Empty State Polish ---------- */
+
+.right-panel .offline-state,
+.right-panel .empty-active-dashboard {
+  min-height: 190px;
+  border-radius: 22px;
+  border: 1px dashed rgba(255, 91, 53, 0.22);
+  background: linear-gradient(135deg, #fffaf7, #ffffff);
+}
+
+.right-panel .empty-active-dashboard h4,
+.right-panel .offline-state h4 {
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.right-panel .empty-active-dashboard p,
+.right-panel .offline-state p {
+  max-width: 320px;
+  font-size: 0.9rem;
+}
+
+/* ---------- Recent Deliveries Polish ---------- */
+
+.recent-panel .recent-item {
+  border-radius: 18px;
+  padding: 14px 12px;
+  transition: 0.2s ease;
+}
+
+.recent-panel .recent-item:hover {
+  background: #fff8f3;
+}
+
+.recent-panel .recent-left h4 {
+  font-weight: 950;
+}
+
+.recent-panel .recent-left p {
+  color: #667085;
+  font-weight: 650;
+}
+
+.recent-panel .recent-item strong {
+  color: #16a34a;
+  font-weight: 950;
+}
+
+.recent-panel .recent-item span {
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #16a34a;
+  padding: 7px 12px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 900px) {
+  .dashboard-active-status {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .active-delivery .delivery-actions {
+    flex-direction: column;
+  }
+
+  .active-delivery .delivery-actions button {
+    width: 100%;
+  }
+
+  .active-delivery .delivery-route {
+    padding: 20px 16px;
+  }
+}
+/* =========================================================
+   FIX DASHBOARD EMPTY STATE CTA BUTTONS ONLY
+   Replaces black CTA with premium light-orange style
+========================================================= */
+
+.primary-dashboard-link,
+.empty-active-dashboard .view-all {
+  min-height: 50px !important;
+  padding: 0 20px 0 10px !important;
+  border-radius: 999px !important;
+
+  background: linear-gradient(180deg, #ffffff, #fffaf7) !important;
+  color: #17172a !important;
+
+  border: 1.5px solid #ffd6c9 !important;
+  box-shadow:
+    0 16px 34px rgba(255, 77, 28, 0.12),
+    0 6px 16px rgba(15, 23, 42, 0.04) !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 14px !important;
+
+  text-decoration: none !important;
+  font-weight: 900 !important;
+  font-size: 0.92rem !important;
+  letter-spacing: -0.01em !important;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease !important;
+}
+
+/* Left icon inside Go to Deliveries button */
+.primary-dashboard-link i {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  border-radius: 50% !important;
+
+  background: linear-gradient(135deg, #ff7043, #ff4d1c) !important;
+  color: #ffffff !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  box-shadow: 0 12px 24px rgba(255, 77, 28, 0.24) !important;
+}
+
+/* Right arrow inside Open Deliveries button */
+.empty-active-dashboard .view-all i {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  border-radius: 50% !important;
+
+  background: linear-gradient(135deg, #ff7043, #ff4d1c) !important;
+  color: #ffffff !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  box-shadow: 0 12px 24px rgba(255, 77, 28, 0.24) !important;
+}
+
+/* Hover */
+.primary-dashboard-link:hover,
+.empty-active-dashboard .view-all:hover {
+  transform: translateY(-2px) !important;
+  border-color: #ffb8a5 !important;
+  background: linear-gradient(180deg, #ffffff, #fff3ed) !important;
+  box-shadow:
+    0 20px 42px rgba(255, 77, 28, 0.16),
+    0 8px 20px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Small mobile fix */
+@media (max-width: 600px) {
+  .primary-dashboard-link,
+  .empty-active-dashboard .view-all {
+    width: 100% !important;
+    max-width: 270px !important;
+  }
+}

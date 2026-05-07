@@ -1432,3 +1432,76 @@ body {
 .fake-map-card {
   overflow: hidden;
 }
+/* =========================================================
+   POLISH RIDER DELIVERIES EMPTY STATE BUTTON ONLY
+========================================================= */
+
+.empty-refresh-btn {
+  margin-top: 18px !important;
+  min-height: 46px !important;
+  height: auto !important;
+  padding: 0 18px !important;
+  border-radius: 999px !important;
+
+  border: 1.5px solid #ffd6c9 !important;
+  background: linear-gradient(180deg, #ffffff, #fffaf7) !important;
+  color: #17172a !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+
+  font-size: 0.9rem !important;
+  font-weight: 900 !important;
+  box-shadow:
+    0 14px 30px rgba(255, 77, 28, 0.12),
+    0 6px 14px rgba(15, 23, 42, 0.04) !important;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease !important;
+}
+
+.empty-refresh-btn i {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  margin: 0 !important;
+
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #ff7043, #ff4d1c) !important;
+  color: #ffffff !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  box-shadow: 0 10px 20px rgba(255, 77, 28, 0.22) !important;
+}
+
+.empty-refresh-btn:hover {
+  transform: translateY(-2px) !important;
+  border-color: #ffb8a5 !important;
+  background: linear-gradient(180deg, #ffffff, #fff3ed) !important;
+  box-shadow:
+    0 18px 38px rgba(255, 77, 28, 0.16),
+    0 8px 18px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Make empty state less oversized */
+.empty-orders {
+  min-height: 300px !important;
+}
+
+.empty-orders h3 {
+  font-size: 25px !important;
+  line-height: 1.1 !important;
+}
+
+.empty-orders p {
+  max-width: 360px !important;
+  color: #667085 !important;
+  font-size: 13.5px !important;
+}

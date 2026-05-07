@@ -1232,6 +1232,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderActive();
     renderAvailable();
     updateStats();
+    updateRiderDeliveryPagePolish();
 
     showToast(`${order.orderNumber} accepted successfully.`);
   } catch (error) {
@@ -1286,19 +1287,21 @@ document.addEventListener("DOMContentLoaded", () => {
       await loadAvailableDeliveriesFromBackend();
 
       renderActive();
-      renderAvailable();
-      updateStats();
+renderAvailable();
+updateStats();
+updateRiderDeliveryPagePolish();
 
-      showToast("Delivery completed. Earnings added.");
-      return;
+showToast("Delivery completed. Earnings added.");
+return;
     }
 
     await loadActiveDeliveryFromBackend();
     await loadAvailableDeliveriesFromBackend();
 
     renderActive();
-    renderAvailable();
-    updateStats();
+renderAvailable();
+updateStats();
+updateRiderDeliveryPagePolish();
 
     if (nextDeliveryStatus === "picked_up") {
       showToast("Order picked up from restaurant.");
@@ -1529,10 +1532,11 @@ async function refreshOrders() {
   refreshBtn?.classList.remove("loading");
 
   renderActive();
-  renderAvailable();
-  updateStats();
+renderAvailable();
+updateStats();
+updateRiderDeliveryPagePolish();
 
-  showToast("Rider requests refreshed.");
+showToast("Rider requests refreshed.");
 }
 
 function startRiderAutoRefresh() {
@@ -1549,10 +1553,11 @@ function startRiderAutoRefresh() {
       await loadAvailableDeliveriesFromBackend();
 
       renderActive();
-      renderAvailable();
-      updateStats();
+renderAvailable();
+updateStats();
+updateRiderDeliveryPagePolish();
 
-      console.log("[rider-deliveries.js] Rider auto refreshed");
+console.log("[rider-deliveries.js] Rider auto refreshed");
     } catch (error) {
       console.error("[rider-deliveries.js] Rider auto refresh failed:", error);
     } finally {
@@ -1696,10 +1701,11 @@ function stopRiderAutoRefresh() {
       event.key === ACTIVE_RIDER_DELIVERY_KEY
     ) {
       activeOrder = readJson(ACTIVE_RIDER_DELIVERY_KEY, null);
-      syncActiveOrderFromStorage();
-      renderActive();
-      renderAvailable();
-      updateStats();
+syncActiveOrderFromStorage();
+renderActive();
+renderAvailable();
+updateStats();
+updateRiderDeliveryPagePolish();
     }
   });
 
@@ -1713,10 +1719,129 @@ Promise.all([
   renderActive();
   renderAvailable();
   updateStats();
+  updateRiderDeliveryPagePolish();
   startRiderAutoRefresh();
 });
 
 window.addEventListener("beforeunload", () => {
   stopRiderAutoRefresh();
 });
+/* ================================
+   DELIVERIES PAGE POLISH PATCH
+   Rider identity + real trip summary
+================================ */
+
+function updateRiderTopbarIdentity() {
+  const rider = getCurrentRider();
+
+  const profileName = document.querySelector(".rider-profile h4");
+  const profileId = document.querySelector(".rider-profile p");
+  const profileImg = document.querySelector(".rider-profile img");
+
+  if (profileName) {
+    profileName.textContent = rider.name;
+  }
+
+  if (profileId) {
+    profileId.textContent = `Rider ID: RID-${String(rider.id || 1).padStart(4, "0")}`;
+  }
+
+  const storedProfile =
+    readJson("foodExpressRiderProfile", null) ||
+    readJson("foodExpressCurrentRider", null) ||
+    readJson("riderProfile", null) ||
+    {};
+
+  const image =
+    storedProfile.profileImage ||
+    storedProfile.profile_image ||
+    storedProfile.avatar ||
+    storedProfile.photo ||
+    "";
+
+  if (profileImg && image) {
+    profileImg.src = image;
+  }
+}
+
+function updateTripSummaryCard() {
+  const summaryCard = document.querySelector(".summary-card");
+  if (!summaryCard) return;
+
+  const history = readJson(RIDER_HISTORY_KEY, []);
+  const safeHistory = Array.isArray(history) ? history : [];
+
+  const today = new Date();
+
+  const todayDelivered = safeHistory.filter((order) => {
+    const dateValue =
+      order.deliveredAt ||
+      order.delivered_at ||
+      order.updatedAt ||
+      order.updated_at ||
+      order.createdAt ||
+      order.created_at ||
+      order.date;
+
+    const date = dateValue ? new Date(dateValue) : null;
+
+    if (!date || Number.isNaN(date.getTime())) return false;
+
+    const delivered =
+      String(order.deliveryStatus || order.delivery_status || order.status || "")
+        .toLowerCase()
+        .includes("delivered");
+
+    return (
+      delivered &&
+      date.getFullYear() === today.getFullYear() &&
+      date.getMonth() === today.getMonth() &&
+      date.getDate() === today.getDate()
+    );
+  });
+
+  const todayEarnings = todayDelivered.reduce((sum, order) => {
+    return sum + Number(order.earning || estimateEarning(order) || 0);
+  }, 0);
+
+  const completedCount = safeHistory.filter((order) => {
+    return String(order.deliveryStatus || order.delivery_status || order.status || "")
+      .toLowerCase()
+      .includes("delivered");
+  }).length;
+
+  const acceptanceRate =
+    completedCount > 0
+      ? Math.min(100, Math.round((completedCount / Math.max(completedCount, completedCount + 1)) * 100))
+      : 0;
+
+  summaryCard.innerHTML = `
+    <h3>Trip Summary</h3>
+
+    <div class="summary-row">
+      <span>Today Earnings</span>
+      <strong>${formatMoney(todayEarnings)}</strong>
+    </div>
+
+    <div class="summary-row">
+      <span>Completed</span>
+      <strong>${completedCount} order${completedCount === 1 ? "" : "s"}</strong>
+    </div>
+
+    <div class="summary-row">
+      <span>Active Trip</span>
+      <strong>${activeOrder ? "1 active" : "No active trip"}</strong>
+    </div>
+
+    <div class="summary-row">
+      <span>Acceptance Rate</span>
+      <strong>${acceptanceRate}%</strong>
+    </div>
+  `;
+}
+
+function updateRiderDeliveryPagePolish() {
+  updateRiderTopbarIdentity();
+  updateTripSummaryCard();
+}
 });
