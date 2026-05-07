@@ -980,3 +980,175 @@ body {
   color: #15803d !important;
   cursor: default;
 }
+.beta-route-map {
+  position: relative;
+  min-height: 180px;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, #fcfaf6, #f7f4ee);
+  border: 1px solid #eee4d8;
+  overflow: hidden;
+  margin-bottom: 16px;
+  padding: 18px 20px;
+}
+
+.route-line {
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: repeating-linear-gradient(
+    90deg,
+    #ef6a63 0,
+    #ef6a63 16px,
+    transparent 16px,
+    transparent 28px
+  );
+  opacity: 0.95;
+}
+
+.route-point,
+.route-rider {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.route-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-point span {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #1f2937;
+  text-align: center;
+  max-width: 110px;
+  line-height: 1.25;
+}
+
+.route-point i,
+.route-rider i {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+}
+
+.route-point.pickup {
+  left: 7%;
+}
+
+.route-point.pickup i {
+  background: #fff;
+  color: #ef4444;
+}
+
+.route-point.dropoff {
+  right: 7%;
+}
+
+.route-point.dropoff i {
+  background: #fff;
+  color: #16a34a;
+}
+
+.route-rider {
+  left: 20%;
+  transition: left 0.45s ease;
+}
+
+.route-rider i {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.route-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.route-mini-grid > div {
+  border: 1px solid #e6e8ee;
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 14px 16px;
+}
+
+.route-mini-grid span {
+  display: block;
+  color: #667085;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.route-mini-grid strong {
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.google-directions-btn {
+  min-height: 48px;
+  border-radius: 16px;
+  background: #0f172a;
+  color: #fff;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 18px;
+  width: 100%;
+  font-weight: 900;
+  transition: 0.2s ease;
+}
+
+.google-directions-btn:hover {
+  background: #111c33;
+}
+
+@media (max-width: 720px) {
+  .route-mini-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .route-point span {
+    font-size: 0.75rem;
+    max-width: 80px;
+  }
+}
+.beta-map-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.route-stage-pill {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 8px 13px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 0.78rem;
+  font-weight: 900;
+}

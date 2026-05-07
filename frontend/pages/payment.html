@@ -531,6 +531,18 @@
       const PAYMENT_DEFAULT_IMAGE =
         "https://via.placeholder.com/400x300?text=FoodExpress";
 
+      const CHECKOUT_RESTAURANT_API =
+        "../../backend/controllers/PublicRestaurantController.php?action=approved";
+
+      let checkoutRestaurantSettings = null;
+      let checkoutRestaurantMode = {
+        key: "open",
+        label: "Open",
+        message: "Ordering available.",
+        canCheckout: true,
+        etaLabel: "30–40 min",
+      };
+
       let checkoutItems = [];
       let checkoutSummary = {
         subtotal: 0,
@@ -548,9 +560,12 @@
       let appliedCouponId = "";
       let appliedCouponData = null;
 
-      document.addEventListener("DOMContentLoaded", function () {
+      document.addEventListener("DOMContentLoaded", async function () {
         normalizeCheckoutCurrencyLabels();
         initializeCheckout();
+
+        await loadCheckoutRestaurantSettings();
+
         initializePaymentMethods();
         initializeCardFormatting();
         initializeCoupons();
@@ -591,6 +606,241 @@
 
       function formatMoney(amount) {
         return Number(amount || 0).toFixed(2);
+      }
+
+      async function loadCheckoutRestaurantSettings() {
+        if (!checkoutRestaurant || !checkoutRestaurant.id) {
+          renderCheckoutOperationWarning({
+            key: "unknown",
+            label: "Restaurant check unavailable",
+            message:
+              "Restaurant details could not be verified. Please return to the restaurant menu and try again.",
+            canCheckout: false,
+            etaLabel: "Unavailable",
+          });
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `${CHECKOUT_RESTAURANT_API}&_=${Date.now()}`,
+          );
+          const raw = await response.text();
+
+          let data;
+          try {
+            data = JSON.parse(raw);
+          } catch (error) {
+            console.error("[checkout] Restaurant API non-JSON:", raw);
+            throw new Error("Restaurant status check failed.");
+          }
+
+          if (!data.success || !Array.isArray(data.data)) {
+            throw new Error(data.message || "Restaurant status check failed.");
+          }
+
+          checkoutRestaurantSettings =
+            data.data.find(function (restaurant) {
+              return String(restaurant.id) === String(checkoutRestaurant.id);
+            }) || null;
+
+          if (!checkoutRestaurantSettings) {
+            checkoutRestaurantMode = {
+              key: "unavailable",
+              label: "Restaurant unavailable",
+              message: "This restaurant is no longer available for checkout.",
+              canCheckout: false,
+              etaLabel: "Unavailable",
+            };
+          } else {
+            checkoutRestaurantMode = getCheckoutRestaurantOperationalStatus(
+              checkoutRestaurantSettings,
+            );
+          }
+
+          renderCheckoutOperationWarning(checkoutRestaurantMode);
+          renderCheckoutHeader();
+        } catch (error) {
+          console.error("[checkout] Failed to verify restaurant:", error);
+
+          checkoutRestaurantMode = {
+            key: "check_failed",
+            label: "Status check failed",
+            message:
+              "Could not verify restaurant status. Please refresh and try again.",
+            canCheckout: false,
+            etaLabel: "Unavailable",
+          };
+
+          renderCheckoutOperationWarning(checkoutRestaurantMode);
+        }
+      }
+
+      function getCheckoutRestaurantOperationalStatus(restaurant) {
+        const isOpen = Number(restaurant.is_open ?? 1) === 1;
+        const acceptingOrders = Number(restaurant.accepting_orders ?? 1) === 1;
+        const deliveryAvailable =
+          Number(restaurant.delivery_available ?? 1) === 1;
+        const busyMode = Number(restaurant.busy_mode ?? 0) === 1;
+
+        const openingTime = restaurant.opening_time || "09:00:00";
+        const closingTime = restaurant.closing_time || "22:00:00";
+        const withinHours = isCheckoutWithinOpeningHours(restaurant);
+
+        if (!isOpen || !withinHours) {
+          return {
+            key: "closed",
+            label: "Restaurant closed",
+            message: `This restaurant is closed. Opens at ${formatCheckoutTime(openingTime)}. You cannot place a new order right now.`,
+            canCheckout: false,
+            etaLabel: "Unavailable",
+          };
+        }
+
+        if (!acceptingOrders) {
+          return {
+            key: "paused",
+            label: "Not accepting orders",
+            message:
+              "This restaurant is open but not accepting new orders right now.",
+            canCheckout: false,
+            etaLabel: "Unavailable",
+          };
+        }
+
+        if (!deliveryAvailable) {
+          return {
+            key: "delivery_off",
+            label: "Delivery unavailable",
+            message: "Delivery is unavailable for this restaurant right now.",
+            canCheckout: false,
+            etaLabel: "Unavailable",
+          };
+        }
+
+        const eta = calculateCheckoutSmartEta(restaurant);
+
+        if (busyMode) {
+          return {
+            key: "busy",
+            label: "Kitchen busy",
+            message: `Restaurant is accepting orders, but ETA is longer than usual: ${eta.label}.`,
+            canCheckout: true,
+            etaLabel: eta.label,
+          };
+        }
+
+        return {
+          key: "open",
+          label: "Restaurant open",
+          message: `Open until ${formatCheckoutTime(closingTime)}. Estimated delivery ${eta.label}.`,
+          canCheckout: true,
+          etaLabel: eta.label,
+        };
+      }
+
+      function calculateCheckoutSmartEta(restaurant) {
+        const itemCount = checkoutItems.reduce(function (sum, item) {
+          return sum + Number(item.quantity || 0);
+        }, 0);
+
+        const basePrep = Number(restaurant?.estimated_prep_minutes || 25);
+        const handoff = Number(restaurant?.avg_handoff_minutes || 5);
+        const radius = Number(restaurant?.delivery_radius_km || 5);
+        const busyExtra = Number(restaurant?.busy_mode || 0) === 1 ? 8 : 0;
+        const itemExtra = Math.max(0, itemCount - 1) * 2;
+        const travelEstimate = Math.ceil(radius * 1.5);
+
+        const min = Math.max(
+          15,
+          basePrep + handoff + busyExtra + itemExtra + travelEstimate,
+        );
+        const max = min + 12;
+
+        return {
+          min,
+          max,
+          label: `${min}–${max} min`,
+        };
+      }
+
+      function isCheckoutWithinOpeningHours(restaurant) {
+        if (!restaurant.opening_time || !restaurant.closing_time) return true;
+
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const openMinutes = checkoutTimeToMinutes(restaurant.opening_time);
+        const closeMinutes = checkoutTimeToMinutes(restaurant.closing_time);
+
+        if (openMinutes === null || closeMinutes === null) return true;
+        if (openMinutes === closeMinutes) return true;
+
+        if (openMinutes < closeMinutes) {
+          return (
+            currentMinutes >= openMinutes && currentMinutes <= closeMinutes
+          );
+        }
+
+        return currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
+      }
+
+      function checkoutTimeToMinutes(time) {
+        const [hourRaw, minuteRaw] = String(time || "").split(":");
+        const hour = Number(hourRaw);
+        const minute = Number(minuteRaw || 0);
+
+        if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+        return hour * 60 + minute;
+      }
+
+      function formatCheckoutTime(time) {
+        const minutes = checkoutTimeToMinutes(time);
+        if (minutes === null) return "soon";
+
+        const hour24 = Math.floor(minutes / 60);
+        const minute = minutes % 60;
+        const suffix = hour24 >= 12 ? "PM" : "AM";
+        const hour12 = hour24 % 12 || 12;
+
+        return `${hour12}:${String(minute).padStart(2, "0")} ${suffix}`;
+      }
+
+      function renderCheckoutOperationWarning(mode) {
+        const restaurantBanner = document.querySelector(".restaurant-banner");
+        if (!restaurantBanner) return;
+
+        let box = document.getElementById("checkoutRestaurantModeBox");
+
+        if (!box) {
+          box = document.createElement("div");
+          box.id = "checkoutRestaurantModeBox";
+          box.className = "checkout-restaurant-mode-box";
+          restaurantBanner.insertAdjacentElement("afterend", box);
+        }
+
+        const icon = mode.canCheckout
+          ? mode.key === "busy"
+            ? "fa-fire-burner"
+            : "fa-circle-check"
+          : "fa-circle-exclamation";
+
+        box.className = `checkout-restaurant-mode-box ${mode.canCheckout ? mode.key : "blocked"}`;
+        box.innerHTML = `
+    <i class="fa-solid ${icon}"></i>
+    <div>
+      <strong>${escapeHtml(mode.label)}</strong>
+      <span>${escapeHtml(mode.message)}</span>
+    </div>
+  `;
+
+        const placeOrderBtn = document.getElementById("placeOrderBtn");
+
+        if (placeOrderBtn) {
+          placeOrderBtn.disabled = !mode.canCheckout;
+          placeOrderBtn.textContent = mode.canCheckout
+            ? "Place Order"
+            : "Ordering unavailable";
+        }
       }
 
       function normalizeCheckoutCurrencyLabels() {
@@ -939,15 +1189,19 @@
           return sum + Number(item.quantity || 0);
         }, 0);
 
-        const eta = generateEstimatedEta(itemCount);
+        const eta =
+          checkoutRestaurantMode && checkoutRestaurantMode.etaLabel
+            ? checkoutRestaurantMode.etaLabel
+            : generateEstimatedEta(itemCount);
 
         setText("restaurantName", checkoutRestaurant.name);
         setText(
           "restaurantMeta",
-          `${itemCount} item${
-            itemCount !== 1 ? "s" : ""
-          } • Fresh prep • Reliable delivery through FoodExpress`,
+          `${itemCount} item${itemCount !== 1 ? "s" : ""} • ${
+            checkoutRestaurantMode?.label || "Fresh prep"
+          } • FoodExpress delivery`,
         );
+
         setText("estimatedEta", eta);
         setText("checkoutRestaurantPill", checkoutRestaurant.name);
       }
@@ -1521,6 +1775,19 @@
           return;
         }
 
+        await loadCheckoutRestaurantSettings();
+
+        if (!checkoutRestaurantMode.canCheckout) {
+          showCheckoutToast(
+            checkoutRestaurantMode.message ||
+              "This restaurant is not accepting orders right now.",
+            "error",
+          );
+
+          renderCheckoutOperationWarning(checkoutRestaurantMode);
+          return;
+        }
+
         checkoutSummary.deliveryFee = calculateFoodExpressDeliveryFee(
           checkoutSummary.subtotal,
         );
@@ -1572,6 +1839,24 @@
           restaurant_name: checkoutRestaurant.name,
           status: "pending",
           delivery_status: "searching",
+          estimatedDelivery:
+            checkoutRestaurantMode.etaLabel ||
+            generateEstimatedEta(checkoutItems.length),
+
+          estimated_delivery:
+            checkoutRestaurantMode.etaLabel ||
+            generateEstimatedEta(checkoutItems.length),
+
+          restaurantOperationStatus: checkoutRestaurantMode.key,
+          restaurant_operation_status: checkoutRestaurantMode.key,
+
+          restaurantOperationMessage: checkoutRestaurantMode.message,
+          restaurant_operation_message: checkoutRestaurantMode.message,
+          estimatedDelivery:
+            checkoutRestaurantMode.etaLabel ||
+            generateEstimatedEta(checkoutItems.length),
+          restaurant_operation_status: checkoutRestaurantMode.key,
+          restaurant_operation_message: checkoutRestaurantMode.message,
           items: checkoutItems,
         };
 
@@ -1682,7 +1967,9 @@
             ],
 
             timestamp: new Date().toISOString(),
-            estimatedDelivery: generateEstimatedEta(checkoutItems.length),
+            estimatedDelivery:
+              checkoutRestaurantMode.etaLabel ||
+              generateEstimatedEta(checkoutItems.length),
           };
 
           localStorage.setItem("latestOrder", JSON.stringify(newOrder));

@@ -24,25 +24,41 @@ $action = $_GET["action"] ?? "";
 
 if ($action === "approved") {
     $sql = "
-        SELECT
-            id,
-            restaurant_name,
-            description,
-            cuisine_type,
-            location,
-            city,
-            phone,
-            email,
-            opening_time,
-            closing_time,
-            delivery_available,
-            logo_url,
-            cover_image_url,
-            status
-        FROM restaurants
-        WHERE status = 'approved'
-        ORDER BY restaurant_name ASC
-    ";
+    SELECT
+        id,
+        restaurant_name,
+        description,
+        cuisine_type,
+        location,
+        city,
+        phone,
+        email,
+        opening_time,
+        closing_time,
+        delivery_available,
+        is_open,
+        accepting_orders,
+        busy_mode,
+        estimated_prep_minutes,
+        logo_url,
+        cover_image_url,
+        status,
+
+        COALESCE(pickup_available, 1) AS pickup_available,
+        COALESCE(auto_pause_overload, 0) AS auto_pause_overload,
+        COALESCE(avg_handoff_minutes, 5) AS avg_handoff_minutes,
+        COALESCE(delivery_radius_km, 5.00) AS delivery_radius_km,
+        COALESCE(min_order_amount, 0.00) AS min_order_amount,
+        COALESCE(packaging_fee, 0.00) AS packaging_fee,
+        COALESCE(show_on_shop, 1) AS show_on_shop,
+        COALESCE(show_busy_banner, 1) AS show_busy_banner,
+        COALESCE(preorder_allowed, 0) AS preorder_allowed,
+        COALESCE(out_of_stock_policy, 'hide') AS out_of_stock_policy
+    FROM restaurants
+    WHERE status = 'approved'
+      AND COALESCE(show_on_shop, 1) = 1
+    ORDER BY restaurant_name ASC
+";
 
     $result = $conn->query($sql);
 

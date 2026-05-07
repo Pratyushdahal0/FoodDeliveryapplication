@@ -306,8 +306,12 @@
               ? true
               : restaurant.cuisine_type === selectedCuisine;
 
+          const operation = getRestaurantOperationalStatus(restaurant);
+
           const matchesOpen =
-            openStatus === "all" ? true : isRestaurantOpen(restaurant);
+            openStatus === "all"
+              ? true
+              : operation.key === "open" || operation.key === "busy";
 
           return matchesSearch && matchesCuisine && matchesOpen;
         });
@@ -341,82 +345,97 @@
       }
 
       function createRestaurantCard(restaurant) {
-        const open = isRestaurantOpen(restaurant);
+        const operation = getRestaurantOperationalStatus(restaurant);
+        const eta = calculateSmartEta(restaurant);
 
         const image =
           restaurant.logo_url && restaurant.logo_url !== "null"
             ? restaurant.logo_url
-            : "https://via.placeholder.com/400x300?text=FoodExpress";
+            : restaurant.cover_image_url &&
+                restaurant.cover_image_url !== "null"
+              ? restaurant.cover_image_url
+              : "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80";
+
+        const actionLabel =
+          operation.canAddToCart || operation.canCheckout
+            ? "View Menu"
+            : "View Menu";
 
         return `
-          <article class="restaurant-row-card">
-            <div class="restaurant-logo-wrap">
-              <img
-                src="${escapeHtml(image)}"
-                alt="${escapeHtml(restaurant.restaurant_name || "Restaurant")}"
-                onerror="this.onerror=null; this.src='https://via.placeholder.com/120x120?text=Restaurant';"
-              />
-            </div>
+    <article class="restaurant-row-card ${operation.key}">
+      <div class="restaurant-logo-wrap">
+        <img
+          src="${escapeHtml(image)}"
+          alt="${escapeHtml(restaurant.restaurant_name || "Restaurant")}"
+          onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80';"
+        />
+      </div>
 
-            <div class="restaurant-main-info">
-              <div class="restaurant-title-line">
-                <h3>${escapeHtml(
-                  restaurant.restaurant_name || "Unnamed Restaurant",
-                )}</h3>
+      <div class="restaurant-main-info">
+        <div class="restaurant-title-line">
+          <h3>${escapeHtml(restaurant.restaurant_name || "Unnamed Restaurant")}</h3>
 
-                <span class="open-badge ${open ? "open" : "closed"}">
-                  ${open ? "Open" : "Closed"}
-                </span>
-              </div>
+          <span class="open-badge ${operation.badgeClass}">
+            ${escapeHtml(operation.label)}
+          </span>
+        </div>
 
-              <p class="restaurant-meta">
-                <i class="fa-solid fa-location-dot"></i>
-                ${escapeHtml(
-                  restaurant.location ||
-                    restaurant.city ||
-                    "Location not added",
-                )}
-              </p>
+        <p class="restaurant-meta">
+          <i class="fa-solid fa-location-dot"></i>
+          ${escapeHtml(restaurant.location || restaurant.city || "Location not added")}
+        </p>
 
-              <p class="restaurant-meta">
-                <i class="fa-solid fa-utensils"></i>
-                ${escapeHtml(restaurant.cuisine_type || "Restaurant")}
-              </p>
+        <p class="restaurant-meta">
+          <i class="fa-solid fa-utensils"></i>
+          ${escapeHtml(restaurant.cuisine_type || "Restaurant")}
+        </p>
 
-              <p class="restaurant-rating">
-                <i class="fa-solid fa-star"></i>
-                <span>${escapeHtml(restaurant.rating || "4.8")}</span>
-              </p>
+        <p class="restaurant-meta ${operation.key === "busy" ? "restaurant-busy-text" : ""}">
+          <i class="fa-solid fa-clock"></i>
+          ${escapeHtml(operation.message)}
+        </p>
 
-              <p class="restaurant-desc">
-                ${escapeHtml(
-                  restaurant.description ||
-                    "Fresh food available from this restaurant.",
-                )}
-              </p>
+        <p class="restaurant-rating">
+          <i class="fa-solid fa-star"></i>
+          <span>${escapeHtml(restaurant.rating || "4.8")}</span>
+          <span class="eta-pill">
+            <i class="fa-solid fa-motorcycle"></i>
+            ${escapeHtml(eta.label)}
+          </span>
+        </p>
 
-              <div class="restaurant-offer">
-                ${
-                  restaurant.delivery_available == 1
-                    ? '<i class="fa-solid fa-truck"></i> Delivery available'
-                    : '<i class="fa-solid fa-store"></i> Pickup only'
-                }
-              </div>
-            </div>
+        <p class="restaurant-desc">
+          ${escapeHtml(
+            restaurant.description ||
+              "Fresh food available from this restaurant.",
+          )}
+        </p>
 
-            <div class="restaurant-action">
-              <button
-  type="button"
-  onclick="viewRestaurantMenu(
-    ${Number(restaurant.id || 0)},
-    '${escapeAttribute(restaurant.restaurant_name || "Restaurant")}'
-  )"
->
-  View Menu
-</button>
-            </div>
-          </article>
-        `;
+        <div class="restaurant-offer ${operation.canCheckout ? "" : "warning"}">
+          ${operation.offerHtml}
+        </div>
+      </div>
+
+      <div class="restaurant-action">
+        <button
+          type="button"
+          class="${operation.canViewMenu ? "" : "disabled"}"
+          onclick="viewRestaurantMenu(
+            ${Number(restaurant.id || 0)},
+            '${escapeAttribute(restaurant.restaurant_name || "Restaurant")}'
+          )"
+        >
+          ${escapeHtml(actionLabel)}
+        </button>
+
+        ${
+          operation.canCheckout
+            ? `<small class="restaurant-action-note">Ordering available</small>`
+            : `<small class="restaurant-action-note blocked">${escapeHtml(operation.blockReason)}</small>`
+        }
+      </div>
+    </article>
+  `;
       }
 
       function viewRestaurantMenu(id, restaurantName = "Restaurant") {
@@ -425,11 +444,29 @@
           return;
         }
 
+        const restaurant = approvedRestaurants.find(
+          (item) => Number(item.id) === Number(id),
+        );
+
+        const operation = restaurant
+          ? getRestaurantOperationalStatus(restaurant)
+          : {
+              key: "open",
+              canAddToCart: true,
+              canCheckout: true,
+              message: "Open",
+            };
+
         const selectedRestaurant = {
+          ...(restaurant || {}),
           id: Number(id),
           restaurant_id: Number(id),
           name: restaurantName,
           restaurant_name: restaurantName,
+          operation_status: operation.key,
+          can_add_to_cart: operation.canAddToCart,
+          can_checkout: operation.canCheckout,
+          operation_message: operation.message,
           selectedAt: new Date().toISOString(),
         };
 
@@ -445,7 +482,90 @@
         )}&restaurant=${encodeURIComponent(restaurantName)}`;
       }
 
-      function isRestaurantOpen(restaurant) {
+      function getRestaurantOperationalStatus(restaurant) {
+        const isOpenFlag = Number(restaurant.is_open ?? 1) === 1;
+        const acceptingOrders = Number(restaurant.accepting_orders ?? 1) === 1;
+        const deliveryAvailable =
+          Number(restaurant.delivery_available ?? 1) === 1;
+        const busyMode = Number(restaurant.busy_mode ?? 0) === 1;
+        const showBusyBanner = Number(restaurant.show_busy_banner ?? 1) === 1;
+
+        const timeOpen = isWithinOpeningHours(restaurant);
+        const openingTime = restaurant.opening_time || "09:00:00";
+        const closingTime = restaurant.closing_time || "22:00:00";
+
+        if (!isOpenFlag || !timeOpen) {
+          return {
+            key: "closed",
+            label: "Closed",
+            badgeClass: "closed",
+            message: `Closed · Opens at ${formatRestaurantTime(openingTime)}`,
+            canViewMenu: true,
+            canAddToCart: false,
+            canCheckout: false,
+            blockReason: "Ordering closed",
+            offerHtml: `<i class="fa-solid fa-door-closed"></i> Ordering is currently closed`,
+          };
+        }
+
+        if (!acceptingOrders) {
+          return {
+            key: "paused",
+            label: "Paused",
+            badgeClass: "closed",
+            message: "Open · Not accepting orders",
+            canViewMenu: true,
+            canAddToCart: false,
+            canCheckout: false,
+            blockReason: "Not accepting orders",
+            offerHtml: `<i class="fa-solid fa-circle-pause"></i> Not accepting new orders right now`,
+          };
+        }
+
+        if (!deliveryAvailable) {
+          return {
+            key: "delivery_off",
+            label: "Delivery Off",
+            badgeClass: "closed",
+            message: "Delivery unavailable right now",
+            canViewMenu: true,
+            canAddToCart: false,
+            canCheckout: false,
+            blockReason: "Delivery unavailable",
+            offerHtml: `<i class="fa-solid fa-truck-ramp-box"></i> Delivery unavailable right now`,
+          };
+        }
+
+        if (busyMode) {
+          return {
+            key: "busy",
+            label: "Busy",
+            badgeClass: "busy",
+            message: showBusyBanner
+              ? "Busy · Longer wait time"
+              : `Open · Until ${formatRestaurantTime(closingTime)}`,
+            canViewMenu: true,
+            canAddToCart: true,
+            canCheckout: true,
+            blockReason: "",
+            offerHtml: `<i class="fa-solid fa-fire-burner"></i> Kitchen busy · ETA may be longer`,
+          };
+        }
+
+        return {
+          key: "open",
+          label: "Open",
+          badgeClass: "open",
+          message: `Open · Until ${formatRestaurantTime(closingTime)}`,
+          canViewMenu: true,
+          canAddToCart: true,
+          canCheckout: true,
+          blockReason: "",
+          offerHtml: `<i class="fa-solid fa-truck"></i> Delivery available`,
+        };
+      }
+
+      function isWithinOpeningHours(restaurant) {
         if (!restaurant.opening_time || !restaurant.closing_time) {
           return true;
         }
@@ -453,27 +573,80 @@
         const now = new Date();
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-        const [openHour, openMinute] = String(restaurant.opening_time)
-          .split(":")
-          .map(Number);
+        const openMinutes = timeToMinutes(restaurant.opening_time);
+        const closeMinutes = timeToMinutes(restaurant.closing_time);
 
-        const [closeHour, closeMinute] = String(restaurant.closing_time)
-          .split(":")
-          .map(Number);
-
-        if (
-          Number.isNaN(openHour) ||
-          Number.isNaN(openMinute) ||
-          Number.isNaN(closeHour) ||
-          Number.isNaN(closeMinute)
-        ) {
+        if (openMinutes === null || closeMinutes === null) {
           return true;
         }
 
-        const openMinutes = openHour * 60 + openMinute;
-        const closeMinutes = closeHour * 60 + closeMinute;
+        if (openMinutes === closeMinutes) {
+          return true;
+        }
 
-        return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+        // normal same-day schedule, e.g. 09:00–22:00
+        if (openMinutes < closeMinutes) {
+          return (
+            currentMinutes >= openMinutes && currentMinutes <= closeMinutes
+          );
+        }
+
+        // overnight schedule, e.g. 18:00–02:00
+        return currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
+      }
+
+      function timeToMinutes(time) {
+        const [hourRaw, minuteRaw] = String(time).split(":");
+        const hour = Number(hourRaw);
+        const minute = Number(minuteRaw || 0);
+
+        if (Number.isNaN(hour) || Number.isNaN(minute)) {
+          return null;
+        }
+
+        return hour * 60 + minute;
+      }
+
+      function formatRestaurantTime(time) {
+        const minutes = timeToMinutes(time);
+        if (minutes === null) return "soon";
+
+        const hour24 = Math.floor(minutes / 60);
+        const minute = minutes % 60;
+        const suffix = hour24 >= 12 ? "PM" : "AM";
+        const hour12 = hour24 % 12 || 12;
+
+        return `${hour12}:${String(minute).padStart(2, "0")} ${suffix}`;
+      }
+
+      function calculateSmartEta(restaurant) {
+        const operation = getRestaurantOperationalStatus(restaurant);
+
+        if (!operation.canCheckout) {
+          return {
+            min: 0,
+            max: 0,
+            label: "Unavailable",
+          };
+        }
+
+        const basePrep = Number(restaurant.estimated_prep_minutes || 25);
+        const handoff = Number(restaurant.avg_handoff_minutes || 5);
+        const radius = Number(restaurant.delivery_radius_km || 5);
+        const busyExtra = Number(restaurant.busy_mode || 0) === 1 ? 8 : 0;
+
+        const travelEstimate = Math.ceil(radius * 1.5);
+        const min = Math.max(
+          15,
+          basePrep + handoff + busyExtra + travelEstimate,
+        );
+        const max = min + 12;
+
+        return {
+          min,
+          max,
+          label: `${min}–${max} mins`,
+        };
       }
 
       function escapeHtml(value) {

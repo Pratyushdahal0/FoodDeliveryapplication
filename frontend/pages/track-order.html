@@ -315,6 +315,62 @@
                 Delivery details will appear here once your order is placed.
               </p>
             </section>
+
+            <section class="card beta-map-card">
+              <div class="beta-map-head">
+                <div>
+                  <h3>Delivery route</h3>
+                  <p id="routeStatusText">
+                    Route details will appear once your order is ready.
+                  </p>
+                </div>
+
+                <span id="routeStagePill" class="route-stage-pill"
+                  >Preparing</span
+                >
+              </div>
+
+              <div class="beta-route-map">
+                <div class="route-line"></div>
+
+                <div class="route-point pickup">
+                  <i class="fa-solid fa-store"></i>
+                  <span id="pickupLabel">Pickup</span>
+                </div>
+
+                <div id="simulatedRouteRider" class="route-rider">
+                  <i class="fa-solid fa-motorcycle"></i>
+                </div>
+
+                <div class="route-point dropoff">
+                  <i class="fa-solid fa-location-dot"></i>
+                  <span id="dropoffLabel">Drop-off</span>
+                </div>
+              </div>
+
+              <div class="route-mini-grid">
+                <div>
+                  <span>ETA</span>
+                  <strong id="routeEtaMini">30–40 min</strong>
+                </div>
+
+                <div>
+                  <span>Rider</span>
+                  <strong id="routeRiderMini">Waiting</strong>
+                </div>
+              </div>
+
+              <a
+                id="openGoogleMapsLink"
+                class="google-directions-btn"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
+                <i class="fa-solid fa-map-location-dot"></i>
+                Open route in Google Maps
+              </a>
+            </section>
           </div>
 
           <aside class="sidebar">
@@ -396,7 +452,7 @@
     <script src="../js/components/notifications.js?v=routefix3"></script>
     <script src="../js/components/navbar.js?v=navtrack2"></script>
     <script src="../js/reward.js?v=reward1"></script>
-    <script src="../js/track-order.js?v=loopsafe-v2"></script>
+    <script src="../js/track-order.js?v=route-beta-1"></script>
     <script src="../js/components/footer.js"></script>
 
     <script>

@@ -484,3 +484,111 @@
     padding: 40px 24px;
   }
 }
+.restaurant-mode-banner {
+  width: min(820px, 100%);
+  margin: 22px auto 0;
+  padding: 14px 18px;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  text-align: left;
+}
+
+.restaurant-mode-banner .mode-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.restaurant-mode-banner i {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.restaurant-mode-banner strong {
+  display: block;
+  color: #111827;
+  font-size: 0.95rem;
+  font-weight: 900;
+  margin-bottom: 2px;
+}
+
+.restaurant-mode-banner span {
+  color: #667085;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  font-weight: 650;
+}
+
+.restaurant-mode-banner .mode-right {
+  white-space: nowrap;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.restaurant-mode-banner.open i {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.restaurant-mode-banner.busy {
+  border-color: #fed7aa;
+  background: #fffaf3;
+}
+
+.restaurant-mode-banner.busy i {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.restaurant-mode-banner.closed,
+.restaurant-mode-banner.paused,
+.restaurant-mode-banner.delivery-off {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.restaurant-mode-banner.closed i,
+.restaurant-mode-banner.paused i,
+.restaurant-mode-banner.delivery-off i {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.menu-card.restaurant-order-disabled {
+  opacity: 0.86;
+}
+
+.btn-add.disabled,
+.btn-add:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+  background: #e5e7eb !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 720px) {
+  .restaurant-mode-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .restaurant-mode-banner .mode-right {
+    white-space: normal;
+  }
+}

@@ -1,6 +1,7 @@
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
+date_default_timezone_set("Asia/Kathmandu");
 
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
@@ -77,6 +78,208 @@ function getDeliveryStatusLabel($status) {
     ];
 
     return $map[$status] ?? formatStatusLabel($status);
+}
+
+function timeToMinutesSafe($time) {
+    if (!$time) {
+        return null;
+    }
+
+    $parts = explode(":", $time);
+    $hour = isset($parts[0]) ? intval($parts[0]) : null;
+    $minute = isset($parts[1]) ? intval($parts[1]) : 0;
+
+    if ($hour === null || $hour < 0 || $hour > 23 || $minute < 0 || $minute > 59) {
+        return null;
+    }
+
+    return ($hour * 60) + $minute;
+}
+
+function isRestaurantInsideOpeningHours($restaurant) {
+    $openingTime = $restaurant["opening_time"] ?? null;
+    $closingTime = $restaurant["closing_time"] ?? null;
+
+    if (!$openingTime || !$closingTime) {
+        return true;
+    }
+
+    $openMinutes = timeToMinutesSafe($openingTime);
+    $closeMinutes = timeToMinutesSafe($closingTime);
+
+    if ($openMinutes === null || $closeMinutes === null) {
+        return true;
+    }
+
+    if ($openMinutes === $closeMinutes) {
+        return true;
+    }
+
+    $currentMinutes = (intval(date("G")) * 60) + intval(date("i"));
+
+    if ($openMinutes < $closeMinutes) {
+        return $currentMinutes >= $openMinutes && $currentMinutes <= $closeMinutes;
+    }
+
+    return $currentMinutes >= $openMinutes || $currentMinutes <= $closeMinutes;
+}
+
+function formatRestaurantTimeSafe($time) {
+    $minutes = timeToMinutesSafe($time);
+
+    if ($minutes === null) {
+        return "soon";
+    }
+
+    $hour24 = intdiv($minutes, 60);
+    $minute = $minutes % 60;
+    $suffix = $hour24 >= 12 ? "PM" : "AM";
+    $hour12 = $hour24 % 12;
+
+    if ($hour12 === 0) {
+        $hour12 = 12;
+    }
+
+    return $hour12 . ":" . str_pad((string)$minute, 2, "0", STR_PAD_LEFT) . " " . $suffix;
+}
+
+function calculateBackendSmartEta($restaurant, $items) {
+    $itemCount = 0;
+
+    foreach ($items as $item) {
+        $itemCount += intval($item["quantity"] ?? 1);
+    }
+
+    $basePrep = intval($restaurant["estimated_prep_minutes"] ?? 25);
+    $handoff = intval($restaurant["avg_handoff_minutes"] ?? 5);
+    $radius = floatval($restaurant["delivery_radius_km"] ?? 5);
+    $busyExtra = intval($restaurant["busy_mode"] ?? 0) === 1 ? 8 : 0;
+    $itemExtra = max(0, $itemCount - 1) * 2;
+    $travelEstimate = intval(ceil($radius * 1.5));
+
+    $min = max(15, $basePrep + $handoff + $busyExtra + $itemExtra + $travelEstimate);
+    $max = $min + 12;
+
+    return $min . "–" . $max . " min";
+}
+
+function getRestaurantCheckoutStatus($conn, $restaurantId, $items = []) {
+    $stmt = $conn->prepare("
+        SELECT
+            id,
+            restaurant_name,
+            status,
+            is_open,
+            accepting_orders,
+            delivery_available,
+            busy_mode,
+            opening_time,
+            closing_time,
+            estimated_prep_minutes,
+            avg_handoff_minutes,
+            delivery_radius_km,
+            min_order_amount,
+            packaging_fee
+        FROM restaurants
+        WHERE id = ?
+        LIMIT 1
+    ");
+
+    if (!$stmt) {
+        return [
+            "success" => false,
+            "can_checkout" => false,
+            "message" => "Restaurant status check failed: " . $conn->error
+        ];
+    }
+
+    $stmt->bind_param("i", $restaurantId);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+    $restaurant = $result ? $result->fetch_assoc() : null;
+
+    $stmt->close();
+
+    if (!$restaurant) {
+        return [
+            "success" => false,
+            "can_checkout" => false,
+            "message" => "Restaurant not found."
+        ];
+    }
+
+    if (($restaurant["status"] ?? "") !== "approved") {
+        return [
+            "success" => true,
+            "can_checkout" => false,
+            "key" => "not_approved",
+            "label" => "Restaurant unavailable",
+            "message" => "This restaurant is not available for orders right now."
+        ];
+    }
+
+    $isOpen = intval($restaurant["is_open"] ?? 1) === 1;
+    $acceptingOrders = intval($restaurant["accepting_orders"] ?? 1) === 1;
+    $deliveryAvailable = intval($restaurant["delivery_available"] ?? 1) === 1;
+    $insideHours = isRestaurantInsideOpeningHours($restaurant);
+
+    if (!$isOpen || !$insideHours) {
+        return [
+            "success" => true,
+            "can_checkout" => false,
+            "key" => "closed",
+            "label" => "Restaurant closed",
+            "restaurant" => $restaurant,
+            "message" => "This restaurant is closed. Opens at " . formatRestaurantTimeSafe($restaurant["opening_time"] ?? "09:00:00") . "."
+        ];
+    }
+
+    if (!$acceptingOrders) {
+        return [
+            "success" => true,
+            "can_checkout" => false,
+            "key" => "paused",
+            "label" => "Not accepting orders",
+            "restaurant" => $restaurant,
+            "message" => "This restaurant is not accepting new orders right now."
+        ];
+    }
+
+    if (!$deliveryAvailable) {
+        return [
+            "success" => true,
+            "can_checkout" => false,
+            "key" => "delivery_off",
+            "label" => "Delivery unavailable",
+            "restaurant" => $restaurant,
+            "message" => "Delivery is unavailable for this restaurant right now."
+        ];
+    }
+
+    $etaLabel = calculateBackendSmartEta($restaurant, $items);
+
+    if (intval($restaurant["busy_mode"] ?? 0) === 1) {
+        return [
+            "success" => true,
+            "can_checkout" => true,
+            "key" => "busy",
+            "label" => "Kitchen busy",
+            "restaurant" => $restaurant,
+            "eta_label" => $etaLabel,
+            "message" => "Restaurant is accepting orders, but ETA is longer than usual: " . $etaLabel . "."
+        ];
+    }
+
+    return [
+        "success" => true,
+        "can_checkout" => true,
+        "key" => "open",
+        "label" => "Restaurant open",
+        "restaurant" => $restaurant,
+        "eta_label" => $etaLabel,
+        "message" => "Restaurant is open. Estimated delivery " . $etaLabel . "."
+    ];
 }
 
 function buildEmailHeader($subtitle, $variant = "coral") {
@@ -796,11 +999,35 @@ switch ($action) {
             ]);
             break;
         }
+        if (count($groupedItems) > 1) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Please order from one restaurant at a time."
+    ]);
+    break;
+}
 
         $createdOrders = [];
         $failedOrders = [];
 
         foreach ($groupedItems as $restaurantId => $restaurantItems) {
+            $restaurantCheckoutStatus = getRestaurantCheckoutStatus($conn, intval($restaurantId), $restaurantItems);
+
+if (
+    empty($restaurantCheckoutStatus["success"]) ||
+    empty($restaurantCheckoutStatus["can_checkout"])
+) {
+    $failedOrders[] = [
+        "restaurant_id" => intval($restaurantId),
+        "message" => $restaurantCheckoutStatus["message"] ?? "Restaurant is not accepting orders right now.",
+        "restaurant_status" => $restaurantCheckoutStatus["key"] ?? "unavailable"
+    ];
+
+    continue;
+}
+
+
+
             $subtotal = 0;
 
             foreach ($restaurantItems as $item) {
@@ -910,7 +1137,10 @@ switch ($action) {
                         "delivery_fee" => $delivery_fee,
                         "total" => $total,
                         "email_queued" => $emailQueued,
-                        "delivery_status" => $result['delivery_status'] ?? 'searching'
+                        "delivery_status" => $result['delivery_status'] ?? 'searching',
+                        "estimated_delivery" => $restaurantCheckoutStatus["eta_label"] ?? null,
+                        "restaurant_operation_status" => $restaurantCheckoutStatus["key"] ?? "open",
+                        "restaurant_operation_message" => $restaurantCheckoutStatus["message"] ?? "",
                     ];
                 } else {
                     $failedOrders[] = [
@@ -929,17 +1159,23 @@ switch ($action) {
         $firstOrder = $createdOrders[0] ?? null;
 
         echo json_encode([
-            "success" => count($createdOrders) > 0,
-            "message" => count($createdOrders) > 0
-                ? "Order(s) created successfully"
-                : "Failed to create order(s)",
-            "order_id" => $firstOrder["order_id"] ?? null,
-            "order_number" => $firstOrder["order_number"] ?? null,
-            "email_queued" => $firstOrder["email_queued"] ?? false,
-            "delivery_status" => $firstOrder["delivery_status"] ?? "searching",
-            "orders" => $createdOrders,
-            "failed_orders" => $failedOrders
-        ]);
+    "success" => count($createdOrders) > 0,
+    "message" => count($createdOrders) > 0
+        ? "Order created successfully"
+        : ($failedOrders[0]["message"] ?? "Failed to create order"),
+
+    "order_id" => $firstOrder["order_id"] ?? null,
+    "order_number" => $firstOrder["order_number"] ?? null,
+    "email_queued" => $firstOrder["email_queued"] ?? false,
+    "delivery_status" => $firstOrder["delivery_status"] ?? "searching",
+
+    "estimated_delivery" => $firstOrder["estimated_delivery"] ?? null,
+    "restaurant_operation_status" => $firstOrder["restaurant_operation_status"] ?? null,
+    "restaurant_operation_message" => $firstOrder["restaurant_operation_message"] ?? null,
+
+    "orders" => $createdOrders,
+    "failed_orders" => $failedOrders
+]);
         break;
 
     case 'single':

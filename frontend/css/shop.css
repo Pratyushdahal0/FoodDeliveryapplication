@@ -343,3 +343,58 @@
     height: 86px;
   }
 }
+.restaurant-row-card.busy {
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.restaurant-row-card.paused,
+.restaurant-row-card.closed,
+.restaurant-row-card.delivery_off {
+  opacity: 0.92;
+}
+
+.open-badge.busy {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.restaurant-busy-text {
+  color: #c2410c !important;
+  font-weight: 800;
+}
+
+.eta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.restaurant-offer.warning {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.restaurant-action-note {
+  display: block;
+  margin-top: 10px;
+  color: #16a34a;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.restaurant-action-note.blocked {
+  color: #dc2626;
+}
+
+.restaurant-action button.disabled {
+  opacity: 0.75;
+}

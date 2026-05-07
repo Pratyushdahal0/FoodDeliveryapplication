@@ -409,6 +409,20 @@
       updatedAt: order.updatedAt || order.updated_at || "",
       updated_at: order.updated_at || order.updatedAt || "",
 
+      estimatedDelivery:
+  order.estimatedDelivery ||
+  order.estimated_delivery ||
+  order.eta ||
+  order.estimated_arrival ||
+  "30–40 min",
+
+estimated_delivery:
+  order.estimated_delivery ||
+  order.estimatedDelivery ||
+  order.eta ||
+  order.estimated_arrival ||
+  "30–40 min",
+
       picked_up_at: order.picked_up_at || "",
       on_the_way_at: order.on_the_way_at || "",
       delivered_at: order.delivered_at || "",
@@ -521,7 +535,7 @@
     );
 
     setText("deliveryFullText", buildDeliveryText(latestOrder));
-    setText("etaValue", latestOrder.estimatedDelivery || latestOrder.eta || "30–40 min");
+    setText("etaValue", getTrackingEta(latestOrder));
 
     setText("paymentMethodValue", formatPaymentMethod(latestOrder.paymentMethod));
 
@@ -538,6 +552,7 @@
     setLiveNote(latestOrder);
     renderRiderInfo(latestOrder);
     renderDeliveredExperience(latestOrder);
+    renderBetaRouteCard(latestOrder);
   }
 
   function renderSummaryItems() {
@@ -760,6 +775,220 @@
     note.textContent =
       "Your order has been created, sent to the restaurant, and rider matching has started.";
   }
+
+  function getTrackingEta(order = latestOrder) {
+  return (
+    order?.estimatedDelivery ||
+    order?.estimated_delivery ||
+    order?.eta ||
+    order?.estimated_arrival ||
+    "30–40 min"
+  );
+}
+
+function getRouteStage(order = latestOrder) {
+  const orderStatus = getOrderStatus(order);
+  const deliveryStatus = getDeliveryStatus(order);
+
+  if (orderStatus === "delivered" || deliveryStatus === "delivered") {
+    return {
+      key: "delivered",
+      label: "Delivered",
+      text: "Your order has arrived at the delivery address.",
+      riderLeft: "82%",
+    };
+  }
+
+  if (deliveryStatus === "on_the_way") {
+    return {
+      key: "on_the_way",
+      label: "On the way",
+      text: "Your rider is moving towards your delivery address.",
+      riderLeft: "62%",
+    };
+  }
+
+  if (deliveryStatus === "picked_up") {
+    return {
+      key: "picked_up",
+      label: "Picked up",
+      text: "Your rider has picked up the order from the restaurant.",
+      riderLeft: "38%",
+    };
+  }
+
+  if (deliveryStatus === "assigned") {
+    return {
+      key: "assigned",
+      label: "Rider assigned",
+      text: "A rider has accepted your delivery and is waiting for pickup.",
+      riderLeft: "18%",
+    };
+  }
+
+  if (orderStatus === "ready_for_pickup") {
+    return {
+      key: "ready_for_pickup",
+      label: "Ready for pickup",
+      text: "Your food is ready at the restaurant. Waiting for rider pickup.",
+      riderLeft: "12%",
+    };
+  }
+
+  if (orderStatus === "preparing") {
+    return {
+      key: "preparing",
+      label: "Preparing",
+      text: "The restaurant is preparing your food. Route will start after pickup.",
+      riderLeft: "12%",
+    };
+  }
+
+  if (orderStatus === "confirmed") {
+    return {
+      key: "confirmed",
+      label: "Confirmed",
+      text: "The restaurant confirmed your order. Rider matching will continue soon.",
+      riderLeft: "12%",
+    };
+  }
+
+  return {
+    key: "pending",
+    label: "Order received",
+    text: "Waiting for restaurant confirmation before delivery route starts.",
+    riderLeft: "12%",
+  };
+}
+
+function buildGoogleMapsDirectionUrl(order = latestOrder) {
+  const restaurantName =
+    order.restaurantName ||
+    order.restaurant_name ||
+    getFirstItemRestaurant(order) ||
+    "Restaurant";
+
+  const city = order.city || "Kathmandu";
+  const address = [order.address, order.city, order.postalCode || order.postal_code]
+    .filter(Boolean)
+    .join(", ");
+
+  const origin = `${restaurantName}, ${city}, Nepal`;
+  const destination = address || `${city}, Nepal`;
+
+  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
+    origin
+  )}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+}
+
+function renderBetaRouteCard(order = latestOrder) {
+  const routeText = document.getElementById("routeStatusText");
+  const routePill = document.getElementById("routeStagePill");
+  const routeEta = document.getElementById("routeEtaMini");
+  const routeRider = document.getElementById("routeRiderMini");
+  const routeIcon = document.getElementById("simulatedRouteRider");
+  const mapsLink = document.getElementById("openGoogleMapsLink");
+
+  const pickupLabel = document.getElementById("pickupLabel");
+  const dropoffLabel = document.getElementById("dropoffLabel");
+
+  if (!routeText || !routePill || !routeEta || !routeRider || !routeIcon) return;
+
+  const orderStatus = getOrderStatus(order);
+  const deliveryStatus = getDeliveryStatus(order);
+  const riderName = getRiderName(order) || "Waiting for rider";
+  const restaurantName =
+    order.restaurantName ||
+    order.restaurant_name ||
+    getFirstItemRestaurant(order) ||
+    "Restaurant";
+
+  const customerAddress =
+    [order.address, order.city, order.postalCode || order.postal_code]
+      .filter(Boolean)
+      .join(", ") || "Your address";
+
+  if (pickupLabel) pickupLabel.textContent = restaurantName;
+  if (dropoffLabel) dropoffLabel.textContent = "Your address";
+
+  routeRider.textContent = riderName;
+
+  // default
+  let stageLabel = "Order received";
+  let stageText = "Waiting for restaurant confirmation before delivery starts.";
+  let riderLeft = "18%";
+  let etaText = "Waiting";
+  let showMaps = false;
+
+  if (orderStatus === "confirmed") {
+    stageLabel = "Confirmed";
+    stageText = "The restaurant confirmed your order.";
+    riderLeft = "18%";
+    etaText = "Preparing";
+  }
+
+  if (orderStatus === "preparing") {
+    stageLabel = "Preparing";
+    stageText = "The kitchen is preparing your order.";
+    riderLeft = "20%";
+    etaText = "Cooking";
+  }
+
+  if (orderStatus === "ready_for_pickup") {
+    stageLabel = "Ready for pickup";
+    stageText = "Your order is packed and waiting for rider pickup.";
+    riderLeft = "26%";
+    etaText = "Rider arriving";
+  }
+
+  if (deliveryStatus === "assigned") {
+    stageLabel = "Rider assigned";
+    stageText = "A rider has been assigned and is heading to the restaurant.";
+    riderLeft = "30%";
+    etaText = "Pickup soon";
+  }
+
+  if (deliveryStatus === "picked_up") {
+    stageLabel = "Picked up";
+    stageText = "Your rider picked up the order from the restaurant.";
+    riderLeft = "48%";
+    etaText = getTrackingEta(order);
+    showMaps = true;
+  }
+
+  if (deliveryStatus === "on_the_way") {
+    stageLabel = "On the way";
+    stageText = "Your rider is on the way to your location.";
+    riderLeft = "68%";
+    etaText = getTrackingEta(order);
+    showMaps = true;
+  }
+
+  if (orderStatus === "delivered" || deliveryStatus === "delivered") {
+    const deliveredTime =
+      formatReadableDate(order.delivered_at || order.updated_at || order.updatedAt) || "Just now";
+
+    stageLabel = "Delivered";
+    stageText = "Your order has been delivered successfully.";
+    riderLeft = "78%";
+    etaText = `Delivered ${deliveredTime}`;
+    showMaps = false;
+  }
+
+  routeText.textContent = stageText;
+  routePill.textContent = stageLabel;
+  routeEta.textContent = etaText;
+  routeIcon.style.left = riderLeft;
+
+  if (mapsLink) {
+    if (showMaps) {
+      mapsLink.style.display = "inline-flex";
+      mapsLink.href = buildGoogleMapsDirectionUrl(order);
+    } else {
+      mapsLink.style.display = "none";
+    }
+  }
+}
 
   function renderRiderInfo(order) {
     const riderName = getRiderName(order);

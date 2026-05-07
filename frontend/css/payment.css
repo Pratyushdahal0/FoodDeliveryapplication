@@ -1115,3 +1115,125 @@ body {
     min-height: auto;
   }
 }
+  .checkout-restaurant-mode-box {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .checkout-restaurant-mode-box i {
+    width: 36px;
+    height: 36px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #dcfce7;
+    color: #16a34a;
+  }
+
+  .checkout-restaurant-mode-box strong {
+    display: block;
+    color: #111827;
+    font-weight: 900;
+    margin-bottom: 3px;
+  }
+
+  .checkout-restaurant-mode-box span {
+    color: #667085;
+    font-weight: 650;
+    line-height: 1.45;
+  }
+
+  .checkout-restaurant-mode-box.busy {
+    border-color: #fed7aa;
+    background: #fff7ed;
+  }
+
+  .checkout-restaurant-mode-box.busy i {
+    background: #ffedd5;
+    color: #c2410c;
+  }
+
+  .checkout-restaurant-mode-box.blocked {
+    border-color: #fecaca;
+    background: #fffafa;
+  }
+
+  .checkout-restaurant-mode-box.blocked i {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  .place-order-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+    box-shadow: none;
+  }
+  .checkout-restaurant-mode-box {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.checkout-restaurant-mode-box i {
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.checkout-restaurant-mode-box strong {
+  display: block;
+  color: #111827;
+  font-weight: 900;
+  margin-bottom: 3px;
+}
+
+.checkout-restaurant-mode-box span {
+  color: #667085;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.checkout-restaurant-mode-box.busy {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.checkout-restaurant-mode-box.busy i {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.checkout-restaurant-mode-box.blocked {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.checkout-restaurant-mode-box.blocked i {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.place-order-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  box-shadow: none;
+}
