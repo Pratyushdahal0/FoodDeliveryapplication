@@ -924,8 +924,16 @@ if (!file_exists($notificationModelPath)) {
 
 include $notificationModelPath;
 
+$couponModelPath = $basePath . 'models/Coupon.php';
+if (!file_exists($couponModelPath)) {
+    sendErrorResponse("Coupon model file not found: " . $couponModelPath, 500);
+}
+
+include $couponModelPath;
+
 $order = new Order($conn);
 $notification = new Notification($conn);
+$couponModel = new Coupon($conn);
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
@@ -1060,6 +1068,40 @@ if (
 
             $discountAmount = isset($input['discount_amount']) ? floatval($input['discount_amount']) : 0;
 
+            // Promo coupons (real coupon system): validate server-side if coupon_code is provided.
+            $incomingCouponCode = isset($input['coupon_code']) ? trim((string)$input['coupon_code']) : '';
+            $promoCouponCode = $incomingCouponCode !== '' ? strtoupper($incomingCouponCode) : '';
+
+            if ($promoCouponCode !== '') {
+                $promoUserId = $input['user_id'] ?? null;
+                if ($promoUserId !== null && $promoUserId !== '') {
+                    $promoUserId = intval($promoUserId);
+                    if ($promoUserId <= 0) $promoUserId = null;
+                } else {
+                    $promoUserId = null;
+                }
+
+                $promoEmail = trim((string)($input['customer_email'] ?? ''));
+
+                $promoValidation = $couponModel->validateForSubtotal(
+                    $promoCouponCode,
+                    $subtotal,
+                    $promoUserId,
+                    $promoEmail
+                );
+
+                if (empty($promoValidation['success'])) {
+                    $failedOrders[] = [
+                        "restaurant_id" => intval($restaurantId),
+                        "message" => $promoValidation['message'] ?? "Invalid coupon code."
+                    ];
+                    continue;
+                }
+
+                // Override discountAmount for promo codes (do not trust frontend discount fields)
+                $discountAmount = floatval($promoValidation['discount_amount'] ?? 0);
+            }
+
             /*
               Coupon + commission: accept optional coupon fields from frontend safely,
               but keep backend as source of truth for the final stored values.
@@ -1075,7 +1117,7 @@ if (
             $coupon_code = null;
             if (isset($input['coupon_code'])) {
                 $candidateCode = trim((string)$input['coupon_code']);
-                $coupon_code = $candidateCode !== '' ? $candidateCode : null;
+                $coupon_code = $candidateCode !== '' ? strtoupper($candidateCode) : null;
             }
 
             // coupon_discount comes from discount_amount (preferred) or incoming coupon_discount
@@ -1084,6 +1126,23 @@ if (
                 $coupon_discount = round(max(0, floatval($discountAmount)), 2);
             } elseif (isset($input['coupon_discount'])) {
                 $coupon_discount = round(max(0, floatval($input['coupon_discount'])), 2);
+            }
+
+            // If promo coupon_code was provided, compute coupon fields from validated coupon record
+            if ($promoCouponCode !== '') {
+                $validatedCoupon = $promoValidation['coupon'] ?? null;
+                if (is_array($validatedCoupon)) {
+                    $coupon_id = intval($validatedCoupon['id'] ?? 0) > 0 ? intval($validatedCoupon['id']) : null;
+                    $coupon_code = $validatedCoupon['code'] ?? $promoCouponCode;
+                    $coupon_discount = round(max(0, floatval($discountAmount)), 2);
+                } else {
+                    // Safety fallback: treat as invalid if coupon record is missing
+                    $failedOrders[] = [
+                        "restaurant_id" => intval($restaurantId),
+                        "message" => "Invalid coupon code."
+                    ];
+                    continue;
+                }
             }
 
             $commission_rate = 10.00; // percent
@@ -1110,6 +1169,7 @@ if (
                 "tax" => $tax,
                 "delivery_fee" => $delivery_fee,
                 "total" => $total,
+                "discount_amount" => $discountAmount,
                 "coupon_id" => $coupon_id,
                 "coupon_code" => $coupon_code,
                 "coupon_discount" => $coupon_discount,
@@ -1128,6 +1188,19 @@ if (
                 $itemsAdded = $order->addItems($order_id, $restaurantItems);
 
                 if ($itemsAdded) {
+                    // Record promo coupon redemption (server-side tracking)
+                    if (!empty($coupon_id) && $coupon_discount > 0) {
+                        $redeemUserId = $orderData['user_id'] ?? null;
+                        $redeemEmail = $orderData['customer_email'] ?? null;
+                        $couponModel->createRedemption(
+                            $coupon_id,
+                            $order_id,
+                            $redeemUserId,
+                            $redeemEmail,
+                            $coupon_discount
+                        );
+                    }
+
                     $emailQueued = false;
 
                     try {
