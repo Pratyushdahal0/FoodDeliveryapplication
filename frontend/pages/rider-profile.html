@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Rider Profile - FoodExpress</title>
+
+    <link rel="stylesheet" href="../css/rider-layout.css" />
+    <link rel="stylesheet" href="../css/rider-profile.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <div id="sidebar"></div>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn" id="menuToggle" type="button">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+        </div>
+
+        <div class="topbar-right">
+          <span class="online-pill"><span></span> Online</span>
+
+          <button
+            class="notification-btn"
+            type="button"
+            aria-label="Notifications"
+          >
+            <i class="fa-regular fa-bell"></i>
+            <small id="profileNotificationCount">2</small>
+          </button>
+
+          <div class="rider-profile">
+            <img
+              id="topbarProfileImage"
+              src="https://i.pravatar.cc/80?img=12"
+              alt="Rider profile"
+            />
+            <div>
+              <h4 id="topbarRiderName">FoodExpress Rider</h4>
+              <p id="topbarRiderId">Rider ID: RID-0001</p>
+            </div>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+        </div>
+      </header>
+
+      <section class="profile-page">
+        <div class="profile-head">
+          <div>
+            <p class="section-label">RIDER PROFILE</p>
+            <h1>Rider Profile</h1>
+            <p>
+              Manage personal details, vehicle information, verification status,
+              and emergency contact for delivery operations.
+            </p>
+          </div>
+
+          <div class="profile-head-actions">
+            <button class="ghost-btn" id="resetProfileBtn" type="button">
+              <i class="fa-solid fa-rotate-left"></i>
+              Reset
+            </button>
+
+            <button class="primary-btn" id="editProfileBtn" type="button">
+              <i class="fa-solid fa-pen-to-square"></i>
+              Edit Profile
+            </button>
+          </div>
+        </div>
+
+        <section class="profile-hero-card">
+          <div class="profile-hero-left">
+            <div class="avatar-wrap">
+              <img
+                id="profileAvatar"
+                src="https://i.pravatar.cc/180?img=12"
+                alt="Rider avatar"
+              />
+              <button
+                id="avatarEditBtn"
+                type="button"
+                aria-label="Change avatar"
+              >
+                <i class="fa-solid fa-camera"></i>
+              </button>
+            </div>
+
+            <div class="hero-copy">
+              <div class="status-row">
+                <span class="verification-pill verified" id="verificationPill">
+                  <i class="fa-solid fa-circle-check"></i>
+                  Verified Rider
+                </span>
+                <span class="online-status-pill" id="profileOnlinePill">
+                  <i class="fa-solid fa-circle"></i>
+                  Online
+                </span>
+              </div>
+
+              <h2 id="profileName">FoodExpress Rider</h2>
+              <p id="profileMeta">Rider ID: RID-0001 • Kathmandu Zone</p>
+
+              <div class="hero-contact-row">
+                <span>
+                  <i class="fa-solid fa-phone"></i>
+                  <strong id="profilePhone">Not added</strong>
+                </span>
+                <span>
+                  <i class="fa-solid fa-envelope"></i>
+                  <strong id="profileEmail">Not added</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-hero-right">
+            <div class="rating-box">
+              <span>Rider Rating</span>
+              <strong id="profileRating">4.9</strong>
+              <p><i class="fa-solid fa-star"></i> Customer score</p>
+            </div>
+
+            <div class="profile-badge-card">
+              <i class="fa-solid fa-shield-halved"></i>
+              <div>
+                <strong>Safety checked</strong>
+                <span>Documents ready for beta operations</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="profile-stats-grid">
+          <div class="profile-stat-card">
+            <div class="stat-icon green">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+              <p>Total Delivered</p>
+              <h3 id="totalDelivered">0</h3>
+              <span>Completed orders</span>
+            </div>
+          </div>
+
+          <div class="profile-stat-card">
+            <div class="stat-icon orange">
+              <i class="fa-solid fa-coins"></i>
+            </div>
+            <div>
+              <p>Total Earnings</p>
+              <h3 id="totalEarnings">Rs. 0</h3>
+              <span>From completed trips</span>
+            </div>
+          </div>
+
+          <div class="profile-stat-card">
+            <div class="stat-icon blue">
+              <i class="fa-solid fa-motorcycle"></i>
+            </div>
+            <div>
+              <p>Vehicle</p>
+              <h3 id="vehicleSummary">Bike</h3>
+              <span id="vehiclePlateSummary">Not added</span>
+            </div>
+          </div>
+
+          <div class="profile-stat-card">
+            <div class="stat-icon purple">
+              <i class="fa-solid fa-location-dot"></i>
+            </div>
+            <div>
+              <p>Delivery Zone</p>
+              <h3 id="zoneSummary">Kathmandu</h3>
+              <span>Primary operation area</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="profile-grid">
+          <div class="profile-left-stack">
+            <div class="profile-card">
+              <div class="card-head">
+                <div>
+                  <h2>Personal Information</h2>
+                  <p>Basic rider identity and contact details.</p>
+                </div>
+                <i class="fa-solid fa-user"></i>
+              </div>
+
+              <div class="info-list">
+                <div class="info-row">
+                  <span>Full name</span>
+                  <strong id="infoName">FoodExpress Rider</strong>
+                </div>
+
+                <div class="info-row">
+                  <span>Email</span>
+                  <strong id="infoEmail">Not added</strong>
+                </div>
+
+                <div class="info-row">
+                  <span>Phone</span>
+                  <strong id="infoPhone">Not added</strong>
+                </div>
+
+                <div class="info-row">
+                  <span>Address</span>
+                  <strong id="infoAddress">Kathmandu, Nepal</strong>
+                </div>
+
+                <div class="info-row">
+                  <span>Joined</span>
+                  <strong id="infoJoined">May 2026</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <div class="card-head">
+                <div>
+                  <h2>Vehicle Information</h2>
+                  <p>Vehicle details used for delivery assignment.</p>
+                </div>
+                <i class="fa-solid fa-motorcycle"></i>
+              </div>
+
+              <div class="vehicle-panel">
+                <div class="vehicle-icon">
+                  <i id="vehicleIcon" class="fa-solid fa-motorcycle"></i>
+                </div>
+
+                <div>
+                  <h3 id="vehicleTitle">Bike</h3>
+                  <p id="vehicleDetails">Plate number not added yet.</p>
+                </div>
+              </div>
+
+              <div class="info-list compact">
+                <div class="info-row">
+                  <span>Vehicle type</span>
+                  <strong id="vehicleType">Bike</strong>
+                </div>
+
+                <div class="info-row">
+                  <span>Plate number</span>
+                  <strong id="vehicleNumber">Not added</strong>
+                </div>
+
+                <div class="info-row">
+                  <span>License number</span>
+                  <strong id="licenseNumber">Not added</strong>
+                </div>
+
+                <div class="info-row">
+                  <span>Max distance</span>
+                  <strong id="maxDistance">8 km</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-card">
+              <div class="card-head">
+                <div>
+                  <h2>Emergency Contact</h2>
+                  <p>Used only for safety and urgent delivery incidents.</p>
+                </div>
+                <i class="fa-solid fa-kit-medical"></i>
+              </div>
+
+              <div class="emergency-box">
+                <div class="emergency-icon">
+                  <i class="fa-solid fa-phone-volume"></i>
+                </div>
+
+                <div>
+                  <span>Emergency contact</span>
+                  <h3 id="emergencyName">Not added</h3>
+                  <p id="emergencyPhone">Add emergency contact for safety.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <aside class="profile-right-stack">
+            <div class="profile-card verification-card">
+              <div class="card-head">
+                <div>
+                  <h2>Verification</h2>
+                  <p>Rider onboarding status.</p>
+                </div>
+                <i class="fa-solid fa-id-card"></i>
+              </div>
+
+              <div class="verify-list">
+                <div class="verify-item done">
+                  <i class="fa-solid fa-check"></i>
+                  <div>
+                    <strong>Profile details</strong>
+                    <span>Basic information added</span>
+                  </div>
+                </div>
+
+                <div class="verify-item" id="vehicleVerifyItem">
+                  <i class="fa-solid fa-check"></i>
+                  <div>
+                    <strong>Vehicle information</strong>
+                    <span id="vehicleVerifyText">Pending vehicle number</span>
+                  </div>
+                </div>
+
+                <div class="verify-item" id="licenseVerifyItem">
+                  <i class="fa-solid fa-check"></i>
+                  <div>
+                    <strong>License details</strong>
+                    <span id="licenseVerifyText">Pending license number</span>
+                  </div>
+                </div>
+
+                <div class="verify-item" id="emergencyVerifyItem">
+                  <i class="fa-solid fa-check"></i>
+                  <div>
+                    <strong>Emergency contact</strong>
+                    <span id="emergencyVerifyText">Recommended for safety</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-card ops-card">
+              <div class="card-head">
+                <div>
+                  <h2>Operations</h2>
+                  <p>Current delivery preferences.</p>
+                </div>
+                <i class="fa-solid fa-sliders"></i>
+              </div>
+
+              <div class="ops-row">
+                <span>Availability</span>
+                <strong id="opsAvailability">Online</strong>
+              </div>
+
+              <div class="ops-row">
+                <span>Payout method</span>
+                <strong id="opsPayout">Not set</strong>
+              </div>
+
+              <div class="ops-row">
+                <span>Preferred zone</span>
+                <strong id="opsZone">Kathmandu Zone</strong>
+              </div>
+
+              <a href="rider-settings.html" class="settings-link">
+                Manage rider settings
+                <i class="fa-solid fa-arrow-right"></i>
+              </a>
+            </div>
+
+            <div class="profile-card safety-card">
+              <i class="fa-solid fa-headset"></i>
+              <h2>Need rider support?</h2>
+              <p>
+                Contact support for payout issues, delivery disputes, safety
+                concerns, or account verification problems.
+              </p>
+              <a href="rider-support.html">Open Support</a>
+            </div>
+          </aside>
+        </section>
+      </section>
+    </main>
+
+    <div class="profile-modal" id="profileModal">
+      <div class="profile-modal-card">
+        <button class="modal-close" id="closeProfileModal" type="button">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="modal-title">
+          <span>
+            <i class="fa-solid fa-user-pen"></i>
+          </span>
+          <div>
+            <h2>Edit Rider Profile</h2>
+            <p>Update rider details for beta delivery operations.</p>
+          </div>
+        </div>
+
+        <form id="profileForm">
+          <div class="form-grid">
+            <label>
+              Full name
+              <input id="inputName" type="text" placeholder="Enter full name" />
+            </label>
+
+            <label>
+              Phone number
+              <input id="inputPhone" type="tel" placeholder="+977 98XXXXXXXX" />
+            </label>
+
+            <label>
+              Email
+              <input
+                id="inputEmail"
+                type="email"
+                placeholder="rider@email.com"
+              />
+            </label>
+
+            <label>
+              Address
+              <input
+                id="inputAddress"
+                type="text"
+                placeholder="Kathmandu, Nepal"
+              />
+            </label>
+
+            <label>
+              Vehicle type
+              <select id="inputVehicleType">
+                <option value="Bike">Bike</option>
+                <option value="Scooter">Scooter</option>
+                <option value="Cycle">Cycle</option>
+                <option value="Car">Car</option>
+              </select>
+            </label>
+
+            <label>
+              Vehicle number
+              <input
+                id="inputVehicleNumber"
+                type="text"
+                placeholder="BA 99 PA 1234"
+              />
+            </label>
+
+            <label>
+              License number
+              <input
+                id="inputLicenseNumber"
+                type="text"
+                placeholder="License number"
+              />
+            </label>
+
+            <label>
+              Delivery zone
+              <input id="inputZone" type="text" placeholder="Kathmandu Zone" />
+            </label>
+
+            <label>
+              Max distance
+              <input id="inputMaxDistance" type="text" placeholder="8 km" />
+            </label>
+
+            <label>
+              Payout method
+              <select id="inputPayoutMethod">
+                <option value="">Select payout method</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="eSewa">eSewa</option>
+                <option value="Khalti">Khalti</option>
+                <option value="Cash Settlement">Cash Settlement</option>
+              </select>
+            </label>
+
+            <label>
+              Emergency contact name
+              <input
+                id="inputEmergencyName"
+                type="text"
+                placeholder="Contact name"
+              />
+            </label>
+
+            <label>
+              Emergency contact phone
+              <input
+                id="inputEmergencyPhone"
+                type="tel"
+                placeholder="+977 98XXXXXXXX"
+              />
+            </label>
+
+            <label class="full">
+              Profile image URL
+              <input
+                id="inputImage"
+                type="url"
+                placeholder="Paste image URL or leave default"
+              />
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="ghost-btn" id="cancelProfileEdit">
+              Cancel
+            </button>
+            <button type="submit" class="primary-btn">
+              <i class="fa-solid fa-floppy-disk"></i>
+              Save Profile
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="profileToast" class="profile-toast"></div>
+
+    <script src="../js/components/rider-sidebar.js"></script>
+    <script src="../js/components/rider-notifications.js?v=rider-notifications-1"></script>
+    <script src="../js/rider-profile.js?v=profile-production-1"></script>
+  </body>
+</html>

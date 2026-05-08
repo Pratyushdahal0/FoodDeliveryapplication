@@ -164,6 +164,47 @@ document.addEventListener("DOMContentLoaded", () => {
     return String(value).replace(/"/g, '\\"');
   }
 
+  function pushRiderNotification({
+  id,
+  title,
+  message,
+  type = "info",
+  category = "delivery",
+  actionUrl = "rider-deliveries.html",
+}) {
+  if (
+    !window.FoodExpressRiderNotify ||
+    typeof window.FoodExpressRiderNotify.push !== "function"
+  ) {
+    return;
+  }
+
+  const notificationId =
+    id ||
+    `${category}-${String(title || "notification")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
+
+  const existing = window.FoodExpressRiderNotify.getAll
+    ? window.FoodExpressRiderNotify.getAll()
+    : [];
+
+  const alreadyExists = existing.some((item) => item.id === notificationId);
+
+  if (alreadyExists) return;
+
+  window.FoodExpressRiderNotify.push({
+    id: notificationId,
+    title,
+    message,
+    type,
+    category,
+    actionUrl,
+    createdAt: new Date().toISOString(),
+    read: false,
+  });
+}
+
   /* ================================
      BACKEND ORDER LOADING
   ================================ */
@@ -1234,11 +1275,28 @@ document.addEventListener("DOMContentLoaded", () => {
     updateStats();
     updateRiderDeliveryPagePolish();
 
+    pushRiderNotification({
+  title: "Delivery accepted",
+  message: `${order.orderNumber} has been assigned to you.`,
+  type: "success",
+  category: "delivery",
+});
+
     showToast(`${order.orderNumber} accepted successfully.`);
+    pushRiderNotification({
+  id: `delivery-accepted-${order.orderNumber || order.id}`,
+  title: "Delivery accepted",
+  message: `${order.orderNumber || order.id} has been assigned to you.`,
+  type: "success",
+  category: "delivery",
+});
+    
   } catch (error) {
     console.error("[rider-deliveries.js] Accept delivery failed:", error);
     showToast(error.message || "Could not accept delivery.", "error");
   }
+
+  
 }
 
 
@@ -1269,6 +1327,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const nextDeliveryStatus = getNextDeliveryStatus();
+  const currentOrderNumber =
+  activeOrder.orderNumber || activeOrder.order_number || activeOrder.id;
+
+const currentRestaurant =
+  activeOrder.restaurant || activeOrder.restaurantName || "Restaurant";
+
+const currentEarning = activeOrder.earning || estimateEarning(activeOrder);
 
   if (getDeliveryStatus(activeOrder) === "delivered") {
     showToast("Delivery already completed.");
@@ -1281,19 +1346,29 @@ document.addEventListener("DOMContentLoaded", () => {
     await updateBackendDeliveryStatus(activeOrder, nextDeliveryStatus);
 
     if (nextDeliveryStatus === "delivered") {
-      saveDeliveredOrderToEarnings(activeOrder);
-      saveDeliveredOrderToHistory(activeOrder);
-      clearActiveDelivery();
-      await loadAvailableDeliveriesFromBackend();
+  saveDeliveredOrderToEarnings(activeOrder);
+  saveDeliveredOrderToHistory(activeOrder);
 
-      renderActive();
-renderAvailable();
-updateStats();
-updateRiderDeliveryPagePolish();
+  pushRiderNotification({
+  id: `delivery-completed-${currentOrderNumber}`,
+  title: "Delivery completed",
+  message: `${currentRestaurant} order completed. ${formatMoney(currentEarning)} added to your rider earnings.`,
+  type: "success",
+  category: "earnings",
+  actionUrl: "rider-earnings.html",
+});
 
-showToast("Delivery completed. Earnings added.");
-return;
-    }
+  clearActiveDelivery();
+  await loadAvailableDeliveriesFromBackend();
+
+  renderActive();
+  renderAvailable();
+  updateStats();
+  updateRiderDeliveryPagePolish();
+
+  showToast("Delivery completed. Earnings added.");
+  return;
+}
 
     await loadActiveDeliveryFromBackend();
     await loadAvailableDeliveriesFromBackend();
@@ -1304,10 +1379,26 @@ updateStats();
 updateRiderDeliveryPagePolish();
 
     if (nextDeliveryStatus === "picked_up") {
-      showToast("Order picked up from restaurant.");
-    } else if (nextDeliveryStatus === "on_the_way") {
-      showToast("You are now on the way to the customer.");
-    }
+  pushRiderNotification({
+  id: `delivery-picked-up-${currentOrderNumber}`,
+  title: "Order picked up",
+  message: `${currentOrderNumber} picked up from ${currentRestaurant}.`,
+  type: "success",
+  category: "delivery",
+});
+
+  showToast("Order picked up from restaurant.");
+} else if (nextDeliveryStatus === "on_the_way") {
+  pushRiderNotification({
+  id: `delivery-on-the-way-${currentOrderNumber}`,
+  title: "On the way",
+  message: `${currentOrderNumber} is now on the way to customer.`,
+  type: "info",
+  category: "delivery",
+});
+
+  showToast("You are now on the way to the customer.");
+}
   } catch (error) {
     console.error("[rider-deliveries.js] Delivery update failed:", error);
     showToast(error.message || "Could not update delivery status.", "error");
@@ -1379,148 +1470,369 @@ updateRiderDeliveryPagePolish();
   }
 
   function openDrawer(order) {
-    if (!order) return;
+  if (!order) return;
 
-    order = normalizeOrderForRider(order);
+  order = normalizeOrderForRider(order);
 
-    createDrawer();
+  createDrawer();
 
-    const drawer = document.getElementById("orderDrawer");
-    const overlay = document.getElementById("drawerOverlay");
+  const drawer = document.getElementById("orderDrawer");
+  const overlay = document.getElementById("drawerOverlay");
 
-    if (!drawer) return;
+  if (!drawer) return;
 
-    const isActive =
-      activeOrder &&
-      (String(activeOrder.id) === String(order.id) ||
-        String(activeOrder.orderNumber) === String(order.orderNumber));
+  const isActive =
+    activeOrder &&
+    (String(activeOrder.id) === String(order.id) ||
+      String(activeOrder.orderNumber) === String(order.orderNumber));
 
-    drawer.innerHTML = `
-      <div class="drawer-head">
-        <div>
-          <h3>${escapeHtml(order.restaurant)}</h3>
-          <p>${escapeHtml(order.orderNumber)} • ${escapeHtml(order.customer)}</p>
-        </div>
+  const deliveryStatus = getDeliveryStatus(order);
+  const orderStatus = getOrderStatus(order);
+  const paymentMethod = formatDrawerPaymentMethod(
+    order.paymentMethod || order.payment_method
+  );
 
-        <button class="drawer-close" id="drawerClose">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+  const subtotal = getDrawerAmount(order, "subtotal");
+  const tax = getDrawerAmount(order, "tax");
+  const deliveryFee = getDrawerAmount(order, "deliveryFee");
+  const total = getDrawerAmount(order, "total");
+  const items = getDrawerItemsHtml(order);
+  const statusLabel = getDrawerStatusLabel(order);
+  const nextLabel = isActive ? getNextActionLabel() : "Accept Delivery";
+  const nextDisabled = isActive && shouldDisableNextStep();
+
+  drawer.innerHTML = `
+    <div class="drawer-head premium-drawer-head">
+      <div>
+        <span class="drawer-status-pill ${escapeHtml(deliveryStatus)}">
+          <i class="fa-solid fa-circle"></i>
+          ${escapeHtml(statusLabel)}
+        </span>
+
+        <h3>${escapeHtml(order.restaurant)}</h3>
+        <p>#${escapeHtml(order.orderNumber)} • ${escapeHtml(
+          formatDrawerDate(
+            order.createdAt ||
+              order.created_at ||
+              order.updatedAt ||
+              order.updated_at
+          )
+        )}</p>
       </div>
 
-      <div class="drawer-map">
-        ${fakeMap(order)}
+      <button class="drawer-close" id="drawerClose" type="button" aria-label="Close order details">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="drawer-earning-hero">
+      <div>
+        <span>Rider earning</span>
+        <strong>${formatMoney(order.earning)}</strong>
+        <p>${escapeHtml(order.distance)} • ${escapeHtml(order.eta)} ETA</p>
       </div>
 
-      <div class="drawer-section">
-        <h4>Order Details</h4>
+      <div class="drawer-order-icon">
+        <i class="fa-solid fa-motorcycle"></i>
+      </div>
+    </div>
 
-        <div class="drawer-info-row">
+    <div class="drawer-map">
+      ${fakeMap(order)}
+    </div>
+
+    <div class="drawer-section drawer-route-section">
+      <h4>Pickup & Drop-off</h4>
+
+      <div class="drawer-route-block">
+        <div class="drawer-route-dot pickup">
           <i class="fa-solid fa-store"></i>
-          <div>
-            <span>Pickup</span>
-            <strong>${escapeHtml(order.restaurant)}, ${escapeHtml(order.pickup)}</strong>
-          </div>
         </div>
 
-        <div class="drawer-info-row">
-          <i class="fa-solid fa-user"></i>
-          <div>
-            <span>Customer</span>
-            <strong>${escapeHtml(order.customer)}, ${escapeHtml(order.dropoff)}</strong>
-          </div>
-        </div>
-
-        <div class="drawer-info-row">
-          <i class="fa-solid fa-phone"></i>
-          <div>
-            <span>Phone</span>
-            <strong>${escapeHtml(order.phone)}</strong>
-          </div>
-        </div>
-
-        <div class="drawer-info-row">
-          <i class="fa-solid fa-bag-shopping"></i>
-          <div>
-            <span>Items</span>
-            <strong>${escapeHtml(order.itemsSummary)}</strong>
-          </div>
+        <div>
+          <span>Pickup from restaurant</span>
+          <strong>${escapeHtml(order.restaurant)}</strong>
+          <p>${escapeHtml(order.pickup)}</p>
         </div>
       </div>
 
-      <div class="drawer-stats">
-        <div class="drawer-stat">
-          <span>Earnings</span>
-          <strong>${formatMoney(order.earning)}</strong>
+      <div class="drawer-route-line-small"></div>
+
+      <div class="drawer-route-block">
+        <div class="drawer-route-dot drop">
+          <i class="fa-solid fa-location-dot"></i>
         </div>
 
-        <div class="drawer-stat">
-          <span>Distance</span>
-          <strong>${escapeHtml(order.distance)}</strong>
-        </div>
-
-        <div class="drawer-stat">
-          <span>ETA</span>
-          <strong>${escapeHtml(order.eta)}</strong>
-        </div>
-
-        <div class="drawer-stat">
-          <span>Status</span>
-          <strong>${escapeHtml(order.deliveryStatus)}</strong>
+        <div>
+          <span>Deliver to customer</span>
+          <strong>${escapeHtml(order.customer)}</strong>
+          <p>${escapeHtml(order.dropoff)}</p>
         </div>
       </div>
+    </div>
 
-      <div class="drawer-actions">
+    <div class="drawer-section">
+      <div class="drawer-section-title-row">
+        <h4>Customer Details</h4>
+
         ${
-          isActive
+          order.phone && order.phone !== "No phone"
             ? `
-              <button class="drawer-primary" id="drawerNextBtn" ${
-                shouldDisableNextStep() ? "disabled" : ""
-              }>
-                ${escapeHtml(getNextActionLabel())}
-              </button>
+              <a class="drawer-call-link" href="tel:${escapeHtml(order.phone)}">
+                <i class="fa-solid fa-phone"></i>
+                Call
+              </a>
             `
-            : `
-              <button class="drawer-primary" id="drawerAcceptBtn">
-                Accept Delivery
-              </button>
-            `
+            : ""
         }
+      </div>
 
-        <button class="drawer-secondary" id="drawerNavigateBtn">
-          Navigate
-        </button>
+      <div class="drawer-info-row">
+        <i class="fa-solid fa-user"></i>
+        <div>
+          <span>Customer name</span>
+          <strong>${escapeHtml(order.customer)}</strong>
+        </div>
+      </div>
+
+      <div class="drawer-info-row">
+        <i class="fa-solid fa-phone"></i>
+        <div>
+          <span>Phone number</span>
+          <strong>${escapeHtml(order.phone || "No phone")}</strong>
+        </div>
+      </div>
+
+      <div class="drawer-info-row">
+        <i class="fa-solid fa-money-bill-wave"></i>
+        <div>
+          <span>Payment method</span>
+          <strong>${escapeHtml(paymentMethod)}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-title-row">
+        <h4>Order Items</h4>
+        <span class="drawer-mini-pill">
+          ${Array.isArray(order.items) ? order.items.length : 0}
+          item${Array.isArray(order.items) && order.items.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      <div class="drawer-items-list">
+        ${items}
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <h4>Payment Summary</h4>
+
+      <div class="drawer-payment-row">
+        <span>Subtotal</span>
+        <strong>${formatMoney(subtotal)}</strong>
+      </div>
+
+      <div class="drawer-payment-row">
+        <span>Tax</span>
+        <strong>${formatMoney(tax)}</strong>
+      </div>
+
+      <div class="drawer-payment-row">
+        <span>Delivery fee</span>
+        <strong>${formatMoney(deliveryFee)}</strong>
+      </div>
+
+      <div class="drawer-payment-row total">
+        <span>Total order value</span>
+        <strong>${formatMoney(total)}</strong>
+      </div>
+    </div>
+
+    <div class="drawer-stats premium-drawer-stats">
+      <div class="drawer-stat">
+        <span>Distance</span>
+        <strong>${escapeHtml(order.distance)}</strong>
+      </div>
+
+      <div class="drawer-stat">
+        <span>ETA</span>
+        <strong>${escapeHtml(order.eta)}</strong>
+      </div>
+
+      <div class="drawer-stat">
+        <span>Order status</span>
+        <strong>${escapeHtml(formatDrawerStatus(orderStatus))}</strong>
+      </div>
+
+      <div class="drawer-stat">
+        <span>Delivery status</span>
+        <strong>${escapeHtml(formatDrawerStatus(statusLabel))}</strong>
+      </div>
+    </div>
+
+    ${
+      nextDisabled
+        ? `
+          <div class="drawer-warning-note">
+            <i class="fa-solid fa-clock"></i>
+            <span>Waiting for restaurant to mark this order ready for pickup.</span>
+          </div>
+        `
+        : ""
+    }
+
+    <div class="drawer-actions premium-drawer-actions">
+      ${
+        isActive
+          ? `
+            <button class="drawer-primary" id="drawerNextBtn" ${
+              nextDisabled ? "disabled" : ""
+            }>
+              <i class="fa-solid fa-circle-check"></i>
+              ${escapeHtml(nextLabel)}
+            </button>
+          `
+          : `
+            <button class="drawer-primary" id="drawerAcceptBtn">
+              <i class="fa-solid fa-hand"></i>
+              Accept Delivery
+            </button>
+          `
+      }
+
+      <button class="drawer-secondary" id="drawerNavigateBtn">
+        <i class="fa-solid fa-location-arrow"></i>
+        Navigate
+      </button>
+    </div>
+  `;
+
+  overlay?.classList.add("show");
+  drawer.classList.add("show");
+  document.body.style.overflow = "hidden";
+
+  document.getElementById("drawerClose")?.addEventListener("click", closeDrawer);
+
+  document.getElementById("drawerAcceptBtn")?.addEventListener("click", () => {
+    acceptOrder(order.id);
+    closeDrawer();
+  });
+
+  document.getElementById("drawerNextBtn")?.addEventListener("click", async () => {
+    await nextStep();
+
+    if (activeOrder) {
+      openDrawer(activeOrder);
+    } else {
+      closeDrawer();
+    }
+  });
+
+  document.getElementById("drawerNavigateBtn")?.addEventListener("click", () => {
+    openGoogleMaps(order);
+  });
+}
+
+  function getDrawerAmount(order, key) {
+  const map = {
+    subtotal: order.subtotal,
+    tax: order.tax,
+    deliveryFee: order.deliveryFee || order.delivery_fee,
+    total: order.total,
+  };
+
+  return Number(map[key] || 0);
+}
+
+function getDrawerItemsHtml(order) {
+  const items = Array.isArray(order.items) ? order.items : [];
+
+  if (!items.length) {
+    return `
+      <div class="drawer-empty-items">
+        <i class="fa-solid fa-bag-shopping"></i>
+        <span>${escapeHtml(order.itemsSummary || "Food order")}</span>
       </div>
     `;
-
-    overlay?.classList.add("show");
-    drawer.classList.add("show");
-
-    document.getElementById("drawerClose")?.addEventListener("click", closeDrawer);
-
-    document.getElementById("drawerAcceptBtn")?.addEventListener("click", () => {
-      acceptOrder(order.id);
-      closeDrawer();
-    });
-
-    document.getElementById("drawerNextBtn")?.addEventListener("click", async () => {
-      await nextStep();
-
-      if (activeOrder) {
-        openDrawer(activeOrder);
-      } else {
-        closeDrawer();
-      }
-    });
-
-    document.getElementById("drawerNavigateBtn")?.addEventListener("click", () => {
-      openGoogleMaps(order);
-    });
   }
 
-  function closeDrawer() {
-    document.getElementById("drawerOverlay")?.classList.remove("show");
-    document.getElementById("orderDrawer")?.classList.remove("show");
+  return items
+    .map((item) => {
+      const name = item.name || item.title || item.product_name || "Food Item";
+      const qty = Number(item.quantity || item.qty || 1);
+      const price = Number(item.price || item.unit_price || item.total_price || 0);
+
+      return `
+        <div class="drawer-item-row">
+          <div>
+            <strong>${escapeHtml(name)}</strong>
+            <span>Qty ${qty}</span>
+          </div>
+
+          <p>${price > 0 ? formatMoney(price * qty) : "Included"}</p>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function formatDrawerPaymentMethod(method) {
+  const value = String(method || "cash").toLowerCase();
+
+  if (value.includes("cash")) return "Cash on Delivery";
+  if (value.includes("card")) return "Card Payment";
+  if (value.includes("esewa")) return "eSewa";
+  if (value.includes("khalti")) return "Khalti";
+
+  return method || "Cash on Delivery";
+}
+
+function formatDrawerStatus(status) {
+  return String(status || "pending")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getDrawerStatusLabel(order) {
+  const deliveryStatus = getDeliveryStatus(order);
+  const orderStatus = getOrderStatus(order);
+
+  if (deliveryStatus === "delivered" || orderStatus === "delivered") {
+    return "Delivered";
   }
+
+  if (deliveryStatus === "on_the_way") return "On the way";
+  if (deliveryStatus === "picked_up") return "Picked up";
+  if (deliveryStatus === "assigned" && orderStatus === "ready_for_pickup") {
+    return "Ready for pickup";
+  }
+
+  if (deliveryStatus === "assigned") return "Accepted";
+  if (orderStatus === "ready_for_pickup") return "Ready for pickup";
+
+  return "Delivery request";
+}
+
+function formatDrawerDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "Recently";
+
+  return date.toLocaleString("en-NP", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function closeDrawer() {
+  document.getElementById("drawerOverlay")?.classList.remove("show");
+  document.getElementById("orderDrawer")?.classList.remove("show");
+  document.body.style.overflow = "";
+}
 
 async function refreshOrders() {
   refreshBtn?.classList.add("loading");
@@ -1613,6 +1925,14 @@ function stopRiderAutoRefresh() {
     const data = readJson(RIDER_EARNINGS_KEY, defaultData);
     const earning = Number(order.earning) || 0;
 
+    const transactionId = `earning-${order.orderNumber || order.id}`;
+
+if (Array.isArray(data.transactions)) {
+  const alreadyPaid = data.transactions.some((item) => item.id === transactionId);
+
+  if (alreadyPaid) return;
+}
+
     data.todayEarnings += earning;
     data.weekEarnings += earning;
     data.availableBalance += earning;
@@ -1623,6 +1943,7 @@ function stopRiderAutoRefresh() {
     data.breakdown.tips += Math.round(earning * 0.15);
 
     data.transactions.unshift({
+      id: transactionId,
       title: `Order ${order.orderNumber || order.id} Delivered`,
       date: new Date().toLocaleString("en-NP", {
         month: "short",
@@ -1650,6 +1971,14 @@ function stopRiderAutoRefresh() {
     if (!order) return;
 
     const history = readJson(RIDER_HISTORY_KEY, []);
+
+    const historyId = String(order.orderNumber || order.id);
+
+const alreadyExists = history.some((item) => {
+  return String(item.id || item.orderNumber || item.order_number) === historyId;
+});
+
+if (alreadyExists) return;
 
     history.unshift({
       id: order.orderNumber || order.id,

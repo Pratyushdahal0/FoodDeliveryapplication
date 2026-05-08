@@ -1,11 +1,15 @@
 /* ================================
    RIDER SETTINGS JS
-   Production-style frontend logic
+   Production sync version
+   Syncs: Settings ↔ Profile ↔ Dashboard ↔ Topbar
 ================================ */
+
+console.log("[rider-settings.js] Loaded - production sync settings");
 
 const RIDER_SETTINGS_KEY = "foodExpressRiderSettings";
 const RIDER_STATUS_KEY = "foodExpressRiderStatus";
 const RIDER_PROFILE_KEY = "foodExpressRiderProfile";
+const RIDER_CURRENT_KEY = "foodExpressCurrentRider";
 const RIDER_SECURITY_LOG_KEY = "foodExpressRiderSecurityLogs";
 const RIDER_DELETE_REQUEST_KEY = "foodExpressRiderDeleteRequest";
 const RIDER_DATA_REQUEST_KEY = "foodExpressRiderDataRequest";
@@ -17,8 +21,9 @@ const defaultSettings = {
     autoAccept: false,
     breakMode: false,
     radius: "5",
-    preferredArea: "Kathmandu"
+    preferredArea: "Kathmandu",
   },
+
   notifications: {
     newOrders: true,
     payoutAlerts: true,
@@ -26,27 +31,36 @@ const defaultSettings = {
     promotions: false,
     sound: true,
     email: true,
-    sms: false
+    sms: false,
   },
+
   payout: {
     method: "Bank Transfer",
     bankName: "Nabil Bank",
-    accountName: "Ramesh Tamang",
+    accountName: "Pratyush Dahal",
     accountNumber: "XXXXXXXX1234",
-    walletNumber: ""
+    walletNumber: "",
   },
+
   security: {
     twoFactor: false,
     loginAlerts: true,
     passwordChangedAt: null,
-    devicesLoggedOutAt: null
+    devicesLoggedOutAt: null,
   },
+
   preferences: {
     darkMode: false,
+    compactMode: false,
     language: "English",
     currency: "NPR",
-    compactMode: false
-  }
+  },
+
+  /* Flat mirror fields for other pages */
+  payoutMethod: "Bank Transfer",
+  deliveryZone: "Kathmandu Zone",
+  deliveryRadius: "5 km",
+  preferredArea: "Kathmandu",
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -62,13 +76,12 @@ function initSettingsPage() {
 
   hydrateTopbar();
   populateSettings(settings);
-  applyStatusUI(settings);
-  applyPreferenceClasses(settings);
+  applyLiveUI(settings);
   updatePayoutFields();
-  updateAlertMessage(settings);
   bindEvents();
 
   syncSettingsToLocalStatus(settings);
+  syncSettingsToProfile(settings);
 }
 
 /* ================================
@@ -89,12 +102,13 @@ function getSettings() {
     const merged = deepMerge(clone(defaultSettings), parsed);
     const normalized = normalizeSettings(merged);
 
-    // Important: always sync separate rider status from actual settings toggles
     syncSettingsToLocalStatus(normalized);
+    syncSettingsToProfile(normalized);
 
     return normalized;
   } catch (error) {
-    console.warn("Invalid rider settings found. Resetting settings.", error);
+    console.warn("[rider-settings.js] Invalid settings. Resetting.", error);
+
     const fresh = normalizeSettings(defaultSettings);
     saveSettings(fresh, false);
     return clone(fresh);
@@ -108,78 +122,148 @@ function saveSettings(settings, showMessage = true) {
   localStorage.setItem(RIDER_LAST_UPDATED_KEY, new Date().toISOString());
 
   syncSettingsToLocalStatus(cleanSettings);
+  syncSettingsToProfile(cleanSettings);
 
   if (typeof window.applyGlobalRiderStatus === "function") {
-  window.applyGlobalRiderStatus();
-}
+    window.applyGlobalRiderStatus();
+  }
 
   window.dispatchEvent(
     new CustomEvent("foodExpressRiderSettingsUpdated", {
-      detail: cleanSettings
+      detail: cleanSettings,
+    })
+  );
+
+  window.dispatchEvent(
+    new CustomEvent("foodExpressRiderStatusUpdated", {
+      detail: {
+        status: getStatusFromSettings(cleanSettings),
+      },
     })
   );
 
   if (showMessage) {
-    showToast("Settings saved successfully.");
+    showToast("Settings saved successfully.", "success");
   }
 
   return cleanSettings;
 }
 
-function syncSettingsToLocalStatus(settings) {
-  let status = "online";
-
-  if (!settings.availability.online) {
-    status = "offline";
-  } else if (settings.availability.breakMode) {
-    status = "break";
-  }
-
-  localStorage.setItem(RIDER_STATUS_KEY, status);
-}
-
 function normalizeSettings(settings) {
   const normalized = deepMerge(clone(defaultSettings), settings || {});
 
-  // Currency locked to NPR.
   normalized.preferences.currency = "NPR";
 
-  // If rider is offline, break mode and auto accept should not remain active.
+  normalized.availability.radius = String(
+    normalized.availability.radius || "5"
+  ).replace(" km", "");
+
+  const allowedRadius = ["3", "5", "8", "10", "15"];
+  if (!allowedRadius.includes(normalized.availability.radius)) {
+    normalized.availability.radius = "5";
+  }
+
+  normalized.availability.preferredArea = String(
+    normalized.availability.preferredArea || "Kathmandu"
+  ).trim();
+
+  if (!normalized.availability.preferredArea) {
+    normalized.availability.preferredArea = "Kathmandu";
+  }
+
   if (!normalized.availability.online) {
     normalized.availability.breakMode = false;
     normalized.availability.autoAccept = false;
   }
 
-  // If rider is on break, auto accept should pause.
   if (normalized.availability.breakMode) {
     normalized.availability.online = true;
     normalized.availability.autoAccept = false;
   }
 
-  // Radius must be one of allowed options.
-  const allowedRadius = ["3", "5", "8", "10", "15"];
-  if (!allowedRadius.includes(String(normalized.availability.radius))) {
-    normalized.availability.radius = "5";
-  }
+  normalized.payout.method = normalized.payout.method || "Bank Transfer";
+  normalized.payout.bankName = String(normalized.payout.bankName || "").trim();
+  normalized.payout.accountName = String(
+    normalized.payout.accountName || ""
+  ).trim();
+  normalized.payout.accountNumber = String(
+    normalized.payout.accountNumber || ""
+  ).trim();
+  normalized.payout.walletNumber = String(
+    normalized.payout.walletNumber || ""
+  ).trim();
 
-  // Preferred area fallback.
-  if (!normalized.availability.preferredArea.trim()) {
-    normalized.availability.preferredArea = "Kathmandu";
-  }
+  /* Flat mirror fields for profile/dashboard compatibility */
+  normalized.payoutMethod = normalized.payout.method;
+  normalized.deliveryZone = `${normalized.availability.preferredArea} Zone`;
+  normalized.deliveryRadius = `${normalized.availability.radius} km`;
+  normalized.preferredArea = normalized.availability.preferredArea;
+  normalized.payout_method = normalized.payout.method;
+  normalized.delivery_zone = normalized.deliveryZone;
+  normalized.maxDistance = `${normalized.availability.radius} km`;
 
   return normalized;
 }
 
 function resetSettings() {
-  saveSettings(defaultSettings, false);
+  const fresh = normalizeSettings(defaultSettings);
 
-  populateSettings(defaultSettings);
-  applyStatusUI(defaultSettings);
-  applyPreferenceClasses(defaultSettings);
+  saveSettings(fresh, false);
+  populateSettings(fresh);
+  applyLiveUI(fresh);
   updatePayoutFields();
-  updateAlertMessage(defaultSettings);
 
-  showToast("Settings reset to default.");
+  showToast("Settings reset to default.", "success");
+}
+
+function syncSettingsToLocalStatus(settings) {
+  localStorage.setItem(RIDER_STATUS_KEY, getStatusFromSettings(settings));
+}
+
+function getStatusFromSettings(settings) {
+  if (!settings.availability.online) return "offline";
+  if (settings.availability.breakMode) return "break";
+  return "online";
+}
+
+function syncSettingsToProfile(settings) {
+  const profile = readJsonObject(RIDER_PROFILE_KEY, null) || {};
+  const currentRider = readJsonObject(RIDER_CURRENT_KEY, null) || {};
+
+  const merged = {
+    ...currentRider,
+    ...profile,
+
+    payoutMethod: settings.payout.method,
+    payout_method: settings.payout.method,
+
+    deliveryZone: `${settings.availability.preferredArea} Zone`,
+    delivery_zone: `${settings.availability.preferredArea} Zone`,
+
+    maxDistance: `${settings.availability.radius} km`,
+    max_distance: `${settings.availability.radius} km`,
+
+    preferredArea: settings.availability.preferredArea,
+
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (settings.payout.method === "Bank Transfer") {
+    merged.bankName = settings.payout.bankName;
+    merged.accountName = settings.payout.accountName;
+    merged.accountNumber = settings.payout.accountNumber;
+  } else {
+    merged.walletNumber = settings.payout.walletNumber;
+  }
+
+  localStorage.setItem(RIDER_PROFILE_KEY, JSON.stringify(merged));
+  localStorage.setItem(RIDER_CURRENT_KEY, JSON.stringify(merged));
+
+  window.dispatchEvent(
+    new CustomEvent("foodExpressRiderProfileUpdated", {
+      detail: merged,
+    })
+  );
 }
 
 /* ================================
@@ -190,6 +274,7 @@ function populateSettings(settings) {
   setChecked("onlineToggle", settings.availability.online);
   setChecked("autoAcceptToggle", settings.availability.autoAccept);
   setChecked("breakModeToggle", settings.availability.breakMode);
+
   setValue("deliveryRadius", settings.availability.radius);
   setValue("preferredArea", settings.availability.preferredArea);
 
@@ -212,6 +297,7 @@ function populateSettings(settings) {
 
   setChecked("darkModeToggle", settings.preferences.darkMode);
   setChecked("compactModeToggle", settings.preferences.compactMode);
+
   setValue("languageSelect", settings.preferences.language);
   setValue("currencySelect", "NPR");
 
@@ -219,14 +305,17 @@ function populateSettings(settings) {
 }
 
 function collectSettingsFromUI() {
-  const settings = {
+  const previous = getSettings();
+
+  return normalizeSettings({
     availability: {
       online: getChecked("onlineToggle"),
       autoAccept: getChecked("autoAcceptToggle"),
       breakMode: getChecked("breakModeToggle"),
       radius: getValue("deliveryRadius") || "5",
-      preferredArea: getValue("preferredArea") || "Kathmandu"
+      preferredArea: getValue("preferredArea") || "Kathmandu",
     },
+
     notifications: {
       newOrders: getChecked("newOrdersToggle"),
       payoutAlerts: getChecked("payoutAlertsToggle"),
@@ -234,30 +323,31 @@ function collectSettingsFromUI() {
       promotions: getChecked("promotionsToggle"),
       sound: getChecked("soundToggle"),
       email: getChecked("emailToggle"),
-      sms: getChecked("smsToggle")
+      sms: getChecked("smsToggle"),
     },
+
     payout: {
       method: getValue("payoutMethod") || "Bank Transfer",
       bankName: getValue("bankName"),
       accountName: getValue("accountName"),
       accountNumber: getValue("accountNumber"),
-      walletNumber: getValue("walletNumber")
+      walletNumber: getValue("walletNumber"),
     },
+
     security: {
       twoFactor: getChecked("twoFactorToggle"),
       loginAlerts: getChecked("loginAlertsToggle"),
-      passwordChangedAt: getSettings().security.passwordChangedAt,
-      devicesLoggedOutAt: getSettings().security.devicesLoggedOutAt
+      passwordChangedAt: previous.security.passwordChangedAt,
+      devicesLoggedOutAt: previous.security.devicesLoggedOutAt,
     },
+
     preferences: {
       darkMode: getChecked("darkModeToggle"),
+      compactMode: getChecked("compactModeToggle"),
       language: getValue("languageSelect") || "English",
       currency: "NPR",
-      compactMode: getChecked("compactModeToggle")
-    }
-  };
-
-  return normalizeSettings(settings);
+    },
+  });
 }
 
 /* ================================
@@ -265,13 +355,17 @@ function collectSettingsFromUI() {
 ================================ */
 
 function bindEvents() {
-  const saveTop = document.getElementById("saveSettingsTopBtn");
-  const saveBottom = document.getElementById("saveSettingsBottomBtn");
-  const resetBtn = document.getElementById("resetSettingsBtn");
+  document
+    .getElementById("saveSettingsTopBtn")
+    ?.addEventListener("click", handleSave);
 
-  if (saveTop) saveTop.addEventListener("click", handleSave);
-  if (saveBottom) saveBottom.addEventListener("click", handleSave);
-  if (resetBtn) resetBtn.addEventListener("click", handleReset);
+  document
+    .getElementById("saveSettingsBottomBtn")
+    ?.addEventListener("click", handleSave);
+
+  document
+    .getElementById("resetSettingsBtn")
+    ?.addEventListener("click", handleReset);
 
   bindAvailabilityEvents();
   bindPreferenceEvents();
@@ -287,143 +381,102 @@ function bindAvailabilityEvents() {
   const deliveryRadius = document.getElementById("deliveryRadius");
   const preferredArea = document.getElementById("preferredArea");
 
-  if (onlineToggle) {
-    onlineToggle.addEventListener("change", () => {
-      if (!onlineToggle.checked) {
-        setChecked("breakModeToggle", false);
-        setChecked("autoAcceptToggle", false);
-      }
+  onlineToggle?.addEventListener("change", () => {
+    if (!onlineToggle.checked) {
+      setChecked("breakModeToggle", false);
+      setChecked("autoAcceptToggle", false);
+    }
 
-      const saved = saveAvailabilityImmediately();
+    const saved = saveAvailabilityImmediately();
 
-      showToast(
-        saved.availability.online
-          ? "You are online and available for requests."
-          : "You are offline. New delivery requests are paused."
-      );
-    });
-  }
-
-  if (breakModeToggle) {
-    breakModeToggle.addEventListener("change", () => {
-      if (breakModeToggle.checked) {
-        setChecked("onlineToggle", true);
-        setChecked("autoAcceptToggle", false);
-      }
-
-      const saved = saveAvailabilityImmediately();
-
-      showToast(
-        saved.availability.breakMode
-          ? "Break mode is active. Requests are paused."
-          : "Break mode turned off."
-      );
-    });
-  }
-
-  if (autoAcceptToggle) {
-    autoAcceptToggle.addEventListener("change", () => {
-      if (autoAcceptToggle.checked) {
-        setChecked("onlineToggle", true);
-        setChecked("breakModeToggle", false);
-      }
-
-      const saved = saveAvailabilityImmediately();
-
-      showToast(
-        saved.availability.autoAccept
-          ? "Auto accept enabled."
-          : "Auto accept disabled."
-      );
-    });
-  }
-
-  if (deliveryRadius) {
-    deliveryRadius.addEventListener("change", () => {
-      const saved = saveAvailabilityImmediately();
-      showToast(`Delivery radius set to ${saved.availability.radius} km.`);
-    });
-  }
-
-  if (preferredArea) {
-    preferredArea.addEventListener(
-      "input",
-      debounce(() => {
-        const area = preferredArea.value.trim();
-
-        if (area.length > 40) {
-          preferredArea.value = area.slice(0, 40);
-          showToast("Preferred area cannot be longer than 40 characters.");
-          return;
-        }
-
-        saveAvailabilityImmediately();
-      }, 400)
+    showToast(
+      saved.availability.online
+        ? "You are online and available for requests."
+        : "You are offline. New delivery requests are paused.",
+      saved.availability.online ? "success" : "warning"
     );
-  }
+  });
+
+  breakModeToggle?.addEventListener("change", () => {
+    if (breakModeToggle.checked) {
+      setChecked("onlineToggle", true);
+      setChecked("autoAcceptToggle", false);
+    }
+
+    const saved = saveAvailabilityImmediately();
+
+    showToast(
+      saved.availability.breakMode
+        ? "Break mode is active. Requests are paused."
+        : "Break mode turned off.",
+      saved.availability.breakMode ? "warning" : "success"
+    );
+  });
+
+  autoAcceptToggle?.addEventListener("change", () => {
+    if (autoAcceptToggle.checked) {
+      setChecked("onlineToggle", true);
+      setChecked("breakModeToggle", false);
+    }
+
+    const saved = saveAvailabilityImmediately();
+
+    showToast(
+      saved.availability.autoAccept
+        ? "Auto accept enabled."
+        : "Auto accept disabled.",
+      "success"
+    );
+  });
+
+  deliveryRadius?.addEventListener("change", () => {
+    const saved = saveAvailabilityImmediately();
+    showToast(`Delivery radius set to ${saved.availability.radius} km.`, "success");
+  });
+
+  preferredArea?.addEventListener(
+    "input",
+    debounce(() => {
+      const area = preferredArea.value.trim();
+
+      if (area.length > 40) {
+        preferredArea.value = area.slice(0, 40);
+        showToast("Preferred area cannot be longer than 40 characters.", "warning");
+        return;
+      }
+
+      saveAvailabilityImmediately();
+    }, 450)
+  );
 }
 
 function saveAvailabilityImmediately() {
   const settings = collectSettingsFromUI();
-  
-  // normalizeSettings enforces the rules:
-  // - If online=false → breakMode=false, autoAccept=false
-  // - If breakMode=true → online=true, autoAccept=false
-  const normalized = normalizeSettings(settings);
+  const saved = saveSettings(settings, false);
 
-  // Save to localStorage
-  localStorage.setItem(RIDER_SETTINGS_KEY, JSON.stringify(normalized));
-  localStorage.setItem(RIDER_LAST_UPDATED_KEY, new Date().toISOString());
+  populateSettings(saved);
+  applyLiveUI(saved);
+  updatePayoutFields();
 
-  // Sync status key (offline/break/online)
-  syncSettingsToLocalStatus(normalized);
-
-  // Update UI
-  populateSettings(normalized);
-  applyStatusUI(normalized);
-  updateAlertMessage(normalized);
-  updateDisabledStates(normalized);
-
-  // Notify other pages
-  if (typeof window.applyGlobalRiderStatus === "function") {
-    window.applyGlobalRiderStatus();
-  }
-
-  window.dispatchEvent(
-    new CustomEvent("foodExpressRiderSettingsUpdated", {
-      detail: normalized
-    })
-  );
-
-  return normalized;
+  return saved;
 }
 
 function bindPreferenceEvents() {
-  const darkModeToggle = document.getElementById("darkModeToggle");
-  const compactModeToggle = document.getElementById("compactModeToggle");
-  const languageSelect = document.getElementById("languageSelect");
+  document.getElementById("darkModeToggle")?.addEventListener("change", () => {
+    const settings = collectSettingsFromUI();
+    applyPreferenceClasses(settings);
+  });
+
+  document.getElementById("compactModeToggle")?.addEventListener("change", () => {
+    const settings = collectSettingsFromUI();
+    applyPreferenceClasses(settings);
+  });
+
+  document.getElementById("languageSelect")?.addEventListener("change", () => {
+    showToast("Language preference updated. Save changes to keep it.", "success");
+  });
+
   const currencySelect = document.getElementById("currencySelect");
-
-  if (darkModeToggle) {
-    darkModeToggle.addEventListener("change", () => {
-      const settings = collectSettingsFromUI();
-      applyPreferenceClasses(settings);
-    });
-  }
-
-  if (compactModeToggle) {
-    compactModeToggle.addEventListener("change", () => {
-      const settings = collectSettingsFromUI();
-      applyPreferenceClasses(settings);
-    });
-  }
-
-  if (languageSelect) {
-    languageSelect.addEventListener("change", () => {
-      showToast("Language preference updated. Save changes to keep it.");
-    });
-  }
-
   if (currencySelect) {
     currencySelect.value = "NPR";
     currencySelect.disabled = true;
@@ -433,52 +486,44 @@ function bindPreferenceEvents() {
 
 function bindPayoutEvents() {
   const payoutMethod = document.getElementById("payoutMethod");
-  const bankName = document.getElementById("bankName");
-  const accountName = document.getElementById("accountName");
-  const accountNumber = document.getElementById("accountNumber");
-  const walletNumber = document.getElementById("walletNumber");
 
-  if (payoutMethod) {
-    payoutMethod.addEventListener("change", () => {
-      // Just update fields - do NOT save or show toast
-      // Payout method will be saved when rider clicks Save Changes
-      updatePayoutFields();
-    });
-  }
+  payoutMethod?.addEventListener("change", () => {
+    updatePayoutFields();
 
-  [bankName, accountName, accountNumber, walletNumber].forEach((input) => {
-    if (!input) return;
+    const method = getValue("payoutMethod");
 
-    input.addEventListener("input", () => {
-      input.classList.remove("input-error");
+    if (method === "Bank Transfer") {
+      showToast("Bank payout fields enabled. Save changes to sync profile.", "success");
+    } else {
+      showToast(`${method} wallet payout selected. Add wallet number.`, "success");
+    }
+  });
+
+  ["bankName", "accountName", "accountNumber", "walletNumber"].forEach((id) => {
+    document.getElementById(id)?.addEventListener("input", () => {
+      document.getElementById(id)?.classList.remove("input-error");
     });
   });
 }
 
 function bindSecurityActions() {
-  const changePasswordBtn = document.getElementById("changePasswordBtn");
-  const logoutDevicesBtn = document.getElementById("logoutDevicesBtn");
+  document
+    .getElementById("changePasswordBtn")
+    ?.addEventListener("click", handleChangePassword);
 
-  if (changePasswordBtn) {
-    changePasswordBtn.addEventListener("click", handleChangePassword);
-  }
-
-  if (logoutDevicesBtn) {
-    logoutDevicesBtn.addEventListener("click", handleLogoutAllDevices);
-  }
+  document
+    .getElementById("logoutDevicesBtn")
+    ?.addEventListener("click", handleLogoutAllDevices);
 }
 
 function bindAccountActions() {
-  const downloadDataBtn = document.getElementById("downloadDataBtn");
-  const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+  document
+    .getElementById("downloadDataBtn")
+    ?.addEventListener("click", handleDownloadData);
 
-  if (downloadDataBtn) {
-    downloadDataBtn.addEventListener("click", handleDownloadData);
-  }
-
-  if (deleteAccountBtn) {
-    deleteAccountBtn.addEventListener("click", handleDeleteAccountRequest);
-  }
+  document
+    .getElementById("deleteAccountBtn")
+    ?.addEventListener("click", handleDeleteAccountRequest);
 }
 
 /* ================================
@@ -490,18 +535,10 @@ function handleSave() {
     const settings = collectSettingsFromUI();
     const validation = validateSettings(settings);
 
-    console.log("🧪 Save clicked");
-    console.log("Selected payout method:", settings.payout.method);
-    console.log("Wallet number:", settings.payout.walletNumber);
-    console.log("Validation result:", validation);
+    if (!validation.valid) {
+      showToast(validation.message, "error");
 
-    if (!validation || validation.valid !== true) {
-      showToast(
-        validation?.message || "Please check your settings and try again.",
-        "error"
-      );
-
-      if (validation?.fieldId) {
+      if (validation.fieldId) {
         focusElement(validation.fieldId);
       }
 
@@ -511,29 +548,19 @@ function handleSave() {
     const saved = saveSettings(settings, false);
 
     populateSettings(saved);
-    applyStatusUI(saved);
-    applyPreferenceClasses(saved);
+    applyLiveUI(saved);
     updatePayoutFields();
-    updateAlertMessage(saved);
-    updateDisabledStates(saved);
 
-    if (typeof window.applyGlobalRiderStatus === "function") {
-      window.applyGlobalRiderStatus();
-    }
-
-    console.log("✅ Rider settings saved successfully:", saved);
-
-    showToast("Settings saved successfully.", "success");
+    showToast("Settings saved and synced with rider profile.", "success");
   } catch (error) {
-    console.error("❌ Failed to save rider settings:", error);
+    console.error("[rider-settings.js] Save failed:", error);
     showToast("Something went wrong while saving settings.", "error");
   }
 }
 
-
 function handleReset() {
   const confirmReset = confirm(
-    "Reset all rider settings to default values? This will not delete your profile."
+    "Reset rider settings to default values? This will not delete delivery history."
   );
 
   if (!confirmReset) return;
@@ -546,13 +573,13 @@ function handleReset() {
 ================================ */
 
 function validateSettings(settings) {
-  const area = String(settings?.availability?.preferredArea || "").trim();
+  const area = String(settings.availability.preferredArea || "").trim();
 
   if (area.length < 2) {
     return {
       valid: false,
       fieldId: "preferredArea",
-      message: "Please enter a valid preferred area."
+      message: "Please enter a valid preferred area.",
     };
   }
 
@@ -560,44 +587,44 @@ function validateSettings(settings) {
     return {
       valid: false,
       fieldId: "preferredArea",
-      message: "Preferred area must be under 40 characters."
+      message: "Preferred area must be under 40 characters.",
     };
   }
 
-  const payoutMethod = String(settings?.payout?.method || "Bank Transfer");
+  const payoutMethod = String(settings.payout.method || "Bank Transfer");
 
   if (payoutMethod === "Bank Transfer") {
-    if (!String(settings?.payout?.bankName || "").trim()) {
+    if (!String(settings.payout.bankName || "").trim()) {
       return {
         valid: false,
         fieldId: "bankName",
-        message: "Please enter your bank name."
+        message: "Please enter your bank name.",
       };
     }
 
-    if (!String(settings?.payout?.accountName || "").trim()) {
+    if (!String(settings.payout.accountName || "").trim()) {
       return {
         valid: false,
         fieldId: "accountName",
-        message: "Please enter the account holder name."
+        message: "Please enter the account holder name.",
       };
     }
 
-    if (!isValidAccountNumber(settings?.payout?.accountNumber)) {
+    if (!isValidAccountNumber(settings.payout.accountNumber)) {
       return {
         valid: false,
         fieldId: "accountNumber",
-        message: "Please enter a valid account number."
+        message: "Please enter a valid account number.",
       };
     }
   }
 
   if (payoutMethod === "eSewa" || payoutMethod === "Khalti") {
-    if (!isValidNepaliPhone(settings?.payout?.walletNumber)) {
+    if (!isValidNepaliPhone(settings.payout.walletNumber)) {
       return {
         valid: false,
         fieldId: "walletNumber",
-        message: "Please enter a valid eSewa/Khalti phone number."
+        message: "Please enter a valid eSewa/Khalti phone number.",
       };
     }
   }
@@ -605,14 +632,13 @@ function validateSettings(settings) {
   return {
     valid: true,
     fieldId: null,
-    message: "Valid settings."
+    message: "Valid settings.",
   };
 }
 
 function isValidAccountNumber(value) {
   const clean = String(value || "").trim();
 
-  // Allows masked demo value like XXXXXXXX1234 and real digits.
   if (/^[Xx*]{4,}\d{3,}$/.test(clean)) return true;
 
   return /^[0-9]{6,24}$/.test(clean.replace(/\s+/g, ""));
@@ -620,39 +646,27 @@ function isValidAccountNumber(value) {
 
 function isValidNepaliPhone(value) {
   let clean = String(value || "").trim();
-
-  // Remove spaces, hyphens, and brackets
   clean = clean.replace(/[\s\-()]/g, "");
 
-  // Accept numbers written as 9779849220167
   if (clean.startsWith("977")) {
     clean = `+${clean}`;
   }
 
-  // 10-digit Nepal mobile: 98XXXXXXXX or 97XXXXXXXX
-  if (/^9[78]\d{8}$/.test(clean)) {
-    return true;
-  }
-
-  // Country-code format: +97798XXXXXXXX or +97797XXXXXXXX
-  if (/^\+9779[78]\d{8}$/.test(clean)) {
-    return true;
-  }
+  if (/^9[78]\d{8}$/.test(clean)) return true;
+  if (/^\+9779[78]\d{8}$/.test(clean)) return true;
 
   return false;
 }
 
 /* ================================
-   STATUS UI
+   LIVE UI
 ================================ */
 
 function applyLiveUI(settings) {
-  const normalized = normalizeSettings(settings);
-
-  populateSettings(normalized);
-  applyStatusUI(normalized);
-  updateAlertMessage(normalized);
-  updateDisabledStates(normalized);
+  applyStatusUI(settings);
+  applyPreferenceClasses(settings);
+  updateAlertMessage(settings);
+  updateDisabledStates(settings);
 }
 
 function applyStatusUI(settings) {
@@ -660,13 +674,17 @@ function applyStatusUI(settings) {
   const onlinePill = document.getElementById("onlinePill");
   const onlineText = document.getElementById("onlineText");
 
+  const status = getStatusFromSettings(settings);
+
   let label = "Online";
   let statusClass = "";
 
-  if (!settings.availability.online) {
+  if (status === "offline") {
     label = "Offline";
     statusClass = "offline";
-  } else if (settings.availability.breakMode) {
+  }
+
+  if (status === "break") {
     label = "On Break";
     statusClass = "break";
   }
@@ -676,9 +694,7 @@ function applyStatusUI(settings) {
     badge.className = `status-badge ${statusClass}`;
   }
 
-  if (onlineText) {
-    onlineText.textContent = label;
-  }
+  if (onlineText) onlineText.textContent = label;
 
   if (onlinePill) {
     onlinePill.classList.remove("offline", "break");
@@ -691,7 +707,6 @@ function applyStatusUI(settings) {
 
 function updateAlertMessage(settings) {
   const alertText = document.getElementById("settingsAlertText");
-
   if (!alertText) return;
 
   if (!settings.availability.online) {
@@ -724,10 +739,6 @@ function updateDisabledStates(settings) {
   }
 }
 
-/* ================================
-   PAYOUT
-================================ */
-
 function updatePayoutFields() {
   const method = getValue("payoutMethod") || "Bank Transfer";
   const walletField = document.getElementById("walletField");
@@ -754,10 +765,6 @@ function updatePayoutFields() {
   }
 }
 
-/* ================================
-   PREFERENCES
-================================ */
-
 function applyPreferenceClasses(settings) {
   document.body.classList.toggle(
     "rider-dark-mode",
@@ -776,33 +783,33 @@ function applyPreferenceClasses(settings) {
 
 function hydrateTopbar() {
   const defaultProfile = {
-    id: "RID-1001",
-    name: "Ramesh Tamang",
-    avatar: "https://i.pravatar.cc/80?img=12"
+    id: 1,
+    name: "Pratyush Dahal",
+    image: "https://i.pravatar.cc/80?img=12",
   };
 
-  let profile = defaultProfile;
+  const storedProfile = readJsonObject(RIDER_PROFILE_KEY, null);
+  const currentRider = readJsonObject(RIDER_CURRENT_KEY, null);
 
-  try {
-    const stored = localStorage.getItem(RIDER_PROFILE_KEY);
+  const profile = {
+    ...defaultProfile,
+    ...(currentRider || {}),
+    ...(storedProfile || {}),
+  };
 
-    if (stored) {
-      profile = {
-        ...defaultProfile,
-        ...JSON.parse(stored)
-      };
-    }
-  } catch (error) {
-    console.warn("Could not read rider profile.", error);
-  }
+  const riderId = profile.riderId || profile.rider_id || profile.id || 1;
+  const image =
+    profile.image ||
+    profile.avatar ||
+    profile.profileImage ||
+    profile.profile_image ||
+    defaultProfile.image;
 
-  const topbarName = document.getElementById("topbarName");
-  const topbarId = document.getElementById("topbarId");
-  const topbarAvatar = document.getElementById("topbarAvatar");
+  setText("topbarName", profile.name || defaultProfile.name);
+  setText("topbarId", `Rider ID: RID-${String(riderId).padStart(4, "0")}`);
 
-  if (topbarName) topbarName.textContent = profile.name || defaultProfile.name;
-  if (topbarId) topbarId.textContent = `Rider ID: ${profile.id || defaultProfile.id}`;
-  if (topbarAvatar) topbarAvatar.src = profile.avatar || defaultProfile.avatar;
+  const avatar = document.getElementById("topbarAvatar");
+  if (avatar) avatar.src = image;
 }
 
 /* ================================
@@ -811,31 +818,28 @@ function hydrateTopbar() {
 
 function handleChangePassword() {
   const currentPassword = prompt("Enter current password:");
-
   if (currentPassword === null) return;
 
   if (currentPassword.trim().length < 4) {
-    showToast("Current password is too short.");
+    showToast("Current password is too short.", "error");
     return;
   }
 
   const newPassword = prompt("Enter new password:");
-
   if (newPassword === null) return;
 
   const passwordCheck = validatePasswordStrength(newPassword);
 
   if (!passwordCheck.valid) {
-    showToast(passwordCheck.message);
+    showToast(passwordCheck.message, "error");
     return;
   }
 
   const confirmPassword = prompt("Confirm new password:");
-
   if (confirmPassword === null) return;
 
   if (newPassword !== confirmPassword) {
-    showToast("New password and confirm password do not match.");
+    showToast("New password and confirm password do not match.", "error");
     return;
   }
 
@@ -845,7 +849,7 @@ function handleChangePassword() {
   saveSettings(settings, false);
   addSecurityLog("Password changed");
 
-  showToast("Password changed successfully.");
+  showToast("Password changed successfully.", "success");
 }
 
 function validatePasswordStrength(password) {
@@ -854,33 +858,33 @@ function validatePasswordStrength(password) {
   if (value.length < 8) {
     return {
       valid: false,
-      message: "Password must be at least 8 characters."
+      message: "Password must be at least 8 characters.",
     };
   }
 
   if (!/[A-Z]/.test(value)) {
     return {
       valid: false,
-      message: "Password must include one uppercase letter."
+      message: "Password must include one uppercase letter.",
     };
   }
 
   if (!/[0-9]/.test(value)) {
     return {
       valid: false,
-      message: "Password must include one number."
+      message: "Password must include one number.",
     };
   }
 
   return {
     valid: true,
-    message: "Strong password."
+    message: "Strong password.",
   };
 }
 
 function handleLogoutAllDevices() {
   const confirmLogout = confirm(
-    "Logout from all devices? Your current local session will stay active for demo testing."
+    "Logout from all devices? Your current local testing session will stay active."
   );
 
   if (!confirmLogout) return;
@@ -891,7 +895,7 @@ function handleLogoutAllDevices() {
   saveSettings(settings, false);
   addSecurityLog("Logged out from all devices");
 
-  showToast("All other devices have been logged out.");
+  showToast("All other devices have been logged out.", "success");
 }
 
 function addSecurityLog(action) {
@@ -900,7 +904,7 @@ function addSecurityLog(action) {
   logs.unshift({
     id: generateId("SEC"),
     action,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   });
 
   localStorage.setItem(RIDER_SECURITY_LOG_KEY, JSON.stringify(logs.slice(0, 20)));
@@ -912,10 +916,7 @@ function addSecurityLog(action) {
 
 function handleDownloadData() {
   const settings = getSettings();
-  const profile = readJsonObject(RIDER_PROFILE_KEY, {
-    id: "RID-1001",
-    name: "Ramesh Tamang"
-  });
+  const profile = readJsonObject(RIDER_PROFILE_KEY, {});
 
   const exportData = {
     exportedAt: new Date().toISOString(),
@@ -923,7 +924,7 @@ function handleDownloadData() {
     riderSettings: settings,
     riderStatus: localStorage.getItem(RIDER_STATUS_KEY) || "online",
     securityLogs: readJsonArray(RIDER_SECURITY_LOG_KEY),
-    note: "This is frontend demo export data from FoodExpress Rider Panel."
+    note: "Frontend demo export data from FoodExpress Rider Panel.",
   };
 
   localStorage.setItem(
@@ -931,19 +932,19 @@ function handleDownloadData() {
     JSON.stringify({
       id: generateId("DATA"),
       status: "completed",
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     })
   );
 
   downloadJsonFile(exportData, `foodexpress-rider-data-${Date.now()}.json`);
-  showToast("Account data downloaded.");
+  showToast("Account data downloaded.", "success");
 }
 
 function handleDeleteAccountRequest() {
   const existingRequest = readJsonObject(RIDER_DELETE_REQUEST_KEY, null);
 
   if (existingRequest && existingRequest.status === "pending") {
-    showToast("Account deletion request is already pending.");
+    showToast("Account deletion request is already pending.", "warning");
     return;
   }
 
@@ -957,13 +958,13 @@ function handleDeleteAccountRequest() {
     id: generateId("DEL"),
     status: "pending",
     reason: "Requested by rider from settings page",
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
 
   localStorage.setItem(RIDER_DELETE_REQUEST_KEY, JSON.stringify(request));
   addSecurityLog("Account deletion requested");
 
-  showToast("Account deletion request submitted for admin review.");
+  showToast("Account deletion request submitted for admin review.", "success");
 }
 
 /* ================================
@@ -987,7 +988,12 @@ function setValue(id, value) {
 
 function getValue(id) {
   const element = document.getElementById(id);
-  return element ? element.value.trim() : "";
+  return element ? String(element.value || "").trim() : "";
+}
+
+function setText(id, value) {
+  const element = document.getElementById(id);
+  if (element) element.textContent = value;
 }
 
 function focusElement(id) {
@@ -1008,21 +1014,18 @@ function showToast(message, type = "success") {
   const toastMessage = document.getElementById("toastMessage");
   const toastIcon = toast?.querySelector("i");
 
-  if (!toast || !toastMessage || !toastIcon) return;
+  if (!toast || !toastMessage || !toastIcon) {
+    console.log(`[rider-settings] ${message}`);
+    return;
+  }
 
   let icon = "fa-circle-check";
 
-  if (type === "error") {
-    icon = "fa-circle-exclamation";
-  }
-
-  if (type === "warning") {
-    icon = "fa-triangle-exclamation";
-  }
+  if (type === "error") icon = "fa-circle-exclamation";
+  if (type === "warning") icon = "fa-triangle-exclamation";
 
   toastIcon.className = `fa-solid ${icon}`;
   toastMessage.textContent = message;
-
   toast.className = `toast show ${type}`;
 
   clearTimeout(window.__settingsToastTimer);
@@ -1031,7 +1034,6 @@ function showToast(message, type = "success") {
     toast.classList.remove("show");
   }, 2800);
 }
-
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -1060,7 +1062,7 @@ function readJsonObject(key, fallback) {
     const value = localStorage.getItem(key);
     return value ? JSON.parse(value) : fallback;
   } catch (error) {
-    console.warn(`Could not read ${key}`, error);
+    console.warn(`[rider-settings.js] Could not read ${key}`, error);
     return fallback;
   }
 }
@@ -1071,7 +1073,7 @@ function readJsonArray(key) {
     const parsed = value ? JSON.parse(value) : [];
     return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
-    console.warn(`Could not read ${key}`, error);
+    console.warn(`[rider-settings.js] Could not read ${key}`, error);
     return [];
   }
 }
@@ -1084,8 +1086,9 @@ function generateId(prefix) {
 
 function downloadJsonFile(data, filename) {
   const json = JSON.stringify(data, null, 2);
+
   const blob = new Blob([json], {
-    type: "application/json"
+    type: "application/json",
   });
 
   const url = URL.createObjectURL(blob);
@@ -1093,10 +1096,11 @@ function downloadJsonFile(data, filename) {
 
   link.href = url;
   link.download = filename;
+
   document.body.appendChild(link);
   link.click();
-
   document.body.removeChild(link);
+
   URL.revokeObjectURL(url);
 }
 

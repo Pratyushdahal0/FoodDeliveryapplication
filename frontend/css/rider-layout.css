@@ -519,3 +519,404 @@ button:active {
 .online-pill.online span {
   background: #0fa958 !important;
 }
+/* ================================
+   RIDER SHARED NOTIFICATION DROPDOWN
+================================ */
+
+.rider-notification-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.notification-btn {
+  position: relative;
+}
+
+.notification-btn small {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ff5a2f;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  border: 2px solid #fff;
+}
+
+.rider-notification-panel {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: -80px;
+  width: 390px;
+  max-width: calc(100vw - 28px);
+  max-height: 560px;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid #f0e2dc;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 26px 70px rgba(19, 22, 41, 0.18);
+  z-index: 9999;
+}
+
+.rider-notification-panel.show {
+  display: flex;
+}
+
+.rider-notification-panel::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  right: 94px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-left: 1px solid #f0e2dc;
+  border-top: 1px solid #f0e2dc;
+  transform: rotate(45deg);
+}
+
+.rider-notification-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid #f3ece8;
+  background:
+    radial-gradient(circle at top right, rgba(255, 90, 47, 0.12), transparent 32%),
+    #fff;
+}
+
+.rider-notification-head h3 {
+  margin: 0;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 28px;
+  line-height: 1;
+  color: #17172a;
+}
+
+.rider-notification-head p {
+  margin: 6px 0 0;
+  color: #77737a;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.rider-notification-head button {
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 12px;
+  background: #fff1ea;
+  color: #ff5a2f;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rider-notification-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f3ece8;
+  background: #fffaf7;
+}
+
+.rider-notification-tabs button {
+  height: 34px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  color: #77737a;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  border: 1px solid #f0e2dc;
+}
+
+.rider-notification-tabs button.active {
+  background: #ff5a2f;
+  border-color: #ff5a2f;
+  color: #fff;
+}
+
+.rider-notification-list {
+  overflow-y: auto;
+  max-height: 360px;
+  padding: 8px;
+  background: #fff;
+}
+
+.rider-notification-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 42px 1fr 26px;
+  gap: 12px;
+  padding: 13px 10px;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rider-notification-item:hover {
+  background: #fff8f4;
+}
+
+.rider-notification-item.unread {
+  background: linear-gradient(135deg, #fff7f2, #ffffff);
+}
+
+.notification-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: #fff1ea;
+  color: #ff5a2f;
+}
+
+.notification-icon.success {
+  background: #eaf8ef;
+  color: #13a85b;
+}
+
+.notification-icon.warning {
+  background: #fff6dc;
+  color: #f4a000;
+}
+
+.notification-icon.info {
+  background: #eef2ff;
+  color: #5b6fe6;
+}
+
+.notification-copy {
+  min-width: 0;
+}
+
+.notification-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification-title-row h4 {
+  margin: 0;
+  color: #17172a;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.notification-title-row span {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #ff5a2f;
+}
+
+.notification-copy p {
+  margin: 5px 0 0;
+  color: #77737a;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.notification-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.notification-meta small {
+  color: #9a939d;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.notification-meta a {
+  color: #ff5a2f;
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.notification-delete {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #aaa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notification-delete:hover {
+  background: #fff1ea;
+  color: #ff5a2f;
+}
+
+.rider-notification-empty {
+  text-align: center;
+  padding: 38px 18px;
+}
+
+.rider-notification-empty div {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 14px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: #fff1ea;
+  color: #ff5a2f;
+  font-size: 23px;
+}
+
+.rider-notification-empty h4 {
+  margin: 0 0 7px;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 26px;
+  color: #17172a;
+}
+
+.rider-notification-empty p {
+  margin: 0;
+  color: #77737a;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.rider-notification-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-top: 1px solid #f3ece8;
+  background: #fffaf7;
+}
+
+.rider-notification-footer button,
+.rider-notification-footer a {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 13px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  color: #17172a;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.rider-notification-footer a {
+  background: #ff5a2f;
+  color: #fff;
+}
+
+@media (max-width: 680px) {
+  .rider-notification-panel {
+    position: fixed;
+    top: 78px;
+    right: 14px;
+    left: 14px;
+    width: auto;
+    max-width: none;
+  }
+
+  .rider-notification-panel::before {
+    display: none;
+  }
+
+  .rider-notification-footer {
+    flex-direction: column;
+  }
+
+  .rider-notification-footer button,
+  .rider-notification-footer a {
+    justify-content: center;
+    width: 100%;
+  }
+}
+/* ================================
+   RIDER NOTIFICATION COMPACT POLISH
+================================ */
+
+.rider-notification-panel {
+  width: 360px !important;
+  max-height: 500px !important;
+}
+
+.rider-notification-head {
+  padding: 16px !important;
+}
+
+.rider-notification-head h3 {
+  font-size: 25px !important;
+}
+
+.rider-notification-tabs {
+  padding: 10px 12px !important;
+}
+
+.rider-notification-tabs button {
+  height: 32px !important;
+  padding: 0 11px !important;
+  font-size: 12px !important;
+}
+
+.rider-notification-list {
+  max-height: 315px !important;
+}
+
+.rider-notification-item {
+  grid-template-columns: 38px 1fr 24px !important;
+  gap: 10px !important;
+  padding: 11px 9px !important;
+}
+
+.notification-icon {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 14px !important;
+}
+
+.notification-title-row h4 {
+  font-size: 12.5px !important;
+}
+
+.notification-copy p {
+  font-size: 11.5px !important;
+  line-height: 1.4 !important;
+}
+
+.rider-notification-footer {
+  padding: 12px !important;
+}
+
+.rider-notification-footer button,
+.rider-notification-footer a {
+  min-height: 36px !important;
+}

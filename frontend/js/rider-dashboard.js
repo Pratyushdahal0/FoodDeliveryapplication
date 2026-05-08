@@ -199,34 +199,63 @@ function renderDashboard() {
 }
 
 function updateStats() {
-  const todayDelivered = getTodayDeliveredOrders();
-  const todayEarnings = todayDelivered.reduce(
-    (sum, order) => sum + estimateEarning(order),
-    0
-  );
+  const normalizedHistory = Array.isArray(dashboardHistory)
+    ? dashboardHistory.map((order) => normalizeOrderForDashboard(order))
+    : [];
+
+  const todayDelivered = normalizedHistory.filter((order) => {
+    return isDelivered(order) && isTodayOrder(order);
+  });
+
+  const todayEarnings = todayDelivered.reduce((sum, order) => {
+    return sum + getRiderEarningAmount(order);
+  }, 0);
+
+  const weeklyDelivered = normalizedHistory.filter((order) => {
+    const date = getOrderDate(order);
+    if (!date || !isDelivered(order)) return false;
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    return date >= sevenDaysAgo;
+  });
 
   const todayDeliveryCard = document.querySelector(".stat-card:nth-child(1) h2");
   const activeDeliveryCard = document.querySelector(".stat-card:nth-child(2) h2");
   const todayEarningsCard = document.querySelector(".stat-card:nth-child(3) h2");
   const weeklyCard = document.querySelector(".stat-card:nth-child(4) h2");
 
-  if (todayDeliveryCard) todayDeliveryCard.innerText = todayDelivered.length;
-  if (activeDeliveryCard) activeDeliveryCard.innerText = dashboardActiveOrder ? "1" : "0";
-  if (todayEarningsCard) todayEarningsCard.innerText = formatMoney(todayEarnings);
+  if (todayDeliveryCard) {
+    todayDeliveryCard.innerText = todayDelivered.length;
+  }
+
+  if (activeDeliveryCard) {
+    activeDeliveryCard.innerText = dashboardActiveOrder ? "1" : "0";
+  }
+
+  if (todayEarningsCard) {
+    todayEarningsCard.innerText = formatMoney(todayEarnings);
+  }
 
   if (weeklyCard) {
-    const weeklyDelivered = dashboardHistory.filter((order) => {
-      const date = getOrderDate(order);
-      if (!date) return false;
-
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-      return date >= sevenDaysAgo && isDelivered(order);
-    });
-
     weeklyCard.innerText = weeklyDelivered.length;
   }
+}
+
+
+function isTodayOrder(order) {
+  const date = getOrderDate(order);
+  if (!date) return false;
+
+  const today = new Date();
+
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
 }
 
 function renderActiveDelivery() {
@@ -479,6 +508,7 @@ function renderRecentDeliveries() {
 
   const delivered = dashboardHistory
     .filter(isDelivered)
+    .map((order) => normalizeOrderForDashboard(order))
     .sort((a, b) => {
       const bDate = getOrderDate(b)?.getTime() || 0;
       const aDate = getOrderDate(a)?.getTime() || 0;
@@ -510,6 +540,8 @@ function renderRecentDeliveries() {
 
     ${delivered
       .map((order) => {
+        const earning = getRiderEarningAmount(order);
+
         return `
           <div class="recent-item">
             <div class="recent-left">
@@ -520,7 +552,7 @@ function renderRecentDeliveries() {
               </div>
             </div>
 
-            <strong>${formatMoney(estimateEarning(order))}</strong>
+            <strong>${formatMoney(earning)}</strong>
             <span>Delivered</span>
             <small>${escapeHtml(formatShortTime(getOrderDate(order)))}</small>
           </div>
@@ -1047,6 +1079,41 @@ function getDropoffAddress(order) {
 }
 
 function getRiderEarningAmount(order = {}) {
+  const history = readJson(RIDER_HISTORY_KEY, []);
+  const orderId = String(
+    order.id ||
+      order.orderId ||
+      order.order_id ||
+      order.orderNumber ||
+      order.order_number ||
+      ""
+  ).replace("#", "");
+
+  if (Array.isArray(history) && orderId) {
+    const matchedHistory = history.find((item) => {
+      const historyId = String(
+        item.id ||
+          item.orderId ||
+          item.order_id ||
+          item.orderNumber ||
+          item.order_number ||
+          ""
+      ).replace("#", "");
+
+      return historyId && historyId === orderId;
+    });
+
+    const historyEarning = Number(
+      matchedHistory?.earning ||
+        matchedHistory?.rider_earning ||
+        matchedHistory?.delivery_earning ||
+        matchedHistory?.amount ||
+        0
+    );
+
+    if (historyEarning > 0) return Math.round(historyEarning);
+  }
+
   const explicit = Number(
     order.rider_earning ||
       order.riderEarning ||
@@ -1060,12 +1127,12 @@ function getRiderEarningAmount(order = {}) {
   if (explicit > 0) return Math.round(explicit);
 
   const deliveryFee = Number(order.deliveryFee || order.delivery_fee || 0);
-  if (deliveryFee > 0) return Math.max(75, Math.round(deliveryFee * 2));
+  if (deliveryFee > 0) return Math.max(100, Math.round(deliveryFee * 2));
 
   const total = Number(order.total || 0);
-  if (total > 0) return Math.max(75, Math.round(total * 0.08 + 70));
+  if (total > 0) return Math.max(100, Math.round(total * 0.08 + 70));
 
-  return 75;
+  return 100;
 }
 
 function estimateEarning(order) {
@@ -1337,16 +1404,19 @@ function bindRefreshButton() {
 }
 
 function openOrderDetails(order) {
-  const details = [
-    `Order: ${order.orderNumber || order.order_number}`,
-    `Restaurant: ${getRestaurantName(order)}`,
-    `Customer: ${getCustomerName(order)}`,
-    `Pickup: ${getPickupAddress(order)}`,
-    `Drop-off: ${getDropoffAddress(order)}`,
-    `Status: ${formatStatusLabel(getDeliveryStatus(order))}`,
-  ].join("\n");
+  if (!order) return;
 
-  alert(details);
+  const normalizedOrder = {
+    ...order,
+    selectedAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem(
+    "foodExpressSelectedRiderOrder",
+    JSON.stringify(normalizedOrder)
+  );
+
+  window.location.href = "rider-deliveries.html";
 }
 
 function openGoogleMaps(order) {
