@@ -174,6 +174,50 @@ class Order {
                 : 0.00;
 
             /*
+              Coupon + commission fields (new columns on orders table).
+              - coupon_discount uses discount_amount if provided, else falls back to coupon_discount
+              - commission is calculated on restaurant food revenue only:
+                commissionBase = subtotal - coupon_discount (>= 0)
+            */
+            $coupon_id = null;
+            if (isset($data['coupon_id']) && $data['coupon_id'] !== '' && $data['coupon_id'] !== null) {
+                $candidateCouponId = intval($data['coupon_id']);
+                $coupon_id = $candidateCouponId > 0 ? $candidateCouponId : null;
+            }
+
+            $coupon_code = null;
+            if (isset($data['coupon_code'])) {
+                $candidateCouponCode = trim((string)$data['coupon_code']);
+                $coupon_code = $candidateCouponCode !== '' ? $candidateCouponCode : null;
+            }
+
+            // coupon_discount uses discount_amount if provided, otherwise coupon_discount, otherwise 0
+            $coupon_discount = 0.00;
+            if (isset($data['discount_amount'])) {
+                $coupon_discount = round(max(0, floatval($discount_amount)), 2);
+            } elseif (isset($data['coupon_discount'])) {
+                $coupon_discount = round(max(0, floatval($data['coupon_discount'])), 2);
+            }
+
+            $commission_rate = 10.00; // percent
+            $commissionBase = floatval($subtotal) - floatval($coupon_discount);
+            if ($commissionBase < 0) {
+                $commissionBase = 0.00;
+            }
+
+            // Prefer values passed from controller; fall back to computed
+            $computedCommissionAmount = round($commissionBase * 0.10, 2);
+            $computedRestaurantEarnings = round($commissionBase - $computedCommissionAmount, 2);
+
+            $commission_amount = isset($data['commission_amount'])
+                ? round(max(0, floatval($data['commission_amount'])), 2)
+                : $computedCommissionAmount;
+
+            $restaurant_earnings = isset($data['restaurant_earnings'])
+                ? round(max(0, floatval($data['restaurant_earnings'])), 2)
+                : $computedRestaurantEarnings;
+
+            /*
               Backend becomes the final source of truth for totals.
               This prevents old frontend values like Rs. 5 delivery fee from
               being saved accidentally.
@@ -229,12 +273,18 @@ class Order {
                         tax,
                         delivery_fee,
                         total,
+                        coupon_id,
+                        coupon_code,
+                        coupon_discount,
+                        commission_rate,
+                        commission_amount,
+                        restaurant_earnings,
                         status,
                         delivery_status,
                         notes
                       )
                       VALUES
-                      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $stmt = $this->conn->prepare($query);
 
@@ -246,7 +296,7 @@ class Order {
             }
 
             $stmt->bind_param(
-                "siisssssssddddsss",
+                "siisssssssddddisddddsss",
                 $order_number,
                 $user_id,
                 $restaurant_id,
@@ -261,6 +311,12 @@ class Order {
                 $tax,
                 $delivery_fee,
                 $total,
+                $coupon_id,
+                $coupon_code,
+                $coupon_discount,
+                $commission_rate,
+                $commission_amount,
+                $restaurant_earnings,
                 $status,
                 $delivery_status,
                 $notes
@@ -280,6 +336,12 @@ class Order {
                     'tax' => $tax,
                     'delivery_fee' => $delivery_fee,
                     'total' => $total,
+                    'coupon_id' => $coupon_id,
+                    'coupon_code' => $coupon_code,
+                    'coupon_discount' => $coupon_discount,
+                    'commission_rate' => $commission_rate,
+                    'commission_amount' => $commission_amount,
+                    'restaurant_earnings' => $restaurant_earnings,
                     'message' => 'Order created successfully'
                 ];
             }
