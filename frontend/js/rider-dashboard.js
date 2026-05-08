@@ -869,7 +869,51 @@ function updateRiderIdentityUI() {
    ORDER NORMALIZATION
 ================================ */
 
-function normalizeOrderForDashboard(order) {
+function normalizeOrderForDashboard(order = {}) {
+  const items = Array.isArray(order.items) ? order.items : [];
+  const firstItem = items[0] || {};
+
+  const restaurantName = cleanDashboardLabel(
+    order.restaurantName ||
+      order.restaurant_name ||
+      order.restaurant ||
+      firstItem.restaurantName ||
+      firstItem.restaurant_name ||
+      firstItem.storeName ||
+      firstItem.store_name ||
+      ""
+  );
+
+  const restaurantAddress = cleanDashboardLabel(
+    order.restaurantAddress ||
+      order.restaurant_address ||
+      order.pickupAddress ||
+      order.pickup_address ||
+      order.pickup ||
+      ""
+  );
+
+  const customerName = cleanDashboardLabel(
+    order.customerName ||
+      order.customer_name ||
+      order.customer ||
+      order.fullName ||
+      order.full_name ||
+      order.name ||
+      ""
+  );
+
+  const customerAddress = [
+    order.address,
+    order.city,
+    order.area,
+    order.postalCode || order.postal_code,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const realEarning = getRiderEarningAmount(order);
+
   return {
     ...order,
 
@@ -878,47 +922,22 @@ function normalizeOrderForDashboard(order) {
     order_id: order.order_id || order.orderId || order.id,
 
     orderNumber:
-      order.orderNumber || order.order_number || order.orderNo || order.id,
+      order.orderNumber || order.order_number || order.orderNo || order.id || "ORDER",
     order_number:
-      order.order_number || order.orderNumber || order.orderNo || order.id,
+      order.order_number || order.orderNumber || order.orderNo || order.id || "ORDER",
 
-    restaurantName:
-      order.restaurantName ||
-      order.restaurant_name ||
-      order.restaurant ||
-      "Restaurant",
-
-    restaurant_name:
-      order.restaurant_name ||
-      order.restaurantName ||
-      order.restaurant ||
-      "Restaurant",
+    restaurantName: restaurantName || "Restaurant",
+    restaurant_name: restaurantName || "Restaurant",
 
     restaurantAddress:
-      order.restaurantAddress ||
-      order.restaurant_address ||
-      order.pickup ||
-      "",
-
+      restaurantAddress ||
+      (restaurantName ? `${restaurantName}, Kathmandu` : "Restaurant pickup location"),
     restaurant_address:
-      order.restaurant_address ||
-      order.restaurantAddress ||
-      order.pickup ||
-      "",
+      restaurantAddress ||
+      (restaurantName ? `${restaurantName}, Kathmandu` : "Restaurant pickup location"),
 
-    customerName:
-      order.customerName ||
-      order.customer_name ||
-      order.fullName ||
-      order.name ||
-      "Customer",
-
-    customer_name:
-      order.customer_name ||
-      order.customerName ||
-      order.fullName ||
-      order.name ||
-      "Customer",
+    customerName: customerName || "Customer",
+    customer_name: customerName || "Customer",
 
     phoneNumber: order.phoneNumber || order.phone_number || order.phone || "",
     phone_number: order.phone_number || order.phoneNumber || order.phone || "",
@@ -936,6 +955,23 @@ function normalizeOrderForDashboard(order) {
     deliveryFee: Number(order.deliveryFee || order.delivery_fee || 0),
     delivery_fee: Number(order.delivery_fee || order.deliveryFee || 0),
 
+    earning: realEarning,
+    rider_earning: realEarning,
+    delivery_earning: realEarning,
+
+    address: order.address || order.deliveryAddress || order.delivery_address || "",
+    city: order.city || "",
+    area: order.area || "",
+    postalCode: order.postalCode || order.postal_code || "",
+    postal_code: order.postal_code || order.postalCode || "",
+
+    dropoff:
+      order.dropoff ||
+      order.dropoffAddress ||
+      order.dropoff_address ||
+      customerAddress ||
+      "Customer delivery location",
+
     createdAt: order.createdAt || order.created_at || "",
     created_at: order.created_at || order.createdAt || "",
     updatedAt: order.updatedAt || order.updated_at || "",
@@ -947,9 +983,95 @@ function normalizeOrderForDashboard(order) {
     distance: order.distance || "2.5 km",
     eta: order.eta || order.estimated_delivery || order.estimatedDelivery || "20 mins",
 
-    items: Array.isArray(order.items) ? order.items : [],
+    items,
   };
 }
+
+function cleanDashboardLabel(value) {
+  const text = String(value || "").trim();
+
+  if (!text) return "";
+  if (text.toLowerCase() === "restaurant") return "";
+  if (text.toLowerCase() === "unknown restaurant") return "";
+  if (text.toLowerCase() === "customer") return "";
+
+  return text;
+}
+
+function getRestaurantName(order) {
+  return (
+    cleanDashboardLabel(order.restaurantName) ||
+    cleanDashboardLabel(order.restaurant_name) ||
+    cleanDashboardLabel(order.restaurant) ||
+    "Restaurant"
+  );
+}
+
+function getCustomerName(order) {
+  return (
+    cleanDashboardLabel(order.customerName) ||
+    cleanDashboardLabel(order.customer_name) ||
+    cleanDashboardLabel(order.customer) ||
+    cleanDashboardLabel(order.fullName) ||
+    cleanDashboardLabel(order.full_name) ||
+    "Customer"
+  );
+}
+
+function getPickupAddress(order) {
+  return (
+    cleanDashboardLabel(order.restaurantAddress) ||
+    cleanDashboardLabel(order.restaurant_address) ||
+    cleanDashboardLabel(order.pickupAddress) ||
+    cleanDashboardLabel(order.pickup_address) ||
+    cleanDashboardLabel(order.pickup) ||
+    `${getRestaurantName(order)}, Kathmandu`
+  );
+}
+
+function getDropoffAddress(order) {
+  const parts = [
+    order.address,
+    order.city,
+    order.area,
+    order.postalCode || order.postal_code,
+  ].filter(Boolean);
+
+  return (
+    parts.join(", ") ||
+    order.dropoff ||
+    order.dropoffAddress ||
+    order.dropoff_address ||
+    "Customer delivery location"
+  );
+}
+
+function getRiderEarningAmount(order = {}) {
+  const explicit = Number(
+    order.rider_earning ||
+      order.riderEarning ||
+      order.delivery_earning ||
+      order.deliveryEarning ||
+      order.earning ||
+      order.amount ||
+      0
+  );
+
+  if (explicit > 0) return Math.round(explicit);
+
+  const deliveryFee = Number(order.deliveryFee || order.delivery_fee || 0);
+  if (deliveryFee > 0) return Math.max(75, Math.round(deliveryFee * 2));
+
+  const total = Number(order.total || 0);
+  if (total > 0) return Math.max(75, Math.round(total * 0.08 + 70));
+
+  return 75;
+}
+
+function estimateEarning(order) {
+  return getRiderEarningAmount(order);
+}
+
 
 function getOrderId(order) {
   return String(order.id || order.orderId || order.order_id || order.orderNumber || "");

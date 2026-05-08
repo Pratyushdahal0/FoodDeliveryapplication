@@ -664,41 +664,109 @@ estimated_delivery:
   }
 
   function updateStepUI(orderOrStatus) {
-    const order =
-      typeof orderOrStatus === "string"
-        ? { status: orderOrStatus, delivery_status: latestOrder?.delivery_status }
-        : orderOrStatus || latestOrder;
+  const order =
+    typeof orderOrStatus === "string"
+      ? { status: orderOrStatus, delivery_status: latestOrder?.delivery_status }
+      : orderOrStatus || latestOrder;
 
-    const visualStatus = getVisualStatus(order);
-    const currentIndex = STATUS_FLOW.indexOf(visualStatus);
-    const safeIndex = currentIndex === -1 ? 0 : currentIndex;
-    const isDelivered = visualStatus === "delivered";
+  ensureTrackTimelineDoneStyles();
 
-    document.querySelectorAll(".step-item").forEach((stepEl, index) => {
-      stepEl.classList.remove("active", "done");
+  const visualStatus = getVisualStatus(order);
+  const currentIndex = STATUS_FLOW.indexOf(visualStatus);
+  const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+  const isDelivered =
+    visualStatus === "delivered" ||
+    getOrderStatus(order) === "delivered" ||
+    getDeliveryStatus(order) === "delivered";
 
-      if (isDelivered) {
-        stepEl.classList.add("done");
-        return;
+  document.querySelectorAll(".step-item").forEach((stepEl, index) => {
+    stepEl.classList.remove("active", "done");
+
+    const dot =
+      stepEl.querySelector(".step-dot") ||
+      stepEl.querySelector(".timeline-dot") ||
+      stepEl.querySelector(".step-circle") ||
+      stepEl.querySelector("span");
+
+    if (isDelivered || index < safeIndex) {
+      stepEl.classList.add("done");
+      if (dot) {
+        dot.innerHTML = `<i class="fa-solid fa-check"></i>`;
+        dot.style.borderColor = "#22c55e";
+        dot.style.background = "#22c55e";
+        dot.style.color = "#ffffff";
       }
+      return;
+    }
 
-      if (index < safeIndex) {
-        stepEl.classList.add("done");
-      } else if (index === safeIndex) {
-        stepEl.classList.add("active");
+    if (index === safeIndex) {
+      stepEl.classList.add("active");
+      if (dot) {
+        dot.style.borderColor = "#ff5a2f";
+        dot.style.background = "#fff1ea";
+        dot.style.color = "#ff5a2f";
       }
-    });
+      return;
+    }
 
-    const fillPercent = isDelivered
-      ? 100
-      : (safeIndex / (STATUS_FLOW.length - 1)) * 100;
+    if (dot) {
+      dot.innerHTML = "";
+      dot.style.borderColor = "";
+      dot.style.background = "";
+      dot.style.color = "";
+    }
+  });
 
-    const progressFill = document.getElementById("progressFill");
-    if (progressFill) progressFill.style.width = `${fillPercent}%`;
+  const fillPercent = isDelivered
+    ? 100
+    : (safeIndex / (STATUS_FLOW.length - 1)) * 100;
 
-    setStatusPill(order);
-    setLiveNote(order);
-  }
+  const progressFill = document.getElementById("progressFill");
+  if (progressFill) progressFill.style.width = `${fillPercent}%`;
+
+  setStatusPill(order);
+  setLiveNote(order);
+}
+
+function ensureTrackTimelineDoneStyles() {
+  if (document.getElementById("trackTimelineDoneStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "trackTimelineDoneStyles";
+  style.textContent = `
+    .step-item.done .step-dot,
+    .step-item.done .timeline-dot,
+    .step-item.done .step-circle {
+      background: #22c55e !important;
+      border-color: #22c55e !important;
+      color: #ffffff !important;
+    }
+
+    .step-item.done .step-dot i,
+    .step-item.done .timeline-dot i,
+    .step-item.done .step-circle i {
+      color: #ffffff !important;
+      font-size: 11px;
+    }
+
+    .step-item.done h3,
+    .step-item.done h4,
+    .step-item.done strong {
+      color: #111827 !important;
+    }
+
+    .step-item.active .step-dot,
+    .step-item.active .timeline-dot,
+    .step-item.active .step-circle {
+      border-color: #ff5a2f !important;
+      background: #fff1ea !important;
+      color: #ff5a2f !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
 
   function setStatusPill(orderOrStatus) {
     const pill = document.getElementById("statusPill");
@@ -1167,50 +1235,102 @@ function renderBetaRouteCard(order = latestOrder) {
   }
 
   function fillStepTimesFromHistory(order) {
-    const historyMap = {};
+  const historyMap = {};
+  const visualStatus = getVisualStatus(order);
+  const currentIndex = STATUS_FLOW.indexOf(visualStatus);
+  const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+  const isDelivered =
+    visualStatus === "delivered" ||
+    getOrderStatus(order) === "delivered" ||
+    getDeliveryStatus(order) === "delivered";
 
-    if (order.created_at || order.createdAt) {
-      historyMap.pending = order.created_at || order.createdAt;
-    }
-
-    if (order.updated_at || order.updatedAt) {
-      const visualStatus = getVisualStatus(order);
-      historyMap[visualStatus] = order.updated_at || order.updatedAt;
-    }
-
-    if (order.rider_assigned_at || order.riderAssignedAt) {
-      historyMap.rider_assigned = order.rider_assigned_at || order.riderAssignedAt;
-    }
-
-    if (order.picked_up_at) historyMap.picked_up = order.picked_up_at;
-    if (order.on_the_way_at) historyMap.on_the_way = order.on_the_way_at;
-    if (order.delivered_at) historyMap.delivered = order.delivered_at;
-
-    const statusHistory = Array.isArray(order.statusHistory) ? order.statusHistory : [];
-    const deliveryHistory = Array.isArray(order.deliveryHistory) ? order.deliveryHistory : [];
-
-    [...statusHistory, ...deliveryHistory].forEach((entry) => {
-      if (entry?.status && entry?.time && !historyMap[entry.status]) {
-        historyMap[entry.status] = entry.time;
-      }
-    });
-
-    STATUS_FLOW.forEach((status) => {
-      const el = document.getElementById(`time-${status}`);
-      if (!el) return;
-
-      const time = historyMap[status];
-
-      if (status === "pending") {
-        el.textContent = formatClockTime(
-          parseOrderDate(time || order.createdAt) || new Date()
-        );
-        return;
-      }
-
-      el.textContent = time ? formatClockTime(parseOrderDate(time)) : "--:--";
-    });
+  if (order.created_at || order.createdAt) {
+    historyMap.pending = order.created_at || order.createdAt;
   }
+
+  if (order.confirmed_at || order.confirmedAt) {
+    historyMap.confirmed = order.confirmed_at || order.confirmedAt;
+  }
+
+  if (order.preparing_at || order.preparingAt) {
+    historyMap.preparing = order.preparing_at || order.preparingAt;
+  }
+
+  if (order.ready_for_pickup_at || order.readyForPickupAt) {
+    historyMap.ready_for_pickup =
+      order.ready_for_pickup_at || order.readyForPickupAt;
+  }
+
+  if (order.rider_assigned_at || order.riderAssignedAt) {
+    historyMap.rider_assigned = order.rider_assigned_at || order.riderAssignedAt;
+  }
+
+  if (order.picked_up_at || order.pickedUpAt) {
+    historyMap.picked_up = order.picked_up_at || order.pickedUpAt;
+  }
+
+  if (order.on_the_way_at || order.onTheWayAt) {
+    historyMap.on_the_way = order.on_the_way_at || order.onTheWayAt;
+  }
+
+  if (order.delivered_at || order.deliveredAt) {
+    historyMap.delivered = order.delivered_at || order.deliveredAt;
+  }
+
+  if (order.updated_at || order.updatedAt) {
+    historyMap[visualStatus] = historyMap[visualStatus] || order.updated_at || order.updatedAt;
+  }
+
+  const statusHistory = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+  const deliveryHistory = Array.isArray(order.deliveryHistory) ? order.deliveryHistory : [];
+
+  [...statusHistory, ...deliveryHistory].forEach((entry) => {
+    if (entry?.status && entry?.time && !historyMap[entry.status]) {
+      historyMap[entry.status] = entry.time;
+    }
+  });
+
+  const fallbackTime =
+    historyMap.delivered ||
+    historyMap.on_the_way ||
+    historyMap.picked_up ||
+    historyMap.rider_assigned ||
+    historyMap.ready_for_pickup ||
+    historyMap.preparing ||
+    historyMap.confirmed ||
+    historyMap.pending ||
+    order.updated_at ||
+    order.updatedAt ||
+    order.created_at ||
+    order.createdAt ||
+    new Date().toISOString();
+
+  STATUS_FLOW.forEach((status, index) => {
+    const el = document.getElementById(`time-${status}`);
+    if (!el) return;
+
+    const time = historyMap[status];
+
+    if (status === "pending") {
+      el.textContent = formatClockTime(
+        parseOrderDate(time || order.createdAt || order.created_at) || new Date()
+      );
+      return;
+    }
+
+    if (time) {
+      el.textContent = formatClockTime(parseOrderDate(time));
+      return;
+    }
+
+    if (isDelivered || index <= safeIndex) {
+      el.textContent = formatClockTime(parseOrderDate(fallbackTime)) || "Completed";
+      return;
+    }
+
+    el.textContent = "--:--";
+  });
+}
 
   /* ===============================
      DELIVERED FINAL UX + REVIEW DRAFT
@@ -2017,6 +2137,34 @@ function saveReviewLocally(order, review) {
       minute: "2-digit",
     });
   }
+
+
+  function formatReadableDate(value) {
+  const date = parseOrderDate(value);
+
+  if (!date) return "";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 30) return "just now";
+  if (minutes < 1) return `${seconds}s ago`;
+  if (minutes < 60) return `${minutes} min ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days === 1) return "yesterday";
+
+  return date.toLocaleDateString("en-NP", {
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() === now.getFullYear() ? undefined : "numeric",
+  });
+}
+
 
   function buildDeliveryText(order) {
     const addressParts = [

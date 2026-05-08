@@ -92,28 +92,45 @@ class Order {
 
     // Get rider's current active delivery
     public function getActiveDeliveryByRider($rider_id) {
-        $query = "SELECT *
-                  FROM " . $this->table . "
-                  WHERE rider_id = ?
-                  AND delivery_status IN ('assigned', 'picked_up', 'on_the_way')
-                  AND status != 'delivered'
-                  ORDER BY updated_at DESC, created_at DESC
-                  LIMIT 1";
+    $query = "
+        SELECT
+            o.*,
+            r.restaurant_name AS restaurant_name,
+            r.restaurant_name AS restaurantName,
+            r.location AS restaurant_address,
+            r.location AS restaurantAddress,
+            r.city AS restaurant_city
+        FROM " . $this->table . " o
+        LEFT JOIN restaurants r ON o.restaurant_id = r.id
+        WHERE o.rider_id = ?
+          AND o.delivery_status IN ('assigned', 'picked_up', 'on_the_way')
+          AND o.status != 'delivered'
+        ORDER BY o.updated_at DESC, o.created_at DESC
+        LIMIT 1
+    ";
 
-        $stmt = $this->conn->prepare($query);
+    $stmt = $this->conn->prepare($query);
 
-        if (!$stmt) return null;
+    if (!$stmt) return null;
 
-        $stmt->bind_param("i", $rider_id);
-        $stmt->execute();
+    $stmt->bind_param("i", $rider_id);
+    $stmt->execute();
 
-        $result = $stmt->get_result();
-        $order = $result ? $result->fetch_assoc() : null;
+    $result = $stmt->get_result();
+    $order = $result ? $result->fetch_assoc() : null;
 
-        $stmt->close();
+    $stmt->close();
 
-        return $order ?: null;
+    if ($order) {
+        $restaurantAddress = trim(($order["restaurant_address"] ?? "") . ", " . ($order["restaurant_city"] ?? ""));
+        $restaurantAddress = trim($restaurantAddress, " ,");
+
+        $order["restaurantAddress"] = $restaurantAddress ?: ($order["restaurant_address"] ?? "");
+        $order["restaurant_address"] = $restaurantAddress ?: ($order["restaurant_address"] ?? "");
     }
+
+    return $order ?: null;
+}
 
     // Create a new order
     public function create($data) {
