@@ -459,6 +459,30 @@
 
                 <div id="couponMessage" class="coupon-message"></div>
               </div>
+
+              <div class="coupon-box promo-coupon-box">
+                <h5>Have a promo code?</h5>
+                <p>Apply a promo code for extra savings.</p>
+
+                <div class="coupon-row promo-row">
+                  <input
+                    type="text"
+                    id="promoCodeInput"
+                    placeholder="Enter promo code (e.g., WELCOME10)"
+                    autocomplete="off"
+                  />
+                  <button type="button" id="applyPromoBtn">Apply</button>
+                  <button
+                    type="button"
+                    id="removePromoBtn"
+                    style="display: none"
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                <div id="promoMessage" class="coupon-message"></div>
+              </div>
             </div>
 
             <button id="placeOrderBtn" class="place-order-btn" type="button">
@@ -533,6 +557,8 @@
 
       const CHECKOUT_RESTAURANT_API =
         "../../backend/controllers/PublicRestaurantController.php?action=approved";
+      const CHECKOUT_COUPON_PREVIEW_API =
+        "../../backend/controllers/CouponController.php?action=preview";
 
       let checkoutRestaurantSettings = null;
       let checkoutRestaurantMode = {
@@ -560,6 +586,9 @@
       let appliedCouponId = "";
       let appliedCouponData = null;
 
+      let appliedPromoCode = "";
+      let appliedPromoCoupon = null;
+
       document.addEventListener("DOMContentLoaded", async function () {
         normalizeCheckoutCurrencyLabels();
         initializeCheckout();
@@ -583,6 +612,18 @@
         if (applyCouponBtn) {
           applyCouponBtn.addEventListener("click", applyCouponToCheckout);
         }
+
+        const applyPromoBtn = document.getElementById("applyPromoBtn");
+        if (applyPromoBtn) {
+          applyPromoBtn.addEventListener("click", applyPromoCode);
+        }
+
+        const removePromoBtn = document.getElementById("removePromoBtn");
+        if (removePromoBtn) {
+          removePromoBtn.addEventListener("click", removePromoCode);
+        }
+
+        syncPromoAndRewardUiState();
       });
 
       /* ===============================
@@ -977,6 +1018,10 @@
       }
 
       function autoApplyBestRewardCoupon(settings) {
+        if (isPromoApplied()) {
+          return;
+        }
+
         if (!settings.autoApplyBestCoupon) return;
 
         const couponSelect = document.getElementById("couponSelect");
@@ -1117,6 +1162,14 @@
       }
 
       function applyCouponToCheckout() {
+        if (isPromoApplied()) {
+          setCouponMessage(
+            "Remove promo code before using a reward coupon.",
+            "error",
+          );
+          return;
+        }
+
         const couponSelect = document.getElementById("couponSelect");
         if (!couponSelect) return;
 
@@ -1161,6 +1214,7 @@
         checkoutSummary.total = Math.max(0, Number(preview.finalTotal || 0));
 
         renderSummary();
+        syncPromoAndRewardUiState();
 
         setCouponMessage(
           `${preview.coupon.discount}% coupon applied successfully.`,
@@ -1174,6 +1228,183 @@
 
         couponMessage.textContent = message;
         couponMessage.className = `coupon-message ${type}`;
+      }
+
+      /* ===============================
+         PROMO CODE (SERVER-SIDE PREVIEW)
+      ================================ */
+
+      function isPromoApplied() {
+        return Boolean(appliedPromoCode && appliedPromoCoupon);
+      }
+
+      function isRewardCouponApplied() {
+        return Boolean(appliedCouponId && appliedCouponData);
+      }
+
+      function setPromoMessage(message, type) {
+        const promoMessage = document.getElementById("promoMessage");
+        if (!promoMessage) return;
+        promoMessage.textContent = message;
+        promoMessage.className = `coupon-message ${type}`;
+      }
+
+      function setRewardCouponUiDisabled(disabled) {
+        const couponSelect = document.getElementById("couponSelect");
+        const applyBtn = document.getElementById("applyCouponBtn");
+        if (couponSelect) couponSelect.disabled = Boolean(disabled);
+        if (applyBtn) applyBtn.disabled = Boolean(disabled);
+      }
+
+      function setPromoUiDisabled(disabled) {
+        const promoInput = document.getElementById("promoCodeInput");
+        const applyBtn = document.getElementById("applyPromoBtn");
+        if (promoInput) promoInput.disabled = Boolean(disabled);
+        if (applyBtn) applyBtn.disabled = Boolean(disabled);
+      }
+
+      function syncPromoAndRewardUiState() {
+        if (isPromoApplied()) {
+          setRewardCouponUiDisabled(true);
+          setPromoUiDisabled(false);
+          return;
+        }
+
+        if (isRewardCouponApplied()) {
+          setPromoUiDisabled(true);
+          return;
+        }
+
+        setRewardCouponUiDisabled(false);
+        setPromoUiDisabled(false);
+      }
+
+      async function applyPromoCode() {
+        if (isRewardCouponApplied()) {
+          setPromoMessage(
+            "Remove reward coupon before using promo code.",
+            "error",
+          );
+          return;
+        }
+
+        const promoInput = document.getElementById("promoCodeInput");
+        const removeBtn = document.getElementById("removePromoBtn");
+
+        const rawCode = promoInput ? promoInput.value : "";
+        const promoCode = String(rawCode || "").trim().toUpperCase();
+
+        if (!promoCode) {
+          setPromoMessage("Please enter a promo code first.", "error");
+          return;
+        }
+
+        setPromoMessage("Validating promo code...", "success");
+
+        const canonicalUser =
+          typeof window.getCurrentLoggedInUser === "function"
+            ? window.getCurrentLoggedInUser()
+            : null;
+
+        const payload = {
+          code: promoCode,
+          subtotal: checkoutSummary.subtotal,
+        };
+
+        if (canonicalUser && canonicalUser.id) {
+          payload.user_id = canonicalUser.id;
+        }
+
+        const canonicalEmail =
+          (canonicalUser && canonicalUser.email) ||
+          localStorage.getItem("userEmail") ||
+          "";
+
+        if (canonicalEmail) {
+          payload.customer_email = canonicalEmail;
+        }
+
+        try {
+          const response = await fetch(CHECKOUT_COUPON_PREVIEW_API, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const raw = await response.text();
+          let result = null;
+
+          try {
+            result = JSON.parse(raw);
+          } catch (parseError) {
+            console.error("[promo] Raw preview response:", raw);
+            throw new Error("Invalid server response while validating promo.");
+          }
+
+          if (!result.success) {
+            throw new Error(result.message || "Invalid promo code.");
+          }
+
+          const coupon = result.coupon || null;
+          const discountAmount = Number(coupon?.discount_amount || 0);
+
+          if (!coupon || !coupon.code) {
+            throw new Error("Invalid promo response.");
+          }
+
+          appliedPromoCode = String(coupon.code || promoCode).toUpperCase();
+          appliedPromoCoupon = coupon;
+
+          checkoutSummary.discount = Math.max(0, discountAmount);
+          checkoutSummary.total = Math.max(
+            0,
+            Number(checkoutSummary.subtotal || 0) +
+              Number(checkoutSummary.deliveryFee || 0) +
+              Number(checkoutSummary.tax || 0) -
+              Number(checkoutSummary.discount || 0),
+          );
+
+          renderSummary();
+          syncPromoAndRewardUiState();
+
+          if (promoInput) {
+            promoInput.value = appliedPromoCode;
+          }
+
+          if (removeBtn) {
+            removeBtn.style.display = "inline-flex";
+          }
+
+          setPromoMessage("Promo code applied successfully.", "success");
+        } catch (error) {
+          console.error("[promo] apply failed:", error);
+          setPromoMessage(error.message || "Could not apply promo code.", "error");
+        }
+      }
+
+      function removePromoCode() {
+        appliedPromoCode = "";
+        appliedPromoCoupon = null;
+
+        const promoInput = document.getElementById("promoCodeInput");
+        const removeBtn = document.getElementById("removePromoBtn");
+
+        if (promoInput) promoInput.value = "";
+        if (removeBtn) removeBtn.style.display = "none";
+
+        checkoutSummary.discount = 0;
+        checkoutSummary.total = Math.max(
+          0,
+          Number(checkoutSummary.subtotal || 0) +
+            Number(checkoutSummary.deliveryFee || 0) +
+            Number(checkoutSummary.tax || 0),
+        );
+
+        renderSummary();
+        syncPromoAndRewardUiState();
+        setPromoMessage("Promo code removed.", "success");
       }
 
       function showEmptyCheckout() {
@@ -1859,6 +2090,13 @@
           restaurant_operation_message: checkoutRestaurantMode.message,
           items: checkoutItems,
         };
+
+        // Promo code flow: send coupon_code only. Backend will validate and compute discount again.
+        if (appliedPromoCode) {
+          orderData.coupon_code = appliedPromoCode;
+          orderData.coupon_id = null;
+          delete orderData.coupon_discount;
+        }
 
         // ---- Priority #3: stamp the order with the logged-in user's
         // canonical identity. This guarantees the order ends up tied
