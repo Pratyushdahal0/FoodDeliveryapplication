@@ -1059,6 +1059,41 @@ if (
             }
 
             $discountAmount = isset($input['discount_amount']) ? floatval($input['discount_amount']) : 0;
+
+            /*
+              Coupon + commission: accept optional coupon fields from frontend safely,
+              but keep backend as source of truth for the final stored values.
+            */
+            $coupon_id = null;
+            if (isset($input['coupon_id']) && $input['coupon_id'] !== '' && $input['coupon_id'] !== null) {
+                $coupon_id = intval($input['coupon_id']);
+                if ($coupon_id <= 0) {
+                    $coupon_id = null;
+                }
+            }
+
+            $coupon_code = null;
+            if (isset($input['coupon_code'])) {
+                $candidateCode = trim((string)$input['coupon_code']);
+                $coupon_code = $candidateCode !== '' ? $candidateCode : null;
+            }
+
+            // coupon_discount comes from discount_amount (preferred) or incoming coupon_discount
+            $coupon_discount = 0.00;
+            if (isset($input['discount_amount'])) {
+                $coupon_discount = round(max(0, floatval($discountAmount)), 2);
+            } elseif (isset($input['coupon_discount'])) {
+                $coupon_discount = round(max(0, floatval($input['coupon_discount'])), 2);
+            }
+
+            $commission_rate = 10.00; // percent
+            $commissionBase = floatval($subtotal) - floatval($coupon_discount);
+            if ($commissionBase < 0) {
+                $commissionBase = 0.00;
+            }
+            $commission_amount = round($commissionBase * 0.10, 2);
+            $restaurant_earnings = round($commissionBase - $commission_amount, 2);
+
             $total = round(max(0, $subtotal + $tax + $delivery_fee - $discountAmount), 2);
 
             $orderData = [
@@ -1075,6 +1110,12 @@ if (
                 "tax" => $tax,
                 "delivery_fee" => $delivery_fee,
                 "total" => $total,
+                "coupon_id" => $coupon_id,
+                "coupon_code" => $coupon_code,
+                "coupon_discount" => $coupon_discount,
+                "commission_rate" => $commission_rate,
+                "commission_amount" => $commission_amount,
+                "restaurant_earnings" => $restaurant_earnings,
                 "notes" => $input['delivery_note'] ?? $input['notes'] ?? null,
                 "status" => $input['status'] ?? 'pending',
                 "delivery_status" => $input['delivery_status'] ?? 'searching'
