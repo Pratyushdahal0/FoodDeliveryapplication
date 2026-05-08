@@ -533,6 +533,95 @@ body {
 }
 
 /* ===============================
+   PROMO CODE POLISH
+================================ */
+
+.promo-coupon-box {
+  margin-top: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.07)),
+    rgba(255, 255, 255, 0.08);
+}
+
+.promo-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.promo-row input {
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  border: none;
+  border-radius: 14px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #111827;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  outline: none;
+  transition:
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.promo-row input::placeholder {
+  color: #8a93a3;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.promo-row button {
+  width: 100%;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+#applyPromoBtn {
+  background: #ffffff;
+  color: #111827;
+}
+
+#removePromoBtn {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+#applyPromoBtn:hover:not(:disabled),
+#removePromoBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.promo-row input:disabled,
+.promo-row button:disabled,
+.coupon-row select:disabled,
+.coupon-row button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+#promoMessage {
+  margin-top: 10px;
+  line-height: 1.45;
+}
+
+@media (max-width: 768px) {
+  .promo-row {
+    grid-template-columns: 1fr;
+  }
+
+  .promo-row button {
+    width: 100%;
+  }
+}
+
+/* ===============================
    BUTTONS
 ================================ */
 
