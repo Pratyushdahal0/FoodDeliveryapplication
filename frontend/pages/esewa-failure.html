@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Failed – FoodExpress</title>
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../assets/images/brand/foodexpress-favicon-32.png"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --red: #dc2626;
+        --red-l: #fee2e2;
+        --orange: #f2644c;
+        --navy: #12203a;
+        --gray: #6b7280;
+        --bg: #f6f7fb;
+        --white: #ffffff;
+      }
+      body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .card {
+        background: var(--white);
+        border-radius: 28px;
+        box-shadow: 0 20px 60px rgba(18, 32, 58, 0.12);
+        padding: 48px 40px;
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+      }
+      .status-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--red-l);
+        color: var(--red);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        margin: 0 auto 24px;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--navy);
+        margin-bottom: 10px;
+      }
+      p.subtitle {
+        font-size: 15px;
+        color: var(--gray);
+        line-height: 1.7;
+        margin-bottom: 28px;
+      }
+      .info-box {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 16px;
+        padding: 18px;
+        font-size: 14px;
+        color: #92400e;
+        margin-bottom: 28px;
+        text-align: left;
+        line-height: 1.7;
+      }
+      .info-box strong {
+        color: var(--navy);
+        display: block;
+        margin-bottom: 6px;
+        font-size: 15px;
+      }
+      .btn-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 24px;
+        border-radius: 999px;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+        transition: opacity 0.2s;
+      }
+      .btn:hover {
+        opacity: 0.85;
+      }
+      .btn-primary {
+        background: var(--navy);
+        color: #fff;
+      }
+      .btn-ghost {
+        background: #f3f4f6;
+        color: var(--navy);
+      }
+      .brand {
+        font-size: 13px;
+        color: var(--gray);
+        margin-top: 28px;
+      }
+      .brand strong {
+        color: var(--navy);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="status-icon">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+
+      <h1>Payment cancelled</h1>
+      <p class="subtitle">
+        Your eSewa payment was not completed. Your order has not been confirmed
+        and no money has been deducted.
+      </p>
+
+      <div class="info-box">
+        <strong>What happened?</strong>
+        You may have cancelled the payment, your session timed out, or eSewa
+        declined the transaction. Your cart items are saved — you can go back
+        and try again.
+      </div>
+
+      <div class="btn-row">
+        <a href="payment.html" class="btn btn-primary">
+          <i class="fa-solid fa-rotate-left"></i> Try again
+        </a>
+        <a href="dashboard.html" class="btn btn-ghost"> Dashboard </a>
+      </div>
+
+      <div class="brand">
+        Powered by <strong>FoodExpress</strong> · Secure checkout
+      </div>
+    </div>
+
+    <script>
+      // Mark payment as failed in the URL params (if any were passed by eSewa)
+      const params = new URLSearchParams(window.location.search);
+      const uuid = params.get("transaction_uuid");
+      const amt = params.get("total_amount");
+
+      if (uuid && amt) {
+        // Silently notify backend of failure (fire-and-forget, don't block UX)
+        fetch(
+          `../../backend/controllers/EsewaController.php?action=verify` +
+            `&transaction_uuid=${encodeURIComponent(uuid)}` +
+            `&total_amount=${encodeURIComponent(amt)}`,
+        ).catch(() => {});
+      }
+    </script>
+  </body>
+</html>
