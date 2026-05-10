@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Track Your Order – FoodRush</title>
+  <link rel="stylesheet" href="../css/map.css" />
+  <!-- Leaflet.js CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body>
+
+  <!-- Top Nav -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="back-btn" onclick="history.back()">
+        <i class="fa fa-arrow-left"></i>
+      </button>
+      <div class="brand">FoodRush</div>
+    </div>
+    <div class="order-tag">
+      <i class="fa fa-receipt"></i>
+      Order #FR-7842
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <main class="app-layout">
+
+    <!-- MAP AREA -->
+    <div class="map-wrapper">
+      <div id="map"></div>
+
+      <!-- ETA Chip over map -->
+      <div class="eta-chip">
+        <i class="fa fa-bolt"></i>
+        <span id="eta-label">Arriving in <strong>12 min</strong></span>
+      </div>
+
+      <!-- Recenter Button -->
+      <button class="recenter-btn" id="recenterBtn" title="Re-center map">
+        <i class="fa fa-crosshairs"></i>
+      </button>
+    </div>
+
+    <!-- BOTTOM PANEL -->
+    <div class="bottom-panel" id="bottomPanel">
+      <!-- Drag handle -->
+      <div class="drag-handle"></div>
+
+      <!-- Progress Steps -->
+      <div class="progress-steps">
+        <div class="step done">
+          <div class="step-icon"><i class="fa fa-check"></i></div>
+          <span>Confirmed</span>
+        </div>
+        <div class="step-line done"></div>
+        <div class="step done">
+          <div class="step-icon"><i class="fa fa-utensils"></i></div>
+          <span>Preparing</span>
+        </div>
+        <div class="step-line active"></div>
+        <div class="step active">
+          <div class="step-icon"><i class="fa fa-motorcycle"></i></div>
+          <span>On the way</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+          <div class="step-icon"><i class="fa fa-house"></i></div>
+          <span>Delivered</span>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <hr class="divider"/>
+
+      <!-- Rider Card -->
+      <div class="rider-card">
+        <div class="rider-avatar">
+          <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=rider42" alt="Rider" />
+          <span class="rider-online-dot"></span>
+        </div>
+        <div class="rider-info">
+          <p class="rider-name">Rohan Thapa</p>
+          <p class="rider-meta"><i class="fa fa-star"></i> 4.9 &nbsp;·&nbsp; Honda Activa · BA 12 PA 3344</p>
+        </div>
+        <div class="rider-actions">
+          <a href="tel:+9779800000000" class="action-btn call-btn">
+            <i class="fa fa-phone"></i>
+          </a>
+          <a href="#" class="action-btn chat-btn">
+            <i class="fa fa-comment"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="order-summary">
+        <div class="summary-header">
+          <span class="summary-title">Order Summary</span>
+          <button class="toggle-summary" id="toggleSummary">
+            <i class="fa fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="summary-items" id="summaryItems">
+          <div class="item-row">
+            <span class="item-qty">2×</span>
+            <span class="item-name">Chicken Momo</span>
+            <span class="item-price">Rs 340</span>
+          </div>
+          <div class="item-row">
+            <span class="item-qty">1×</span>
+            <span class="item-name">Veg Chowmein</span>
+            <span class="item-price">Rs 130</span>
+          </div>
+          <div class="item-row">
+            <span class="item-qty">2×</span>
+            <span class="item-name">Masala Chai</span>
+            <span class="item-price">Rs 80</span>
+          </div>
+          <hr class="mini-divider"/>
+          <div class="item-row total-row">
+            <span class="item-name">Total Paid</span>
+            <span class="item-price total-price">Rs 550</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cancel / Support -->
+      <div class="footer-actions">
+        <button class="support-btn" onclick="alert('Connecting to support...')">
+          <i class="fa fa-headset"></i> Help
+        </button>
+        <button class="cancel-btn" id="cancelOrderBtn">
+          <i class="fa fa-xmark"></i> Cancel Order
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Cancel Modal -->
+  <div class="modal-overlay" id="cancelModal">
+    <div class="modal">
+      <h3>Cancel Order?</h3>
+      <p>Your rider is already on the way. Cancellation may attract a fee.</p>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" id="keepOrderBtn">Keep Order</button>
+        <button class="modal-btn danger" id="confirmCancelBtn">Yes, Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/map.js"></script>
+</body>
+</html>
