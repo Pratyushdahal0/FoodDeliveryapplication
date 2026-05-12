@@ -6,3 +6,4 @@ backend/config/mail.php
 vendor/
 node_modules/
 *.log
+backend/controllers/StripeController.php
