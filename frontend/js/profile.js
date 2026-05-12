@@ -10,34 +10,47 @@ console.log("[profile.js] Loaded — final global profile sync");
   }
 
   function getStoredProfile() {
-    const profile = safeJsonParse(localStorage.getItem("userProfile"), {}) || {};
-    const loggedInUser =
-      safeJsonParse(localStorage.getItem("loggedInUser"), {}) || {};
+    // Canonical auth keys set by the customer login flow — always role-correct.
+    // These take precedence over userProfile, which can be contaminated by a
+    // previous owner or rider session that wasn't fully cleared on logout.
+    const canonicalEmail = localStorage.getItem("userEmail") || "";
+    const canonicalName  = localStorage.getItem("userName")  || "";
+
+    const profile      = safeJsonParse(localStorage.getItem("userProfile"), {}) || {};
+    const loggedInUser = safeJsonParse(localStorage.getItem("loggedInUser"), {}) || {};
+
+    // Only use userProfile data when it belongs to the currently logged-in user.
+    const profileIsForCurrentUser =
+      !profile.email || !canonicalEmail || profile.email === canonicalEmail;
 
     const name =
-      profile.name ||
-      profile.fullName ||
-      [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim() ||
+      canonicalName ||
+      (profileIsForCurrentUser
+        ? profile.name ||
+          profile.fullName ||
+          [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim()
+        : null) ||
       loggedInUser.name ||
       loggedInUser.fullName ||
-      localStorage.getItem("userName") ||
       localStorage.getItem("pendingVerificationName") ||
       "User";
 
     const email =
-      profile.email ||
+      canonicalEmail ||
+      (profileIsForCurrentUser ? profile.email : null) ||
       loggedInUser.email ||
-      localStorage.getItem("userEmail") ||
       "";
 
     const image =
-      profile.profileImage ||
-      profile.image ||
-      profile.avatar ||
-      profile.profile_picture ||
+      localStorage.getItem("userProfileImage") ||
+      (profileIsForCurrentUser
+        ? profile.profileImage ||
+          profile.image ||
+          profile.avatar ||
+          profile.profile_picture
+        : null) ||
       loggedInUser.profileImage ||
       loggedInUser.image ||
-      localStorage.getItem("userProfileImage") ||
       "";
 
     return {

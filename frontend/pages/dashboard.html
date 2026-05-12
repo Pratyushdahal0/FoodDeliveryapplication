@@ -44,17 +44,17 @@
         </div>
 
         <div class="welcome-info">
-          <h2>Welcome back, <span id="welcomeName">Pratyush</span>!</h2>
+          <h2>Welcome back, <span id="welcomeName"></span>!</h2>
           <p class="email" id="welcomeEmail">pratyushdahal33@gmail.com</p>
         </div>
 
         <div class="welcome-stats">
           <div class="stat">
-            <h3 id="ordersCount">127</h3>
+            <h3 id="ordersCount"></h3>
             <p>Orders</p>
           </div>
           <div class="stat">
-            <h3 id="pointsCount">850</h3>
+            <h3 id="pointsCount"></h3>
             <p>Points</p>
           </div>
           <div class="stat">
@@ -186,19 +186,20 @@
             <div class="offer-icon">📈</div>
             <h3>Special Offer!</h3>
             <p>Get 20% off your next order with code FOOD20</p>
-            <button class="offer-btn" type="button">Claim Offer</button>
+            <button class="offer-btn" type="button" onclick="window.location.href='rewards.html'">Claim Offer</button>
           </div>
         </div>
       </div>
     </div>
     <footer class="footer" id="footer"></footer>
 
+    <script src="../js/shared.js"></script>
     <script src="../js/modules/cart.js"></script>
     <script src="../js/profile.js?v=profilesync2"></script>
     <script src="../js/components/notifications.js?v=routefix4"></script>
     <script src="../js/components/navbar.js?v=brandlogo4"></script>
     <script src="../js/components/footer.js"></script>
-    <script src="../js/dashboard.js?v=dashboard-db-orders-2"></script>
+    <script src="../js/dashboard.js?v=dashboard-db-orders-3"></script>
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {

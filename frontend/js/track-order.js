@@ -6,7 +6,7 @@
   const TRACK_ORDER_HISTORY_KEY = "foodExpressOrders";
   const TRACK_LAST_ORDER_KEY = "lastOrder";
   const DEFAULT_IMAGE = "";
-  const SYNC_INTERVAL_MS = 4000;          // up from 2.5s — reduces base polling rate
+  const SYNC_INTERVAL_MS = 5000;          // poll every 5 s — stop automatically on terminal status
   const STORAGE_REACT_DEBOUNCE_MS = 1500; // debounce cross-tab storage events
 
   const STATUS_FLOW = [
@@ -67,11 +67,59 @@
     startTrackingSync();
   }
 
+  function updateLiveIndicator(active) {
+    let el = document.getElementById("trackLiveBadge");
+
+    if (!active) {
+      if (el) el.remove();
+      return;
+    }
+
+    if (!el) {
+      if (!document.getElementById("trackLiveStyles")) {
+        const s = document.createElement("style");
+        s.id = "trackLiveStyles";
+        s.textContent =
+          "@keyframes trackLivePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}";
+        document.head.appendChild(s);
+      }
+
+      el = document.createElement("span");
+      el.id = "trackLiveBadge";
+      el.title = "Auto-refreshing order status";
+      el.style.cssText =
+        "display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;" +
+        "color:#16a34a;vertical-align:middle;margin-left:8px;";
+      el.innerHTML =
+        '<span style="width:7px;height:7px;border-radius:50%;background:#16a34a;' +
+        'display:inline-block;animation:trackLivePulse 1.4s ease-in-out infinite;flex-shrink:0;"></span>Live';
+
+      const pill = document.getElementById("statusPill");
+      const content = document.getElementById("trackContent");
+      if (pill && pill.parentNode) {
+        pill.insertAdjacentElement("afterend", el);
+      } else if (content) {
+        content.insertAdjacentElement("afterbegin", el);
+      }
+    }
+  }
+
   function startTrackingSync() {
+    // Skip polling for terminal orders
+    if (latestOrder) {
+      const s = getOrderStatus(latestOrder);
+      const d = getDeliveryStatus(latestOrder);
+      if (s === "delivered" || s === "cancelled" || d === "delivered") {
+        updateLiveIndicator(false);
+        return;
+      }
+    }
+
     if (syncInterval) clearInterval(syncInterval);
+    updateLiveIndicator(true);
 
     syncInterval = setInterval(async () => {
-      if (document.hidden) return; // safety net
+      if (document.hidden) return;
 
       const updatedOrder = await getLatestTrackedOrder();
       if (!updatedOrder) return;
@@ -83,6 +131,17 @@
       const newDeliveryStatus = getDeliveryStatus(updatedOrder);
 
       latestOrder = updatedOrder;
+
+      // Stop polling when order reaches a terminal state
+      if (
+        newRestaurantStatus === "delivered" ||
+        newRestaurantStatus === "cancelled" ||
+        newDeliveryStatus === "delivered"
+      ) {
+        clearInterval(syncInterval);
+        syncInterval = null;
+        updateLiveIndicator(false);
+      }
 
       if (
         oldRestaurantStatus !== newRestaurantStatus ||
@@ -257,20 +316,10 @@
   }
 
   async function fetchNewestBackendOrder() {
-    try {
-      const result = await fetchJson(`${ORDER_API_URL}?action=all&limit=1`);
-
-      if (result?.success && Array.isArray(result.data) && result.data.length) {
-        const normalized = normalizeOrder(result.data[0]);
-        saveLatestOrderLocally(normalized);
-        return normalized;
-      }
-
-      return null;
-    } catch (error) {
-      console.warn("[track-order.js] fetchNewestBackendOrder failed:", error);
-      return null;
-    }
+    // Intentionally returns null — do not fall back to action=all which returns
+    // any customer's most recent order. Callers must supply an order number via
+    // URL param or localStorage; the tracking page shows empty state otherwise.
+    return null;
   }
 
   async function fetchJson(url) {
@@ -501,6 +550,7 @@ estimated_delivery:
   }
 
   function renderTrackingPage(order) {
+    showCancelBtn(order);
     latestOrder = normalizeOrder(order);
     showTrackState();
     hydrateLatestOrder();
@@ -2233,4 +2283,115 @@ function saveReviewLocally(order, review) {
   window.goBackToDashboard = goBackToDashboard;
   window.openRiderMessagePlaceholder = openRiderMessagePlaceholder;
   window.focusTrackSection = focusTrackSection;
+
+  /* ── Customer cancel order ───────────────────────────────────────────── */
+
+  function showCancelBtn(order) {
+    const btn = document.getElementById("cancelOrderBtn");
+    if (!btn) return;
+    const status = String(order.status || "").toLowerCase();
+    // Only show cancel button if order is still pending
+    btn.style.display = status === "pending" ? "inline-flex" : "none";
+  }
+
+  window.openCancelOrderModal = function () {
+    const modal = document.getElementById("cancelOrderModal");
+    if (modal) modal.style.display = "flex";
+  };
+
+  window.closeCancelOrderModal = function () {
+    const modal = document.getElementById("cancelOrderModal");
+    if (modal) modal.style.display = "none";
+  };
+
+  window.confirmCancelOrder = async function () {
+    if (!latestOrder) return;
+
+    const reason = (document.getElementById("cancelReasonInput")?.value || "").trim();
+    const btn = document.getElementById("confirmCancelBtn");
+    if (btn) { btn.disabled = true; btn.textContent = "Cancelling..."; }
+
+    const canonicalUser = typeof window.getCurrentLoggedInUser === "function"
+      ? window.getCurrentLoggedInUser() : null;
+
+    try {
+      const resp = await apiRequest(
+        "../../backend/controllers/CancellationController.php?action=cancel_order",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order_id:        latestOrder.id || latestOrder.orderId,
+            cancelled_by:    "customer",
+            canceller_id:    canonicalUser?.id || null,
+            canceller_email: canonicalUser?.email || latestOrder.customerEmail || "",
+            reason:          reason,
+          }),
+        }
+      );
+
+      const result = await resp.json();
+      window.closeCancelOrderModal();
+
+      if (result.success) {
+        // Update local state
+        if (latestOrder) latestOrder.status = "cancelled";
+        showCancelBtn({ status: "cancelled" });
+
+        // Show refund info if applicable
+        let msg = "Your order has been cancelled.";
+        if (result.refund_eligible) {
+          msg += ` A refund of Rs. ${result.refund_amount} will be processed.`;
+        }
+
+        const modal = document.getElementById("trackActionModal");
+        const icon  = document.getElementById("trackActionIcon");
+        const title = document.getElementById("trackActionTitle");
+        const message = document.getElementById("trackActionMessage");
+
+        if (modal && icon && title && message) {
+          icon.style.background = "#dcfce7";
+          icon.style.color = "#16a34a";
+          icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+          title.textContent = "Order cancelled";
+          message.textContent = msg;
+          modal.style.display = "flex";
+          setTimeout(() => { modal.style.display = "none"; }, 4000);
+        }
+      } else {
+        const modal   = document.getElementById("trackActionModal");
+        const icon    = document.getElementById("trackActionIcon");
+        const title   = document.getElementById("trackActionTitle");
+        const message = document.getElementById("trackActionMessage");
+
+        if (modal && icon && title && message) {
+          icon.style.background = "#fee2e2";
+          icon.style.color = "#dc2626";
+          icon.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+          title.textContent = "Could not cancel";
+          message.textContent = result.message || "Could not cancel order.";
+          modal.style.display = "flex";
+          setTimeout(() => { modal.style.display = "none"; }, 4000);
+        }
+      }
+    } catch (err) {
+      const modal   = document.getElementById("trackActionModal");
+      const icon    = document.getElementById("trackActionIcon");
+      const title   = document.getElementById("trackActionTitle");
+      const message = document.getElementById("trackActionMessage");
+
+      if (modal && icon && title && message) {
+        icon.style.background = "#fee2e2";
+        icon.style.color = "#dc2626";
+        icon.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+        title.textContent = "Network error";
+        message.textContent = "Could not reach server. Please try again.";
+        modal.style.display = "flex";
+        setTimeout(() => { modal.style.display = "none"; }, 4000);
+      }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Yes, cancel"; }
+    }
+  };
+
 })();

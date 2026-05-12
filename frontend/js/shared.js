@@ -64,6 +64,18 @@ function logout() {
     "isRiderLoggedIn",
     "foodExpressCurrentRider",
     "riderUserId",
+
+    "latestOrder",
+    "foodExpressOrders",
+    "foodexpressRewards",
+    "foodExpressRewardPoints",
+    "userPoints",
+    "foodExpressHiddenDashboardOrders",
+    "userProfile",
+    "foodExpressUserProfile",
+    "userProfileImage",
+
+    "authToken",
   ];
 
   keysToRemove.forEach((key) => localStorage.removeItem(key));
@@ -79,6 +91,10 @@ function logout() {
    AUTH CHECKS
 ================================ */
 
+// CLIENT-SIDE ONLY GUARD — not a security boundary.
+// This check can be bypassed by any user with DevTools (set isLoggedIn = "true").
+// Real auth enforcement must happen on every backend endpoint via session/token validation.
+// TODO: replace with a server-side session token check once backend auth middleware is added.
 function requireAuth() {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
 
@@ -398,6 +414,26 @@ function getCurrentLoggedInUser() {
 }
 
 /* ===============================
+   API REQUEST HELPER
+================================ */
+
+/**
+ * Wrapper around fetch() that automatically attaches the JWT Authorization
+ * header when a token is stored in localStorage. Falls back to a plain
+ * fetch() call when no token is present so existing code keeps working.
+ *
+ * Usage:  apiRequest('/backend/controllers/OrderController.php?action=...', { method: 'GET' })
+ */
+function apiRequest(url, options = {}) {
+  const token = localStorage.getItem("authToken");
+  const headers = Object.assign({}, options.headers || {});
+  if (token) {
+    headers["Authorization"] = "Bearer " + token;
+  }
+  return fetch(url, Object.assign({}, options, { headers }));
+}
+
+/* ===============================
    GLOBAL EXPORTS
 ================================ */
 
@@ -409,6 +445,8 @@ window.getCurrentLoggedInUser = getCurrentLoggedInUser;
 window.requireOwnerAuth = requireOwnerAuth;
 window.requireCustomerAuth = requireCustomerAuth;
 window.requireRiderAuth = requireRiderAuth;
+
+window.apiRequest = apiRequest;
 
 window.getFavoriteIds = getFavoriteIds;
 window.saveFavoriteIds = saveFavoriteIds;

@@ -1,5 +1,8 @@
 console.log("[dashboard.js] Loaded - final premium real-world customer dashboard");
 
+// Fallback in case shared.js fails to load before this file.
+const _apiReq = typeof apiRequest === "function" ? apiRequest : fetch;
+
 const ORDER_HISTORY_KEY = "foodExpressOrders";
 const DASHBOARD_PREFS_KEY = "foodExpressDashboardPrefs";
 const REWARDS_STORAGE_KEY = "foodexpressRewards";
@@ -77,23 +80,23 @@ window.addEventListener("foodExpressRewardsUpdated", () => {
   loadDashboardStats();
 });
 
+let _dashStorageTimer = null;
 window.addEventListener("storage", async (event) => {
   if (
     event.key === "userProfile" ||
     event.key === "userName" ||
     event.key === "userEmail" ||
-    event.key === "userProfileImage" ||
-    event.key === "userPoints" ||
-    event.key === "foodExpressRewardPoints" ||
-    event.key === REWARDS_STORAGE_KEY ||
     event.key === ORDER_HISTORY_KEY ||
     event.key === "lastOrder" ||
     event.key === "latestOrder"
   ) {
-    bindDashboardProfileInfo();
-    updateRewardsUI();
-    await refreshDashboardData();
-    loadDashboardStats();
+    clearTimeout(_dashStorageTimer);
+    _dashStorageTimer = setTimeout(async () => {
+      bindDashboardProfileInfo();
+      updateRewardsUI();
+      await refreshDashboardData();
+      loadDashboardStats();
+    }, 2000); // wait 2 seconds before re-fetching
   }
 });
 
@@ -139,7 +142,7 @@ async function loadCustomerOrdersForDashboard(email) {
     const url = `${CUSTOMER_ORDER_API}&email=${encodeURIComponent(email)}`;
     console.log("[dashboard.js] Fetching customer orders:", url);
 
-    const response = await fetch(url, {
+    const response = await _apiReq(url, {
       method: "GET",
       headers: { Accept: "application/json" },
       cache: "no-store",
@@ -200,7 +203,15 @@ async function loadCustomerOrdersForDashboard(email) {
       dashboardServerStats
     );
 
-    return dbOrders.map(normalizeDashboardOrder);
+    const hiddenNums = getHiddenDashboardOrderNumbers();
+    const visibleOrders = dbOrders.filter(o => {
+      const num1 = String(o.order_number || "");
+      const num2 = String(o.orderNumber || "");
+      const num3 = String(o.id || "");
+      return !hiddenNums.includes(num1) && !hiddenNums.includes(num2) && !hiddenNums.includes(num3);
+    });
+
+    return visibleOrders.map(normalizeDashboardOrder);
   } catch (error) {
     console.error("[dashboard.js] Error fetching customer orders:", error);
     return getSortedOrders().map(normalizeDashboardOrder);
@@ -277,7 +288,7 @@ function normalizeDashboardOrder(order = {}) {
     customer_email: order.customer_email || order.customerEmail || "",
 
     total: Number(order.total || 0),
-    status: order.status || "pending",
+    status: String(order.status || "").toLowerCase() || "pending",
 
     deliveryStatus: order.deliveryStatus || order.delivery_status || "",
     delivery_status: order.delivery_status || order.deliveryStatus || "",
@@ -511,6 +522,15 @@ function renderOrdersList() {
     });
 
   list
+    .querySelectorAll(".dashboard-order-cancel-btn")
+    .forEach((button, visibleIndex) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        showDashboardCancelConfirm(ordersToShow[visibleIndex]);
+      });
+    });
+
+  list
     .querySelectorAll(".dashboard-order-remove-btn")
     .forEach((button, visibleIndex) => {
       button.addEventListener("click", (event) => {
@@ -605,6 +625,16 @@ function renderDashboardOrderCard(order, index) {
               <i class="fa-solid fa-rotate-right"></i>
               Reorder
             </button>
+
+            ${(String(order.status || "").toLowerCase() === "pending" && String(order.status || "").toLowerCase() !== "cancelled") ? `
+            <button
+              type="button"
+              class="dashboard-order-cancel-btn"
+              title="Cancel this order"
+              style="background:#fff0ef;color:#dc2626;border:1.5px solid #fca5a5;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;"
+            >
+              <i class="fa-solid fa-xmark"></i> Cancel
+            </button>` : ""}
 
             <button
               type="button"
@@ -1046,6 +1076,7 @@ async function loadFavoritesData() {
     list.innerHTML = favorites
       .map((item) => {
         const id = String(item.id || item.product_id || "");
+        const restaurantId = String(item.restaurant_id || item.restaurantId || "");
         const image =
           item.image_url ||
           item.imageUrl ||
@@ -1069,6 +1100,7 @@ async function loadFavoritesData() {
           <div
             class="dashboard-favorite-item"
             data-product-id="${escapeHtml(id)}"
+            data-restaurant-id="${escapeHtml(restaurantId)}"
           >
             <div class="dashboard-favorite-left">
               <img
@@ -1158,7 +1190,13 @@ function bindFavoriteOpenButtons() {
     .querySelectorAll(".dashboard-favorite-item[data-product-id]")
     .forEach((card) => {
       card.addEventListener("click", () => {
-        window.location.href = "food.html";
+        const productId = card.dataset.productId || "";
+        const restaurantId = card.dataset.restaurantId || "";
+        const params = new URLSearchParams();
+        if (productId) params.set("product_id", productId);
+        if (restaurantId) params.set("restaurant_id", restaurantId);
+        const qs = params.toString();
+        window.location.href = qs ? `food.html?${qs}` : "food.html";
       });
     });
 }
@@ -1682,4 +1720,103 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+/* ===============================
+   CANCEL ORDER (DASHBOARD)
+================================ */
+
+function showDashboardCancelConfirm(order) {
+  if (!order) return;
+
+  let modal = document.getElementById("dashboardCancelModal");
+
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "dashboardCancelModal";
+    modal.style.cssText = "display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,0.5);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;";
+
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:24px;padding:36px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="width:56px;height:56px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:24px;color:#dc2626;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h3 style="text-align:center;font-size:20px;color:#12203A;margin-bottom:10px;">Cancel this order?</h3>
+        <p id="dashCancelMsg" style="text-align:center;color:#6B7280;font-size:14px;margin-bottom:20px;">This cannot be undone.</p>
+        <textarea id="dashCancelReason" placeholder="Reason (optional)" style="width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:12px;font-size:14px;resize:none;height:70px;margin-bottom:16px;font-family:inherit;box-sizing:border-box;"></textarea>
+        <div style="display:flex;gap:10px;">
+          <button id="dashCancelKeepBtn" style="flex:1;padding:12px;border-radius:999px;border:1.5px solid #e5e7eb;background:#f9fafb;font-weight:700;cursor:pointer;">Keep order</button>
+          <button id="dashCancelConfirmBtn" style="flex:1;padding:12px;border-radius:999px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer;">Yes, cancel</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  const msgEl = document.getElementById("dashCancelMsg");
+  const reasonEl = document.getElementById("dashCancelReason");
+  const keepBtn = document.getElementById("dashCancelKeepBtn");
+  const confirmBtn = document.getElementById("dashCancelConfirmBtn");
+
+  if (msgEl) msgEl.textContent = `Order #${getOrderNumber(order)} will be permanently cancelled.`;
+  if (reasonEl) reasonEl.value = "";
+
+  modal.style.display = "flex";
+
+  keepBtn.onclick = () => { modal.style.display = "none"; };
+
+  confirmBtn.onclick = async () => {
+    const reason = reasonEl ? reasonEl.value.trim() : "";
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Cancelling...";
+
+    const canonicalUser = typeof window.getCurrentLoggedInUser === "function"
+      ? window.getCurrentLoggedInUser() : null;
+
+    try {
+      const resp = await fetch(
+        "../../backend/controllers/CancellationController.php?action=cancel_order",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order_id:        order.id || order.order_id || order.orderId,
+            cancelled_by:    "customer",
+            canceller_id:    canonicalUser?.id || null,
+            canceller_email: canonicalUser?.email || order.customerEmail || order.customer_email || "",
+            reason,
+          }),
+        }
+      );
+
+      const result = await resp.json();
+      modal.style.display = "none";
+
+      if (result.success) {
+        let msg = "Your order has been cancelled.";
+        if (result.refund_eligible) {
+          msg += ` Refund of Rs. ${result.refund_amount} will be processed.`;
+        }
+
+        // Re-fetch from DB so UI is fully in sync
+        await refreshDashboardData();
+
+        // Show toast AFTER re-render
+        showDashboardToast("Order cancelled", msg, "success");
+      } else {
+        // If already cancelled, just refresh UI silently
+        if (result.message && result.message.toLowerCase().includes("already cancelled")) {
+          await refreshDashboardData();
+        } else {
+          showDashboardToast("Cannot cancel", result.message || "Could not cancel order.", "warning");
+        }
+      }
+    } catch (err) {
+      modal.style.display = "none";
+      showDashboardToast("Error", "Network error. Please try again.", "warning");
+    } finally {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Yes, cancel";
+    }
+  };
 }

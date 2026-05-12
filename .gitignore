@@ -3,3 +3,6 @@
 backend/config/mail.php
 .env
 *.env
+vendor/
+node_modules/
+*.log

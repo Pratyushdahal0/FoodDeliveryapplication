@@ -37,7 +37,7 @@
       image_url:
         product.image_url ||
         product.image ||
-        "https://via.placeholder.com/400x300?text=FoodExpress",
+        "https://placehold.co/400x300?text=FoodExpress",
       rating: product.rating || "4.5",
       delivery_time: product.delivery_time || "30 min",
       is_popular: Number(product.is_popular || 0),
@@ -75,7 +75,7 @@
           description: "Temporary fallback product",
           price: 349,
           category: "burger",
-          image_url: "https://via.placeholder.com/400x300?text=FoodExpress",
+          image_url: "https://placehold.co/400x300?text=FoodExpress",
           rating: "4.5",
           delivery_time: "20 min",
           is_popular: 1,

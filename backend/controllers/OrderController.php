@@ -4,7 +4,7 @@ ini_set('display_errors', 0);
 date_default_timezone_set("Asia/Kathmandu");
 
 header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json");
+header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
@@ -931,6 +931,8 @@ if (!file_exists($couponModelPath)) {
 
 include $couponModelPath;
 
+require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+
 $order = new Order($conn);
 $notification = new Notification($conn);
 $couponModel = new Coupon($conn);
@@ -1203,21 +1205,27 @@ if (
 
                     $emailQueued = false;
 
-                    try {
-                        $emailQueued = queueOrderConfirmationEmail(
-                            $conn,
-                            $order_id,
-                            $result['order_number'],
-                            $input,
-                            $restaurantId,
-                            $restaurantItems,
-                            $subtotal,
-                            $tax,
-                            $delivery_fee,
-                            $total
-                        );
-                    } catch (Throwable $emailException) {
-                        $emailQueued = false;
+                    // Digital payments: skip email here, send after eSewa verifies
+                    $pm = strtolower(trim($input['payment_method'] ?? ''));
+                    $isDigitalPayment = ($pm === 'digital' || $pm === 'card');
+
+                    if (!$isDigitalPayment) {
+                        try {
+                            $emailQueued = queueOrderConfirmationEmail(
+                                $conn,
+                                $order_id,
+                                $result['order_number'],
+                                $input,
+                                $restaurantId,
+                                $restaurantItems,
+                                $subtotal,
+                                $tax,
+                                $delivery_fee,
+                                $total
+                            );
+                        } catch (Throwable $emailException) {
+                            $emailQueued = false;
+                        }
                     }
 
                     $createdOrderData = $order->getById($order_id);
@@ -1227,8 +1235,8 @@ if (
                             $notification,
                             $createdOrderData,
                             "order_placed",
-                            "Order placed",
-                            "Your order " . $result['order_number'] . " was sent to the restaurant."
+                            "Order received",
+                            "Order " . $result['order_number'] . " received — the restaurant is preparing your food."
                         );
 
                         createOwnerNotification(
@@ -1349,6 +1357,7 @@ if (
         break;
 
             case 'customer_orders':
+        $jwtPayload = checkAuth($conn); // soft: logs warning if no token, continues either way
         $email = trim($_GET['email'] ?? '');
         $limit = intval($_GET['limit'] ?? 30);
 
@@ -1363,6 +1372,20 @@ if (
                 "data" => []
             ]);
             break;
+        }
+
+        // If a JWT token was present, ensure the requested email matches the token owner.
+        if ($jwtPayload !== null) {
+            $tokenEmail = strtolower(trim($jwtPayload['email'] ?? ''));
+            if ($tokenEmail !== '' && strtolower($email) !== $tokenEmail) {
+                http_response_code(403);
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Unauthorized: email does not match token.",
+                    "data"    => []
+                ]);
+                break;
+            }
         }
 
         try {
@@ -1508,6 +1531,10 @@ if (
                     || strtolower($item["delivery_status"] ?? "") === "delivered";
             });
 
+            $nonCancelledOrders = array_filter($orders, function ($item) {
+                return strtolower($item["status"] ?? "") !== "cancelled";
+            });
+
             $points = count($deliveredOrders) * 100;
 
             $savings = 0;
@@ -1520,7 +1547,7 @@ if (
                 "data" => $orders,
                 "count" => count($orders),
                 "stats" => [
-                    "total_orders" => count($orders),
+                    "total_orders" => count($nonCancelledOrders),
                     "delivered_orders" => count($deliveredOrders),
                     "points" => $points,
                     "savings" => $savings

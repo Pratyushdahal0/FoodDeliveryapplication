@@ -1,7 +1,7 @@
 console.log("[ownerOrders.js] Loaded - fixed renderer v3");
 
 const OWNER_ORDER_API = "../../backend/controllers/OwnerOrderController.php";
-const OWNER_ORDERS_POLL_INTERVAL = 6000;
+const OWNER_ORDERS_POLL_INTERVAL = 8000;
 
 const tabClassMap = {
   pending: "active-pending",
@@ -28,6 +28,8 @@ let ownerOrdersRefreshTimer = null;
 let isOwnerOrdersLoading = false;
 let isOwnerOrderUpdating = false;
 let currentSortMode = "latest";
+let prevOwnerOrderIds = new Set();
+let isFirstOwnerLoad = true;
 
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("[ownerOrders.js] DOM ready");
@@ -62,7 +64,7 @@ function getCurrentOwnerRestaurant() {
     owner.restaurant_id ||
     currentUser.restaurantId ||
     currentUser.restaurant_id ||
-    "1";
+    null;
 
   const restaurantName =
     localStorage.getItem("ownerRestaurantName") ||
@@ -70,27 +72,28 @@ function getCurrentOwnerRestaurant() {
     owner.restaurant_name ||
     currentUser.restaurantName ||
     currentUser.restaurant_name ||
-    "Spicy Grill";
+    null;
 
   const ownerUserId =
     owner.id || owner.user_id || currentUser.id || currentUser.user_id || null;
 
   return {
-    restaurantId: String(restaurantId || "1"),
-    restaurantName: String(restaurantName || "Spicy Grill"),
+    restaurantId: restaurantId ? String(restaurantId) : null,
+    restaurantName: restaurantName ? String(restaurantName) : null,
     ownerUserId,
   };
 }
 
 function renderOwnerName() {
   const { restaurantName } = getCurrentOwnerRestaurant();
+  const displayName = restaurantName || "Restaurant";
 
   document.querySelectorAll(".sidebar-profile .name").forEach((el) => {
-    el.textContent = restaurantName;
+    el.textContent = displayName;
   });
 
   document.querySelectorAll(".sidebar-profile .avatar").forEach((el) => {
-    el.textContent = restaurantName.charAt(0).toUpperCase();
+    el.textContent = displayName.charAt(0).toUpperCase();
   });
 }
 
@@ -158,6 +161,13 @@ async function loadOwnerOrdersFromBackend(options = {}) {
 
   const { restaurantId } = getCurrentOwnerRestaurant();
 
+  if (!restaurantId) {
+    renderErrorState(
+      "No restaurant account found. Please log out and log in again as a restaurant owner."
+    );
+    return;
+  }
+
   try {
     isOwnerOrdersLoading = true;
 
@@ -180,9 +190,27 @@ async function loadOwnerOrdersFromBackend(options = {}) {
       throw new Error(result.message || "Failed to load restaurant orders.");
     }
 
-    ownerOrdersCache = Array.isArray(result.data)
+    const incomingOrders = Array.isArray(result.data)
       ? result.data.map(normalizeBackendOrder)
       : [];
+
+    if (!isFirstOwnerLoad) {
+      const newOrders = incomingOrders.filter(
+        (o) => !prevOwnerOrderIds.has(String(o.id))
+      );
+      if (newOrders.length > 0) {
+        const label =
+          newOrders.length === 1
+            ? `New order received! #${newOrders[0].orderNumber || newOrders[0].id}`
+            : `${newOrders.length} new orders received!`;
+        showToast(label, "success");
+        scheduleNewOrderFlash(newOrders.map((o) => String(o.id)));
+      }
+    }
+
+    prevOwnerOrderIds = new Set(incomingOrders.map((o) => String(o.id)));
+    isFirstOwnerLoad = false;
+    ownerOrdersCache = incomingOrders;
 
     console.log("[ownerOrders.js] Orders loaded:", ownerOrdersCache.length);
 
@@ -904,8 +932,56 @@ function updateTabCounts() {
   if (tabs[5]) tabs[5].innerHTML = `<i class="fa fa-circle-xmark"></i><span>Cancelled (${counts.cancelled})</span>`;
 }
 
+function scheduleNewOrderFlash(ids) {
+  requestAnimationFrame(() => {
+    ids.forEach((id) => {
+      const card = document.querySelector(
+        `.order-card[data-order-id="${safeCssEscape(id)}"]`
+      );
+      if (!card) return;
+      card.style.transition = "box-shadow 0.3s ease, background 0.3s ease";
+      card.style.boxShadow = "0 0 0 3px #16a34a, 0 8px 24px rgba(22,163,74,0.18)";
+      card.style.background = "#f0fdf4";
+      setTimeout(() => {
+        card.style.boxShadow = "";
+        card.style.background = "";
+      }, 2500);
+    });
+  });
+}
+
+function ensureOwnerLiveIndicator() {
+  if (document.getElementById("ownerLiveBadge")) return;
+
+  if (!document.getElementById("ownerLiveStyles")) {
+    const s = document.createElement("style");
+    s.id = "ownerLiveStyles";
+    s.textContent =
+      "@keyframes ownerLivePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}";
+    document.head.appendChild(s);
+  }
+
+  const badge = document.createElement("span");
+  badge.id = "ownerLiveBadge";
+  badge.title = "Auto-refreshing orders";
+  badge.style.cssText =
+    "display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;" +
+    "color:#16a34a;margin-left:10px;vertical-align:middle;";
+  badge.innerHTML =
+    '<span style="width:8px;height:8px;border-radius:50%;background:#16a34a;' +
+    'display:inline-block;animation:ownerLivePulse 1.4s ease-in-out infinite;"></span>Live';
+
+  const target =
+    document.querySelector(".owner-header h1") ||
+    document.querySelector(".dashboard-header h1") ||
+    document.querySelector(".page-title") ||
+    document.querySelector("h1");
+  if (target) target.appendChild(badge);
+}
+
 function startAutoRefresh() {
   stopAutoRefresh();
+  ensureOwnerLiveIndicator();
 
   ownerOrdersRefreshTimer = setInterval(() => {
     if (document.hidden || isOwnerOrderUpdating) return;

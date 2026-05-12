@@ -11,7 +11,7 @@ const ACTIVE_RIDER_DELIVERY_KEY = "foodExpressActiveRiderDelivery";
 const RIDER_HISTORY_KEY = "foodexpress_rider_history";
 const RIDER_EARNINGS_KEY = "foodexpress_rider_earnings";
 
-const RIDER_AUTO_REFRESH_INTERVAL = 5000;
+const RIDER_AUTO_REFRESH_INTERVAL = 6000;
 
 let riderAutoRefreshTimer = null;
 let isRiderAutoRefreshing = false;
@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const rider = getCurrentRider();
 
   try {
-    const response = await fetch(
+    const response = await apiRequest(
       `${ORDER_API_URL}?action=active_delivery&rider_id=${encodeURIComponent(rider.id)}`
     );
 
@@ -211,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadAvailableDeliveriesFromBackend() {
     try {
-      const response = await fetch(`${ORDER_API_URL}?action=available_deliveries`);
+      const response = await apiRequest(`${ORDER_API_URL}?action=available_deliveries`);
       const raw = await response.text();
 
       let result;
@@ -530,11 +530,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return (
         order.items[0].image_url ||
         order.items[0].image ||
-        "https://via.placeholder.com/400x300?text=FoodExpress"
+        "https://placehold.co/400x300?text=FoodExpress"
       );
     }
 
-    return "https://via.placeholder.com/400x300?text=FoodExpress";
+    return "https://placehold.co/400x300?text=FoodExpress";
   }
 
   function getItemsSummary(order) {
@@ -1044,7 +1044,7 @@ document.addEventListener("DOMContentLoaded", () => {
       throw new Error("This order does not have a backend order ID.");
     }
 
-    const response = await fetch(`${ORDER_API_URL}?action=assign_rider`, {
+    const response = await apiRequest(`${ORDER_API_URL}?action=assign_rider`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1083,7 +1083,7 @@ document.addEventListener("DOMContentLoaded", () => {
       throw new Error("This order does not have a backend order ID.");
     }
 
-    const response = await fetch(`${ORDER_API_URL}?action=update_delivery_status`, {
+    const response = await apiRequest(`${ORDER_API_URL}?action=update_delivery_status`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1369,6 +1369,9 @@ const currentEarning = activeOrder.earning || estimateEarning(activeOrder);
   showToast("Delivery completed. Earnings added.");
   return;
 }
+
+    activeOrder = updateLocalOrderDelivery(activeOrder, nextDeliveryStatus);
+    renderActive();
 
     await loadActiveDeliveryFromBackend();
     await loadAvailableDeliveriesFromBackend();
@@ -1851,6 +1854,25 @@ updateRiderDeliveryPagePolish();
 showToast("Rider requests refreshed.");
 }
 
+function flashNewAvailableDeliveries(count) {
+  const box = document.getElementById("availableList");
+  if (!box) return;
+
+  if (!document.getElementById("riderFlashStyles")) {
+    const s = document.createElement("style");
+    s.id = "riderFlashStyles";
+    s.textContent =
+      "@keyframes riderNewFlash{0%{background:#dcfce7}50%{background:#bbf7d0}100%{background:transparent}}" +
+      ".rider-new-flash{animation:riderNewFlash 0.9s ease-out 3;}";
+    document.head.appendChild(s);
+  }
+
+  box.classList.remove("rider-new-flash");
+  void box.offsetWidth; // force reflow to restart animation
+  box.classList.add("rider-new-flash");
+  setTimeout(() => box.classList.remove("rider-new-flash"), 2800);
+}
+
 function startRiderAutoRefresh() {
   stopRiderAutoRefresh();
 
@@ -1861,13 +1883,26 @@ function startRiderAutoRefresh() {
     try {
       isRiderAutoRefreshing = true;
 
+      const prevIds = new Set(
+        backendAvailableOrders.map((o) => String(o.id || o.orderId || ""))
+      );
+
       await loadActiveDeliveryFromBackend();
       await loadAvailableDeliveriesFromBackend();
+
+      const newCount = backendAvailableOrders.filter(
+        (o) => !prevIds.has(String(o.id || o.orderId || ""))
+      ).length;
+
+      if (newCount > 0) {
+        flashNewAvailableDeliveries(newCount);
+      }
 
       renderActive();
 renderAvailable();
 updateStats();
 updateRiderDeliveryPagePolish();
+updateLocationTracking();
 
 console.log("[rider-deliveries.js] Rider auto refreshed");
     } catch (error) {
@@ -1885,6 +1920,94 @@ function stopRiderAutoRefresh() {
     clearInterval(riderAutoRefreshTimer);
     riderAutoRefreshTimer = null;
   }
+}
+
+/* ================================
+   RIDER LOCATION TRACKING
+================================ */
+let locationWatchId    = null;
+let lastLocationSent   = 0;
+const LOCATION_API     = '../../backend/controllers/RiderLocationController.php';
+const LOC_SEND_MS      = 15000;
+
+function _getRiderIdForLocation() {
+  let stored = {};
+  try {
+    stored =
+      JSON.parse(localStorage.getItem('foodExpressCurrentRider') || 'null') ||
+      JSON.parse(localStorage.getItem('foodExpressRiderProfile') || 'null') ||
+      JSON.parse(localStorage.getItem('riderProfile')           || 'null') || {};
+  } catch (e) {}
+  return parseInt(stored.id || localStorage.getItem('riderId') || '0', 10) || 0;
+}
+
+function _sendRiderLocation(lat, lng) {
+  const riderId = _getRiderIdForLocation();
+  if (!riderId) return;
+  apiRequest(LOCATION_API + '?action=update_location', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ rider_id: riderId, latitude: lat, longitude: lng }),
+  }).catch(() => {});
+}
+
+function showLocationIndicator(active) {
+  if (!document.getElementById('locationPulseStyle')) {
+    const s  = document.createElement('style');
+    s.id     = 'locationPulseStyle';
+    s.textContent = '@keyframes locationPulse{0%,100%{opacity:1}50%{opacity:.4}}';
+    document.head.appendChild(s);
+  }
+  let el = document.getElementById('riderLocationIndicator');
+  if (!el && active) {
+    el           = document.createElement('span');
+    el.id        = 'riderLocationIndicator';
+    el.style.cssText =
+      'display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;' +
+      'color:#16a34a;background:#dcfce7;border:1.5px solid #86efac;border-radius:999px;' +
+      'padding:4px 12px;margin-left:8px;vertical-align:middle;';
+    el.innerHTML =
+      '<span style="width:8px;height:8px;border-radius:50%;background:#16a34a;' +
+      'display:inline-block;animation:locationPulse 1.5s ease-in-out infinite;"></span>' +
+      ' Location ON';
+    const right = document.querySelector('.topbar-right');
+    if (right) right.prepend(el);
+  }
+  if (el) el.style.display = active ? 'inline-flex' : 'none';
+}
+
+function startLocationTracking() {
+  if (!navigator.geolocation || locationWatchId !== null) return;
+  locationWatchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const now = Date.now();
+      if (now - lastLocationSent >= LOC_SEND_MS) {
+        lastLocationSent = now;
+        _sendRiderLocation(pos.coords.latitude, pos.coords.longitude);
+      }
+    },
+    (err) => console.warn('[rider-deliveries] Geolocation error:', err.message),
+    { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+  );
+  showLocationIndicator(true);
+}
+
+function stopLocationTracking() {
+  if (locationWatchId !== null) {
+    navigator.geolocation.clearWatch(locationWatchId);
+    locationWatchId = null;
+  }
+  showLocationIndicator(false);
+}
+
+function updateLocationTracking() {
+  let hasActive = false;
+  try {
+    const raw = localStorage.getItem('foodExpressActiveRiderDelivery');
+    hasActive  = !!(raw && JSON.parse(raw));
+  } catch (e) {}
+  if (hasActive) startLocationTracking();
+  else           stopLocationTracking();
 }
 
   /* ================================
@@ -2035,6 +2158,7 @@ renderActive();
 renderAvailable();
 updateStats();
 updateRiderDeliveryPagePolish();
+updateLocationTracking();
     }
   });
 
@@ -2050,10 +2174,12 @@ Promise.all([
   updateStats();
   updateRiderDeliveryPagePolish();
   startRiderAutoRefresh();
+  updateLocationTracking();
 });
 
 window.addEventListener("beforeunload", () => {
   stopRiderAutoRefresh();
+  stopLocationTracking();
 });
 /* ================================
    DELIVERIES PAGE POLISH PATCH

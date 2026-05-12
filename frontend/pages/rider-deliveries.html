@@ -172,6 +172,44 @@
                 Dispatch
               </button>
             </section>
+
+            <!-- ── Rider Chat ──────────────────────────────── -->
+            <section class="fe-chat-section" id="riderChatSection" style="display:none;">
+              <div class="fe-chat-header">
+                <div class="fe-chat-header-info">
+                  <h3><i class="fa-solid fa-comments"></i> Order Chat</h3>
+                  <p id="riderChatOrderLabel">Chat with customer</p>
+                </div>
+                <span class="fe-chat-unread" id="riderChatUnreadBadge">0</span>
+              </div>
+
+              <div class="fe-chat-messages" id="riderChatMessages"></div>
+
+              <div class="fe-chat-quick">
+                <button type="button" class="fe-chat-quick-btn"
+                  data-quick-msg="I'm on my way to pick up your order!">
+                  <i class="fa-solid fa-motorcycle"></i> On my way
+                </button>
+                <button type="button" class="fe-chat-quick-btn"
+                  data-quick-msg="I'm at the restaurant picking up now.">
+                  <i class="fa-solid fa-store"></i> At restaurant
+                </button>
+                <button type="button" class="fe-chat-quick-btn"
+                  data-quick-msg="I've arrived at your location.">
+                  <i class="fa-solid fa-location-dot"></i> Arrived
+                </button>
+              </div>
+
+              <div class="fe-chat-input-row">
+                <input type="text" class="fe-chat-input"
+                  placeholder="Message customer…" maxlength="500" autocomplete="off" />
+                <button type="button" class="fe-chat-send-btn" title="Send message">
+                  <i class="fa-solid fa-paper-plane"></i>
+                </button>
+              </div>
+            </section>
+            <!-- ── /Rider Chat ─────────────────────────────── -->
+
           </aside>
         </section>
       </section>
@@ -185,5 +223,73 @@
     <script src="../js/components/rider-sidebar.js"></script>
     <script src="../js/components/rider-notifications.js?v=rider-notifications-1"></script>
     <script src="../js/rider-deliveries.js?v=backendrider3"></script>
+    <script src="../js/components/chat.js"></script>
+    <script>
+      /* ── Rider chat init ──────────────────────────────────── */
+      (function () {
+        var _chatAttempts = 0;
+
+        function getRiderInfo() {
+          var stored = null;
+          try {
+            stored = JSON.parse(
+              localStorage.getItem('foodExpressCurrentRider') ||
+              localStorage.getItem('foodExpressRiderProfile') ||
+              localStorage.getItem('riderProfile') || 'null'
+            );
+          } catch (e) {}
+          return {
+            name:  localStorage.getItem('riderName')  || (stored && stored.name)  || 'Rider',
+            email: localStorage.getItem('riderEmail') || (stored && stored.email) || '',
+          };
+        }
+
+        function tryInitRiderChat() {
+          var order = null;
+          try {
+            order = JSON.parse(
+              localStorage.getItem('foodExpressActiveRiderDelivery') || 'null'
+            );
+          } catch (e) {}
+          var orderId = order && (order.id || order.orderId || order.order_id);
+          if (!orderId) {
+            if (++_chatAttempts < 20) setTimeout(tryInitRiderChat, 1000);
+            return;
+          }
+
+          var section = document.getElementById('riderChatSection');
+          if (section) section.style.display = '';
+
+          var label = document.getElementById('riderChatOrderLabel');
+          if (label) {
+            label.textContent = 'Order #' + (order.orderNumber || order.order_number || orderId);
+          }
+
+          var rider = getRiderInfo();
+          window.FoodExpressChat.init({
+            containerId: 'riderChatSection',
+            orderId:     Number(orderId),
+            senderRole:  'rider',
+            senderName:  rider.name,
+            senderEmail: rider.email,
+          });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+          setTimeout(tryInitRiderChat, 2000);
+        });
+
+        // Re-init when rider picks up a new delivery
+        window.addEventListener('storage', function (e) {
+          if (e.key === 'foodExpressActiveRiderDelivery') {
+            _chatAttempts = 0;
+            if (window.FoodExpressChat) window.FoodExpressChat.destroy('riderChatSection');
+            var section = document.getElementById('riderChatSection');
+            if (section) section.style.display = 'none';
+            setTimeout(tryInitRiderChat, 500);
+          }
+        });
+      })();
+    </script>
   </body>
 </html>

@@ -135,6 +135,8 @@ class Order {
     // Create a new order
     public function create($data) {
         try {
+            $this->conn->begin_transaction();
+
             $order_number = 'ORD' . date('Ymd') . strtoupper(substr(uniqid(), -4));
 
             $user_id = isset($data['user_id']) && $data['user_id'] !== ''
@@ -326,6 +328,8 @@ class Order {
                 $order_id = $this->conn->insert_id;
                 $stmt->close();
 
+                $this->conn->commit();
+
                 return [
                     'success' => true,
                     'order_id' => $order_id,
@@ -349,11 +353,14 @@ class Order {
             $error = $stmt->error;
             $stmt->close();
 
+            $this->conn->rollback();
+
             return [
                 'success' => false,
                 'message' => 'Execute error: ' . $error
             ];
         } catch (Exception $e) {
+            $this->conn->rollback();
             return [
                 'success' => false,
                 'message' => 'Exception: ' . $e->getMessage()

@@ -501,6 +501,7 @@
     <script src="../js/components/notifications.js?v=routefix4"></script>
     <script src="../js/components/navbar.js?v=paymentnav1"></script>
     <script src="../js/reward.js?v=reward1"></script>
+    <script src="../js/stripe-payment.js"></script>
     <script src="../js/components/footer.js"></script>
 
     <script>
@@ -553,7 +554,7 @@
       const PAYMENT_ORDER_HISTORY_KEY = "foodExpressOrders";
       const PAYMENT_USER_PROFILE_KEY = "foodExpressUserProfile";
       const PAYMENT_DEFAULT_IMAGE =
-        "https://via.placeholder.com/400x300?text=FoodExpress";
+        "https://placehold.co/400x300?text=FoodExpress";
 
       const CHECKOUT_RESTAURANT_API =
         "../../backend/controllers/PublicRestaurantController.php?action=approved";
@@ -1001,10 +1002,10 @@
         const deliveryNoteInput = document.getElementById("deliveryNote");
         if (!deliveryNoteInput) return;
 
-        const existingNote = deliveryNoteInput.value.trim();
-        const notes = [];
+        // Only populate if the field is empty — never append to an existing value.
+        if (deliveryNoteInput.value.trim() !== "") return;
 
-        if (existingNote) notes.push(existingNote);
+        const notes = [];
         if (settings.defaultDeliveryNote)
           notes.push(settings.defaultDeliveryNote);
         if (settings.contactlessDelivery)
@@ -1292,7 +1293,9 @@
         const removeBtn = document.getElementById("removePromoBtn");
 
         const rawCode = promoInput ? promoInput.value : "";
-        const promoCode = String(rawCode || "").trim().toUpperCase();
+        const promoCode = String(rawCode || "")
+          .trim()
+          .toUpperCase();
 
         if (!promoCode) {
           setPromoMessage("Please enter a promo code first.", "error");
@@ -1380,7 +1383,10 @@
           setPromoMessage("Promo code applied successfully.", "success");
         } catch (error) {
           console.error("[promo] apply failed:", error);
-          setPromoMessage(error.message || "Could not apply promo code.", "error");
+          setPromoMessage(
+            error.message || "Could not apply promo code.",
+            "error",
+          );
         }
       }
 
@@ -2238,6 +2244,224 @@
             newOrder.orderNumber,
           )}`;
 
+          /* ── eSewa digital payment redirect ──────────────────────────────
+           * If the user chose Digital Wallet, initiate eSewa and redirect
+           * to the sandbox instead of going to order tracking.
+           * Order is already saved in DB at this point.
+           * ─────────────────────────────────────────────────────────────── */
+          if (paymentMethod === "digital" && newOrder.id) {
+            showCheckoutStatusModal(
+              "loading",
+              "Redirecting to eSewa…",
+              "Your order is saved. We're launching eSewa secure payment. Please do not close this tab.",
+            );
+
+            try {
+              const esewaResp = await fetch(
+                "../../backend/controllers/EsewaController.php?action=initiate",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ order_id: newOrder.id }),
+                },
+              );
+
+              const esewaRaw = await esewaResp.text();
+              let esewaResult = null;
+              try {
+                esewaResult = JSON.parse(esewaRaw);
+              } catch (_) {
+                console.error("[eSewa] Non-JSON response:", esewaRaw);
+                throw new Error(
+                  "eSewa server returned an unexpected response.",
+                );
+              }
+
+              if (esewaResult && esewaResult.already_paid) {
+                // Edge case: order already paid (replay) → go to tracking
+                window.location.href = trackUrl;
+                return;
+              }
+
+              if (
+                !esewaResult ||
+                !esewaResult.success ||
+                !esewaResult.form_url
+              ) {
+                throw new Error(
+                  esewaResult?.message || "eSewa initiation failed.",
+                );
+              }
+
+              /* Build and auto-submit the eSewa form */
+              const form = document.createElement("form");
+              form.method = "POST";
+              form.action = esewaResult.form_url;
+
+              const fields = esewaResult.fields || {};
+              Object.entries(fields).forEach(([name, value]) => {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = name;
+                input.value = value;
+                form.appendChild(input);
+              });
+
+              document.body.appendChild(form);
+              form.submit();
+              return; // execution continues on esewa-success.html
+            } catch (esewaError) {
+              console.error("[eSewa] initiation error:", esewaError);
+              hideCheckoutStatusModal();
+              showCheckoutToast(
+                "Could not launch eSewa: " +
+                  esewaError.message +
+                  ". Your order is saved — please contact support.",
+                "error",
+              );
+              // Don't redirect — order is saved, user should contact support
+              return;
+            }
+          }
+
+          /* ── Stripe card payment ─────────────────────────────────────── */
+          if (paymentMethod === "card" && newOrder.id) {
+            showCheckoutStatusModal(
+              "loading",
+              "Processing card payment…",
+              "Initializing secure Stripe payment. Please wait.",
+            );
+
+            try {
+              const stripeInit = await window.initStripeForOrder(newOrder.id);
+              if (stripeInit && stripeInit.already_paid) {
+                window.location.href = trackUrl;
+                return;
+              }
+
+              await new Promise((resolve) => setTimeout(resolve, 1800));
+
+              const modalInner = document.querySelector(
+                ".checkout-status-modal",
+              );
+              if (
+                modalInner &&
+                !document.getElementById("stripe-modal-wrapper")
+              ) {
+                document.getElementById("checkoutLiveSteps").style.display =
+                  "none";
+
+                const wrapper = document.createElement("div");
+                wrapper.id = "stripe-modal-wrapper";
+                wrapper.style.cssText = "padding:16px 0";
+                wrapper.innerHTML = `
+                  <p style="font-size:14px;color:#12203A;font-weight:700;margin-bottom:12px;">Enter card details</p>
+                  <div id="stripe-modal-card" style="border:1.5px solid #e5e7eb;border-radius:12px;padding:16px;background:#fff;margin-bottom:8px;"></div>
+                  <div id="stripe-modal-errors" style="color:#dc2626;font-size:13px;min-height:18px;margin-bottom:12px;"></div>
+                  <p style="font-size:12px;color:#6B7280;margin-bottom:16px;">🔒 Test: 4242 4242 4242 4242 | 12/28 | 123</p>
+                  <button id="stripePayBtn" style="width:100%;padding:14px;border-radius:999px;border:none;background:#12203A;color:#fff;font-size:15px;font-weight:800;cursor:pointer;">
+                    Pay Rs. ${Number(newOrder.total || 0).toFixed(2)}
+                  </button>
+                `;
+                modalInner.appendChild(wrapper);
+
+                const stripe = window.__stripeInstance;
+                const elements = stripe.elements();
+                const card = elements.create("card", {
+                  style: {
+                    base: {
+                      fontSize: "15px",
+                      color: "#12203A",
+                      fontFamily: "Segoe UI, system-ui, sans-serif",
+                    },
+                  },
+                });
+                card.mount("#stripe-modal-card");
+
+                document.getElementById("checkoutStatusTitle").textContent =
+                  "Enter card details";
+                document.getElementById("checkoutStatusMessage").textContent =
+                  "Your order is saved. Complete payment below.";
+
+                document
+                  .getElementById("stripePayBtn")
+                  .addEventListener("click", async () => {
+                    const payBtn = document.getElementById("stripePayBtn");
+                    payBtn.disabled = true;
+                    payBtn.textContent = "Processing…";
+
+                    try {
+                      const { paymentIntent, error } =
+                        await stripe.confirmCardPayment(
+                          window.__stripeClientSecret,
+                          { payment_method: { card } },
+                        );
+
+                      if (error) throw new Error(error.message);
+                      if (paymentIntent.status !== "succeeded")
+                        throw new Error("Payment not completed.");
+
+                      const vResp = await fetch(
+                        "../../backend/controllers/StripeController.php?action=verify",
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            payment_intent_id: paymentIntent.id,
+                            order_id: newOrder.id,
+                          }),
+                        },
+                      );
+                      const vResult = await vResp.json();
+                      if (!vResult.success && !vResult.already_paid)
+                        throw new Error(
+                          vResult.message || "Verification failed.",
+                        );
+
+                      document.getElementById("stripe-modal-wrapper")?.remove();
+
+                      showCheckoutStatusModal(
+                        "success",
+                        "Payment successful!",
+                        "Your card payment was confirmed. Order is being prepared.",
+                        {
+                          orderNumber: newOrder.orderNumber || "-",
+                          eta: newOrder.estimatedDelivery || "30–40 min",
+                          paymentMethod: "Credit / Debit Card",
+                          totalText: `Rs. ${Number(newOrder.total || 0).toFixed(2)}`,
+                          trackUrl,
+                        },
+                      );
+
+                      setTimeout(() => {
+                        window.location.href = trackUrl;
+                      }, 5000);
+                    } catch (err) {
+                      const errEl = document.getElementById(
+                        "stripe-modal-errors",
+                      );
+                      if (errEl) errEl.textContent = err.message;
+                      payBtn.disabled = false;
+                      payBtn.textContent = `Pay Rs. ${Number(newOrder.total || 0).toFixed(2)}`;
+                    }
+                  });
+              }
+              return;
+            } catch (stripeError) {
+              hideCheckoutStatusModal();
+              showCheckoutToast(
+                "Card payment error: " + stripeError.message,
+                "error",
+              );
+              if (btn) {
+                btn.disabled = false;
+                btn.textContent = originalText;
+              }
+              return;
+            }
+          }
+
+          /* ── COD: normal success flow ─────────────────────────── */
           showCheckoutStatusModal(
             "success",
             "Order placed successfully",

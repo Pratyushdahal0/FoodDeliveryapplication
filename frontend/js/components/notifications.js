@@ -12,6 +12,36 @@ console.log("[notifications.js] Loaded - backend notification bell with smart ro
   let boundBell = null;
   let outsideClickBound = false;
 
+  let userInteracted = false;
+  let prevUnreadForSound = -1; // -1 = first load, skip beep
+
+  (function trackInteraction() {
+    function mark() { userInteracted = true; }
+    ["click", "touchstart", "keydown"].forEach((e) =>
+      document.addEventListener(e, mark, { once: true, passive: true })
+    );
+  })();
+
+  function playNotificationBeep() {
+    if (!userInteracted) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.28);
+    } catch (_) {
+      // AudioContext not available — silent fail
+    }
+  }
+
   function bindNotificationBell() {
     const bell = document.getElementById("notificationBell");
     const dropdown = document.getElementById("notificationDropdown");
@@ -146,7 +176,13 @@ console.log("[notifications.js] Loaded - backend notification bell with smart ro
       }
 
       notificationsCache = Array.isArray(result.data) ? result.data : [];
-      unreadCount = Number(result.unread_count || 0);
+      const newUnread = Number(result.unread_count || 0);
+
+      if (prevUnreadForSound >= 0 && newUnread > prevUnreadForSound) {
+        playNotificationBeep();
+      }
+      prevUnreadForSound = newUnread;
+      unreadCount = newUnread;
 
       updateBadge();
       renderDropdown();
@@ -307,9 +343,16 @@ console.log("[notifications.js] Loaded - backend notification bell with smart ro
         "rider_assigned_owner",
         "rider_picked_up_owner",
         "order_delivered_owner",
+        "order_cancelled_by_customer",
       ].includes(cleanType)
     ) {
-      window.location.href = `owner-orders.html?order=${encodedOrder}`;
+      // Only route to owner panel if user is actually an owner
+      const role = localStorage.getItem("userRole") || localStorage.getItem("foodExpressUserRole") || "";
+      if (role === "restaurant_owner" || role === "restaurant-owner" || role === "owner") {
+        window.location.href = `ownerdashboard.html?order=${encodedOrder}`;
+      } else {
+        window.location.href = `track-order.html?order=${encodedOrder}`;
+      }
       return;
     }
 

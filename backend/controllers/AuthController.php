@@ -3,8 +3,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
@@ -15,6 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
 require "../config/db.php";
 require "../models/User.php";
 require_once __DIR__ . "/../helpers/MailHelper.php";
+require_once __DIR__ . "/../helpers/JwtHelper.php";
 
 /*
 |--------------------------------------------------------------------------
@@ -370,11 +371,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         $isVerified = !empty($userData["email_verified_at"]);
 
+        $token = JwtHelper::generate([
+            'user_id' => intval($userData['id']   ?? 0),
+            'email'   => $userData['email']        ?? '',
+            'role'    => $userData['role']         ?? 'customer',
+            'name'    => $userData['name']         ?? '',
+        ]);
+
         send_json([
-            "success" => true,
-            "message" => "Login successful",
+            "success"        => true,
+            "message"        => "Login successful",
             "email_verified" => $isVerified,
-            "data" => $userData
+            "token"          => $token,
+            "data"           => $userData,
         ]);
     }
 

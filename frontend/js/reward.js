@@ -1,3 +1,22 @@
+/**
+ * SECURITY WARNING — CLIENT-SIDE ONLY, NO SERVER VALIDATION
+ *
+ * This entire reward system runs in localStorage. It is trivially exploitable:
+ *  - Any user can open DevTools and set their points to any number.
+ *  - Coupon IDs are generated client-side (FDX-<discount>OFF-<timestamp>) and
+ *    never validated against a server-side table.
+ *  - redeemReward() deducts points from localStorage with no server check.
+ *  - The backend receives coupon_id from the frontend but has no rewards table
+ *    to verify that the coupon was legitimately earned.
+ *
+ * REQUIRED BEFORE PRODUCTION:
+ *  1. Add a `reward_points` column and `reward_transactions` table to the DB.
+ *  2. Award points server-side in OrderController when status → delivered.
+ *  3. Add a POST /RewardController.php?action=redeem endpoint that validates
+ *     the redemption and returns a signed coupon code.
+ *  4. Validate all incoming coupon codes in CouponController.php against the DB.
+ *  5. Remove point mutations from this file entirely — read-only display only.
+ */
 console.log("[reward.js] Loaded - real-world FoodExpress rewards");
 
 const REWARD_TIERS = [

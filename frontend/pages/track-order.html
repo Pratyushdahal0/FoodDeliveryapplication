@@ -383,27 +383,27 @@
 
               <div class="summary-row">
                 <span>Subtotal</span>
-                <strong id="subtotalValue">$0.00</strong>
+                <strong id="subtotalValue">Rs. 0.00</strong>
               </div>
 
               <div class="summary-row">
                 <span>Tax</span>
-                <strong id="taxValue">$0.00</strong>
+                <strong id="taxValue">Rs. 0.00</strong>
               </div>
 
               <div class="summary-row">
                 <span>Delivery fee</span>
-                <strong id="deliveryFeeValue">$0.00</strong>
+                <strong id="deliveryFeeValue">Rs. 0.00</strong>
               </div>
 
               <div class="summary-row" id="discountRow" style="display: none">
                 <span>Discount</span>
-                <strong id="discountValue">-$0.00</strong>
+                <strong id="discountValue">-Rs. 0.00</strong>
               </div>
 
               <div class="summary-row total">
                 <span>Total</span>
-                <span id="totalValue">$0.00</span>
+                <span id="totalValue">Rs. 0.00</span>
               </div>
             </section>
 
@@ -423,6 +423,21 @@
                   Reorder these items
                 </button>
 
+                <button
+                  class="secondary-btn cancel-order-btn"
+                  type="button"
+                  id="cancelOrderBtn"
+                  onclick="openCancelOrderModal()"
+                  style="
+                    display: none;
+                    background: #fff0ef;
+                    color: #dc2626;
+                    border: 1.5px solid #fca5a5;
+                  "
+                >
+                  <i class="fa-solid fa-xmark"></i> Cancel order
+                </button>
+
                 <a
                   class="secondary-btn track-action-link"
                   href="loggedContact.html"
@@ -438,9 +453,232 @@
                   Back to dashboard
                 </button>
               </div>
+
+              <!-- Cancel order modal -->
+              <div
+                id="cancelOrderModal"
+                style="
+                  display: none;
+                  position: fixed;
+                  inset: 0;
+                  z-index: 9999;
+                  background: rgba(15, 23, 42, 0.5);
+                  backdrop-filter: blur(8px);
+                  align-items: center;
+                  justify-content: center;
+                  padding: 20px;
+                "
+              >
+                <div
+                  style="
+                    background: #fff;
+                    border-radius: 24px;
+                    padding: 36px;
+                    max-width: 420px;
+                    width: 100%;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+                  "
+                >
+                  <div
+                    style="
+                      width: 56px;
+                      height: 56px;
+                      background: #fee2e2;
+                      border-radius: 50%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      margin: 0 auto 20px;
+                      font-size: 24px;
+                      color: #dc2626;
+                    "
+                  >
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                  </div>
+                  <h3
+                    style="
+                      text-align: center;
+                      font-size: 20px;
+                      color: #12203a;
+                      margin-bottom: 10px;
+                    "
+                  >
+                    Cancel this order?
+                  </h3>
+                  <p
+                    style="
+                      text-align: center;
+                      color: #6b7280;
+                      font-size: 14px;
+                      margin-bottom: 20px;
+                    "
+                  >
+                    You can only cancel before the restaurant confirms. This
+                    cannot be undone.
+                  </p>
+                  <textarea
+                    id="cancelReasonInput"
+                    placeholder="Reason for cancelling (optional)"
+                    style="
+                      width: 100%;
+                      padding: 12px;
+                      border: 1.5px solid #e5e7eb;
+                      border-radius: 12px;
+                      font-size: 14px;
+                      resize: none;
+                      height: 80px;
+                      margin-bottom: 16px;
+                      font-family: inherit;
+                    "
+                  ></textarea>
+                  <div style="display: flex; gap: 10px">
+                    <button
+                      onclick="closeCancelOrderModal()"
+                      style="
+                        flex: 1;
+                        padding: 12px;
+                        border-radius: 999px;
+                        border: 1.5px solid #e5e7eb;
+                        background: #f9fafb;
+                        font-weight: 700;
+                        cursor: pointer;
+                      "
+                    >
+                      Keep order
+                    </button>
+                    <button
+                      onclick="confirmCancelOrder()"
+                      id="confirmCancelBtn"
+                      style="
+                        flex: 1;
+                        padding: 12px;
+                        border-radius: 999px;
+                        border: none;
+                        background: #dc2626;
+                        color: #fff;
+                        font-weight: 700;
+                        cursor: pointer;
+                      "
+                    >
+                      Yes, cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
             </section>
           </aside>
         </div>
+
+        <!-- ── Rider Location Map ────────────────────────── -->
+        <section
+          class="fe-rider-map-section"
+          id="riderMapSection"
+          style="display: none"
+        >
+          <div class="fe-rider-map-header">
+            <div class="fe-rider-map-header-info">
+              <h3><i class="fa-solid fa-location-dot"></i> Rider Location</h3>
+              <p id="riderMapLabel">Locating your rider…</p>
+            </div>
+            <span class="fe-rider-map-live"><span></span> Live</span>
+          </div>
+          <div class="fe-rider-map-frame-wrap">
+            <iframe
+              id="riderMapIframe"
+              frameborder="0"
+              scrolling="no"
+              marginheight="0"
+              marginwidth="0"
+              style="
+                width: 100%;
+                height: 280px;
+                border-radius: 16px;
+                border: 1.5px solid #e5e7eb;
+                display: block;
+              "
+              title="Rider location map"
+              src="about:blank"
+            ></iframe>
+            <div
+              id="riderMapNoGps"
+              style="
+                display: none;
+                text-align: center;
+                padding: 40px 20px;
+                color: #9ca3af;
+              "
+            >
+              <i
+                class="fa-solid fa-satellite-dish"
+                style="
+                  font-size: 28px;
+                  opacity: 0.4;
+                  display: block;
+                  margin-bottom: 10px;
+                "
+              ></i>
+              <p style="margin: 0; font-size: 13px">
+                Rider location not available yet
+              </p>
+            </div>
+          </div>
+        </section>
+        <!-- ── /Rider Location Map ───────────────────────── -->
+
+        <!-- ── Order Chat ─────────────────────────────────── -->
+        <section
+          class="fe-chat-section"
+          id="orderChatSection"
+          style="display: none"
+        >
+          <div class="fe-chat-header">
+            <div class="fe-chat-header-info">
+              <h3><i class="fa-solid fa-comments"></i> Order Chat</h3>
+              <p>Chat with your delivery rider</p>
+            </div>
+            <span class="fe-chat-unread" id="chatUnreadBadge">0</span>
+          </div>
+
+          <div class="fe-chat-messages" id="chatMessages"></div>
+
+          <div class="fe-chat-quick">
+            <button
+              type="button"
+              class="fe-chat-quick-btn"
+              data-quick-msg="I'm outside, please come to the door."
+            >
+              <i class="fa-solid fa-door-open"></i> I'm outside
+            </button>
+            <button
+              type="button"
+              class="fe-chat-quick-btn"
+              data-quick-msg="Where is my order?"
+            >
+              <i class="fa-solid fa-map-marker-alt"></i> Where is my order?
+            </button>
+            <button
+              type="button"
+              class="fe-chat-quick-btn"
+              data-quick-msg="Please call me."
+            >
+              <i class="fa-solid fa-phone"></i> Please call me
+            </button>
+          </div>
+
+          <div class="fe-chat-input-row">
+            <input
+              type="text"
+              class="fe-chat-input"
+              placeholder="Message your rider…"
+              maxlength="500"
+              autocomplete="off"
+            />
+            <button type="button" class="fe-chat-send-btn" title="Send message">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </section>
+        <!-- ── /Order Chat ────────────────────────────────── -->
       </section>
     </main>
 
@@ -454,6 +692,219 @@
     <script src="../js/reward.js?v=reward1"></script>
     <script src="../js/track-order.js?v=route-beta-1"></script>
     <script src="../js/components/footer.js"></script>
+    <script src="../js/components/chat.js"></script>
+
+    <style>
+      .fe-rider-map-section {
+        border-radius: 24px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        padding: 22px;
+        box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06);
+        margin-top: 20px;
+      }
+      .fe-rider-map-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        gap: 10px;
+      }
+      .fe-rider-map-header-info h3 {
+        font-size: 1rem;
+        font-weight: 900;
+        color: #111827;
+        margin: 0 0 3px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .fe-rider-map-header-info h3 i {
+        color: #f97316;
+      }
+      .fe-rider-map-header-info p {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+      }
+      .fe-rider-map-live {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #16a34a;
+        background: #dcfce7;
+        border: 1.5px solid #86efac;
+        border-radius: 999px;
+        padding: 4px 12px;
+        flex-shrink: 0;
+      }
+      .fe-rider-map-live span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #16a34a;
+        display: inline-block;
+        animation: mapLivePulse 1.5s ease-in-out infinite;
+      }
+      @keyframes mapLivePulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.35;
+        }
+      }
+      .fe-rider-map-frame-wrap {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+    </style>
+
+    <script>
+      /* ── Rider location map polling ──────────────────────── */
+      (function () {
+        var LOCATION_API =
+          "../../backend/controllers/RiderLocationController.php";
+        var _mapTimer = null;
+        var _mapAttempts = 0;
+        var _lastSrc = "";
+
+        function osmUrl(lat, lng) {
+          var d = 0.003;
+          return (
+            "https://www.openstreetmap.org/export/embed.html" +
+            "?bbox=" +
+            (lng - d) +
+            "," +
+            (lat - d) +
+            "," +
+            (lng + d) +
+            "," +
+            (lat + d) +
+            "&layer=mapnik&marker=" +
+            lat +
+            "," +
+            lng
+          );
+        }
+
+        function updateMap(lat, lng, riderName) {
+          var section = document.getElementById("riderMapSection");
+          var iframe = document.getElementById("riderMapIframe");
+          var label = document.getElementById("riderMapLabel");
+          var noGps = document.getElementById("riderMapNoGps");
+          if (!section) return;
+
+          section.style.display = "";
+          if (label)
+            label.textContent = riderName
+              ? riderName + " is on the way"
+              : "Rider is on the way";
+
+          var src = osmUrl(lat, lng);
+          if (src !== _lastSrc) {
+            _lastSrc = src;
+            if (iframe) iframe.src = src;
+          }
+          if (iframe) iframe.style.display = "block";
+          if (noGps) noGps.style.display = "none";
+        }
+
+        function showNoGps(riderName) {
+          var section = document.getElementById("riderMapSection");
+          var iframe = document.getElementById("riderMapIframe");
+          var label = document.getElementById("riderMapLabel");
+          var noGps = document.getElementById("riderMapNoGps");
+          if (!section) return;
+
+          section.style.display = "";
+          if (label)
+            label.textContent = riderName
+              ? riderName + " assigned"
+              : "Rider assigned";
+          if (iframe) iframe.style.display = "none";
+          if (noGps) noGps.style.display = "block";
+        }
+
+        async function pollLocation(orderId) {
+          try {
+            var resp = await fetch(
+              LOCATION_API +
+                "?action=get_location&order_id=" +
+                orderId +
+                "&_=" +
+                Date.now(),
+            );
+            var data = await resp.json();
+            if (!data.success) return;
+            if (data.has_location) {
+              updateMap(data.latitude, data.longitude, data.rider_name);
+            } else {
+              showNoGps(data.rider_name);
+            }
+          } catch (e) {}
+        }
+
+        function tryInitMap() {
+          var order = null;
+          try {
+            order = JSON.parse(localStorage.getItem("lastOrder") || "null");
+          } catch (e) {}
+          var orderId = order && (order.id || order.orderId || order.order_id);
+          if (!orderId) {
+            if (++_mapAttempts < 20) setTimeout(tryInitMap, 1000);
+            return;
+          }
+
+          pollLocation(orderId);
+          _mapTimer = setInterval(function () {
+            pollLocation(orderId);
+          }, 10000);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+          setTimeout(tryInitMap, 2000);
+        });
+
+        window.addEventListener("beforeunload", function () {
+          if (_mapTimer) clearInterval(_mapTimer);
+        });
+      })();
+    </script>
+
+    <script>
+      /* ── Customer chat init ──────────────────────────────── */
+      (function () {
+        var _chatAttempts = 0;
+        function tryInitCustomerChat() {
+          var order = null;
+          try {
+            order = JSON.parse(localStorage.getItem("lastOrder") || "null");
+          } catch (e) {}
+          var orderId = order && (order.id || order.orderId || order.order_id);
+          if (!orderId) {
+            if (++_chatAttempts < 15) setTimeout(tryInitCustomerChat, 1000);
+            return;
+          }
+          var section = document.getElementById("orderChatSection");
+          if (section) section.style.display = "";
+          window.FoodExpressChat.init({
+            containerId: "orderChatSection",
+            orderId: Number(orderId),
+            senderRole: "customer",
+            senderName: localStorage.getItem("userName") || "Customer",
+            senderEmail: localStorage.getItem("userEmail") || "",
+          });
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+          setTimeout(tryInitCustomerChat, 1500);
+        });
+      })();
+    </script>
 
     <script>
       function initTrackNavbar(attempt = 0) {

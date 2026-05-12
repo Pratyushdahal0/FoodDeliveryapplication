@@ -474,6 +474,10 @@ async function handleLogin(event) {
 
     const savedUser = saveLoggedInUser(user, email, isEmailVerified);
 
+    if (result.token) {
+      localStorage.setItem("authToken", result.token);
+    }
+
     saveRememberedEmail(email, Boolean(rememberMe?.checked));
 
     if (!isEmailVerified) {

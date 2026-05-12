@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Successful – FoodExpress</title>
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../assets/images/brand/foodexpress-favicon-32.png"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --green: #16a34a;
+        --green-l: #dcfce7;
+        --orange: #f2644c;
+        --navy: #12203a;
+        --gray: #6b7280;
+        --bg: #f6f7fb;
+        --white: #ffffff;
+        --radius: 20px;
+      }
+
+      body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+
+      .card {
+        background: var(--white);
+        border-radius: 28px;
+        box-shadow: 0 20px 60px rgba(18, 32, 58, 0.12);
+        padding: 48px 40px;
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+      }
+
+      /* ── Status icon ── */
+      .status-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        font-size: 36px;
+      }
+      .status-icon.loading {
+        background: #e0f2fe;
+        color: #0ea5e9;
+      }
+      .status-icon.success {
+        background: var(--green-l);
+        color: var(--green);
+      }
+      .status-icon.error {
+        background: #fee2e2;
+        color: #dc2626;
+      }
+      .status-icon.warning {
+        background: #fef3c7;
+        color: #d97706;
+      }
+
+      /* spinner */
+      .spinner {
+        width: 36px;
+        height: 36px;
+        border: 4px solid #bae6fd;
+        border-top-color: #0ea5e9;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      h1 {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--navy);
+        margin-bottom: 10px;
+        line-height: 1.3;
+      }
+      p.subtitle {
+        font-size: 15px;
+        color: var(--gray);
+        line-height: 1.7;
+        margin-bottom: 28px;
+      }
+
+      /* ── Details box ── */
+      .details {
+        background: var(--green-l);
+        border: 1px solid #bbf7d0;
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-bottom: 28px;
+        text-align: left;
+      }
+      .details-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        font-size: 14px;
+      }
+      .details-row span {
+        color: #166534;
+        font-weight: 600;
+      }
+      .details-row strong {
+        color: var(--navy);
+        font-weight: 800;
+      }
+
+      /* ── Progress bar ── */
+      .redirect-bar {
+        height: 4px;
+        background: #e5e7eb;
+        border-radius: 99px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .redirect-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--orange), #f59e0b);
+        border-radius: 99px;
+        transition: width 5s linear;
+      }
+      .redirect-fill.go {
+        width: 100%;
+      }
+
+      .redirect-label {
+        font-size: 13px;
+        color: var(--gray);
+        margin-bottom: 20px;
+      }
+
+      /* ── Buttons ── */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 24px;
+        border-radius: 999px;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+        transition: opacity 0.2s;
+      }
+      .btn:hover {
+        opacity: 0.85;
+      }
+      .btn-primary {
+        background: var(--navy);
+        color: #fff;
+      }
+      .btn-ghost {
+        background: #f3f4f6;
+        color: var(--navy);
+      }
+      .btn-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      /* ── Error details ── */
+      .error-box {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-bottom: 20px;
+        font-size: 13px;
+        color: #92400e;
+        text-align: left;
+      }
+
+      .brand {
+        font-size: 13px;
+        color: var(--gray);
+        margin-top: 28px;
+      }
+      .brand strong {
+        color: var(--navy);
+      }
+
+      /* Retry spinner shown inline */
+      .retry-msg {
+        font-size: 13px;
+        color: #0ea5e9;
+        margin-bottom: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card" id="card">
+      <!-- Loading state (default) -->
+      <div class="status-icon loading" id="statusIcon">
+        <div class="spinner"></div>
+      </div>
+
+      <h1 id="title">Verifying your payment…</h1>
+      <p class="subtitle" id="subtitle">
+        Please wait while we confirm your eSewa payment with FoodExpress. Do not
+        close this page.
+      </p>
+
+      <div class="details" id="detailsBox" style="display: none">
+        <div class="details-row">
+          <span>Payment gateway</span><strong>eSewa</strong>
+        </div>
+        <div class="details-row">
+          <span>Order number</span><strong id="detailOrderNum">—</strong>
+        </div>
+        <div class="details-row">
+          <span>Reference ID</span><strong id="detailRefId">—</strong>
+        </div>
+      </div>
+
+      <div id="retryMsg" class="retry-msg" style="display: none">
+        Retrying verification…
+      </div>
+
+      <div class="redirect-bar" id="redirectBar" style="display: none">
+        <div class="redirect-fill" id="redirectFill"></div>
+      </div>
+      <p class="redirect-label" id="redirectLabel" style="display: none">
+        Redirecting to order tracking in a few seconds…
+      </p>
+
+      <div class="error-box" id="errorBox" style="display: none"></div>
+
+      <div class="btn-row" id="btnRow" style="display: none"></div>
+
+      <div class="brand">
+        Powered by <strong>FoodExpress</strong> · Secure payment
+      </div>
+    </div>
+
+    <script>
+      /* ── Utility ─────────────────────────────────────────── */
+      function el(id) {
+        return document.getElementById(id);
+      }
+
+      function setIcon(type) {
+        const icon = el("statusIcon");
+        const icons = {
+          loading: '<div class="spinner"></div>',
+          success: '<i class="fa-solid fa-circle-check"></i>',
+          error: '<i class="fa-solid fa-triangle-exclamation"></i>',
+          warning: '<i class="fa-solid fa-clock"></i>',
+        };
+        icon.className = "status-icon " + type;
+        icon.innerHTML = icons[type] || icons.loading;
+      }
+
+      function showDetails(orderNumber, refId) {
+        el("detailOrderNum").textContent = orderNumber || "—";
+        el("detailRefId").textContent = refId || "—";
+        el("detailsBox").style.display = "block";
+      }
+
+      function showRedirect(trackUrl) {
+        el("redirectBar").style.display = "block";
+        el("redirectLabel").style.display = "block";
+        setTimeout(() => {
+          el("redirectFill").classList.add("go");
+        }, 80);
+        setTimeout(() => {
+          window.location.href = trackUrl;
+        }, 5200);
+      }
+
+      function showButtons(buttons) {
+        const row = el("btnRow");
+        row.innerHTML = buttons
+          .map((b) => `<a href="${b.href}" class="btn ${b.cls}">${b.label}</a>`)
+          .join("");
+        row.style.display = "flex";
+      }
+
+      function showError(msg) {
+        el("errorBox").textContent = msg;
+        el("errorBox").style.display = "block";
+      }
+
+      /* ── Main verification flow ───────────────────────────── */
+      async function verifyEsewa(retryCount) {
+        const params = new URLSearchParams(window.location.search);
+        const encodedData = params.get("data");
+        let transactionUuid = params.get("transaction_uuid") || "";
+        let totalAmount = params.get("total_amount") || "";
+
+        /* eSewa v2 encodes a base64 JSON blob in the `data` param */
+        if (encodedData) {
+          try {
+            const decoded = JSON.parse(atob(encodedData));
+            transactionUuid = decoded.transaction_uuid || transactionUuid;
+            totalAmount = decoded.total_amount || totalAmount;
+          } catch (e) {
+            console.warn("[esewa-success] Could not decode data param:", e);
+          }
+        }
+
+        if (!transactionUuid || !totalAmount) {
+          setIcon("error");
+          el("title").textContent = "Payment details missing";
+          el("subtitle").textContent =
+            "We could not find your payment details in the URL. Please contact support.";
+          showError("Missing transaction_uuid or total_amount parameters.");
+          showButtons([
+            {
+              href: "dashboard.html",
+              cls: "btn-primary",
+              label: "← Go to Dashboard",
+            },
+            { href: "payment.html", cls: "btn-ghost", label: "Try again" },
+          ]);
+          return;
+        }
+
+        try {
+          const resp = await fetch(
+            `../../backend/controllers/EsewaController.php?action=verify` +
+              `&transaction_uuid=${encodeURIComponent(transactionUuid)}` +
+              `&total_amount=${encodeURIComponent(totalAmount)}`,
+          );
+          const result = await resp.json();
+
+          /* ── Success ─────────────────────────────────────── */
+          if (result.success) {
+            setIcon("success");
+            el("title").textContent = "Payment confirmed!";
+            el("subtitle").textContent =
+              "Your eSewa payment has been verified. Your order is on its way!";
+
+            showDetails(result.order_number, result.ref_id);
+
+            const orderNum = result.order_number || "";
+            const trackUrl = orderNum
+              ? `track-order.html?order=${encodeURIComponent(orderNum)}`
+              : "dashboard.html";
+
+            showRedirect(trackUrl);
+            showButtons([
+              {
+                href: trackUrl,
+                cls: "btn-primary",
+                label: '<i class="fa-solid fa-location-arrow"></i> Track order',
+              },
+              { href: "dashboard.html", cls: "btn-ghost", label: "Dashboard" },
+            ]);
+            return;
+          }
+
+          /* ── Retryable (eSewa unreachable) ───────────────── */
+          if (result.retryable && retryCount < 2) {
+            el("retryMsg").style.display = "block";
+            el("retryMsg").textContent =
+              `Retrying… (attempt ${retryCount + 2} of 3)`;
+            setTimeout(() => verifyEsewa(retryCount + 1), 3000);
+            return;
+          }
+
+          /* ── Payment not complete ────────────────────────── */
+          setIcon("error");
+          el("title").textContent = "Payment not completed";
+          el("subtitle").textContent =
+            "Your eSewa payment could not be confirmed. No money has been deducted. You can try again.";
+
+          const statusMsg =
+            result.status && result.status !== "UNKNOWN"
+              ? `eSewa status: ${result.status}`
+              : result.message ||
+                "Payment verification returned a non-success status.";
+
+          showError(statusMsg);
+          showButtons([
+            { href: "payment.html", cls: "btn-primary", label: "← Try again" },
+            { href: "dashboard.html", cls: "btn-ghost", label: "Dashboard" },
+          ]);
+        } catch (err) {
+          console.error("[esewa-success] Fetch error:", err);
+
+          if (retryCount < 2) {
+            el("retryMsg").style.display = "block";
+            el("retryMsg").textContent =
+              `Network error. Retrying… (attempt ${retryCount + 2} of 3)`;
+            setTimeout(() => verifyEsewa(retryCount + 1), 3000);
+            return;
+          }
+
+          setIcon("warning");
+          el("title").textContent = "Verification timed out";
+          el("subtitle").textContent =
+            "We could not reach the server to confirm your payment. " +
+            "Please check your order status in the dashboard.";
+          showError("Network error: " + err.message);
+          showButtons([
+            {
+              href: "dashboard.html",
+              cls: "btn-primary",
+              label: "← Go to Dashboard",
+            },
+            { href: "payment.html", cls: "btn-ghost", label: "Try again" },
+          ]);
+        }
+      }
+
+      verifyEsewa(0);
+    </script>
+  </body>
+</html>
