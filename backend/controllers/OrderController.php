@@ -1564,15 +1564,34 @@ if (
         break;
         
     case 'all':
-        $limit = intval($_GET['limit'] ?? 50);
+        $limit  = intval($_GET['limit']  ?? 50);
         $offset = intval($_GET['offset'] ?? 0);
 
-        $orders = $order->getAll($limit, $offset);
+        $allSql = "
+            SELECT
+                o.*,
+                r.restaurant_name
+            FROM orders o
+            LEFT JOIN restaurants r ON o.restaurant_id = r.id
+            ORDER BY o.created_at DESC
+            LIMIT ? OFFSET ?
+        ";
+        $allStmt = $conn->prepare($allSql);
+        $allRows = [];
+        if ($allStmt) {
+            $allStmt->bind_param("ii", $limit, $offset);
+            $allStmt->execute();
+            $allResult = $allStmt->get_result();
+            while ($row = $allResult->fetch_assoc()) {
+                $allRows[] = $row;
+            }
+            $allStmt->close();
+        }
 
         echo json_encode([
             "success" => true,
-            "data" => $orders,
-            "count" => count($orders)
+            "data"    => $allRows,
+            "count"   => count($allRows)
         ]);
         break;
 

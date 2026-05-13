@@ -119,13 +119,24 @@
       </div>
     </div>
 
-    <script>
-      function adminLogout() {
-        localStorage.removeItem("foodExpressCurrentAdmin");
-        localStorage.removeItem("isAdminLoggedIn");
-        window.location.href = "login.html";
-      }
-    </script>
+    <div id="blockConfirmModal" class="modal">
+      <div class="modal-content" style="max-width:460px">
+        <button id="closeBlockModal" class="modal-close" type="button">&times;</button>
+        <div class="block-confirm-modal-body">
+          <h3 id="blockModalTitle">Block User</h3>
+          <p id="blockModalDesc">Blocking this user will prevent them from logging in. You can unblock them at any time.</p>
+          <textarea
+            id="blockReasonInput"
+            class="block-reason-textarea"
+            placeholder="Reason (optional)..."
+          ></textarea>
+          <div class="modal-action-row">
+            <button id="cancelBlockBtn"  class="action-btn btn-view">Cancel</button>
+            <button id="confirmBlockBtn" class="action-btn btn-reject">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script src="../js/admin-users.js"></script>
   </body>

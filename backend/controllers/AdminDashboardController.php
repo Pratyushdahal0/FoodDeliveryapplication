@@ -28,6 +28,14 @@ try {
             handleDashboardSummary($conn);
             break;
 
+        case "dashboard_stats":
+            handleDashboardStats($conn);
+            break;
+
+        case "revenue_stats":
+            handleRevenueStats($conn);
+            break;
+
         default:
             http_response_code(400);
             echo json_encode([
@@ -42,6 +50,76 @@ try {
         "success" => false,
         "message" => "Server error: " . $e->getMessage()
     ]);
+}
+
+function handleDashboardStats($conn) {
+    $today = date('Y-m-d');
+    echo json_encode([
+        "success" => true,
+        "data" => [
+            "total_orders"          => getSingleCount($conn, "SELECT COUNT(*) AS total FROM orders"),
+            "total_revenue"         => getRevenueSum($conn),
+            "total_users"           => getSingleCount($conn, "SELECT COUNT(*) AS total FROM users"),
+            "pending_restaurants"   => getSingleCount($conn, "SELECT COUNT(*) AS total FROM restaurants WHERE status = 'pending'"),
+            "active_restaurants"    => getSingleCount($conn, "SELECT COUNT(*) AS total FROM restaurants WHERE status = 'approved'"),
+            "active_riders"         => getSingleCount($conn, "SELECT COUNT(*) AS total FROM users WHERE role = 'delivery-rider'"),
+            "cancelled_today"       => getSingleCount($conn, "SELECT COUNT(*) AS total FROM orders WHERE status = 'cancelled' AND DATE(created_at) = '{$today}'"),
+            "recent_orders"         => getRecentOrdersForDashboard($conn),
+        ]
+    ]);
+}
+
+function getRevenueSum($conn) {
+    $result = $conn->query("SELECT COALESCE(SUM(subtotal), 0) AS total FROM orders WHERE status NOT IN ('cancelled','rejected')");
+    if (!$result) return 0;
+    $row = $result->fetch_assoc();
+    return round((float)($row["total"] ?? 0), 2);
+}
+
+function handleRevenueStats($conn) {
+    $sql = "
+        SELECT
+            DATE(created_at) AS day,
+            COALESCE(SUM(subtotal), 0) AS revenue
+        FROM orders
+        WHERE status NOT IN ('cancelled', 'rejected')
+            AND created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        GROUP BY DATE(created_at)
+        ORDER BY day ASC
+    ";
+    $result = $conn->query($sql);
+    $rows = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $rows[] = ["day" => $row["day"], "revenue" => round((float)$row["revenue"], 2)];
+        }
+    }
+    echo json_encode(["success" => true, "data" => $rows]);
+}
+
+function getRecentOrdersForDashboard($conn) {
+    $sql = "
+        SELECT
+            o.id,
+            o.order_number,
+            o.customer_name,
+            o.customer_email,
+            r.restaurant_name,
+            o.status,
+            o.total,
+            o.created_at
+        FROM orders o
+        LEFT JOIN restaurants r ON o.restaurant_id = r.id
+        ORDER BY o.created_at DESC
+        LIMIT 10
+    ";
+    $result = $conn->query($sql);
+    if (!$result) return [];
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    return $rows;
 }
 
 function handleDashboardSummary($conn) {

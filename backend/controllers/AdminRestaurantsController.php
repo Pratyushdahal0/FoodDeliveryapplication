@@ -32,6 +32,10 @@ try {
             handleUpdateRestaurantStatus($conn);
             break;
 
+        case "detail":
+            handleRestaurantDetail($conn);
+            break;
+
         default:
             http_response_code(400);
             echo json_encode([
@@ -62,10 +66,10 @@ function handleListRestaurants($conn) {
             r.logo_url,
             r.status,
             r.created_at,
-            rd.owner_full_name
+            COALESCE(rd.owner_full_name, u.name, 'No owner') AS owner_full_name
         FROM restaurants r
-        LEFT JOIN restaurant_documents rd
-            ON rd.restaurant_id = r.id
+        LEFT JOIN restaurant_documents rd ON rd.restaurant_id = r.id
+        LEFT JOIN users u ON r.owner_user_id = u.id
         ORDER BY r.created_at DESC
     ";
 
@@ -126,5 +130,70 @@ function handleUpdateRestaurantStatus($conn) {
         "success" => true,
         "message" => "Restaurant status updated to {$status}."
     ]);
+}
+
+function handleRestaurantDetail($conn) {
+    $id = intval($_GET["id"] ?? 0);
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "message" => "Restaurant ID required."]);
+        return;
+    }
+
+    $stmt = $conn->prepare("
+        SELECT
+            r.*,
+            COALESCE(rd.owner_full_name, u.name, 'No owner') AS owner_full_name,
+            u.email AS owner_email
+        FROM restaurants r
+        LEFT JOIN restaurant_documents rd ON rd.restaurant_id = r.id
+        LEFT JOIN users u ON r.owner_user_id = u.id
+        WHERE r.id = ?
+        LIMIT 1
+    ");
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $conn->error);
+    }
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $restaurant = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$restaurant) {
+        http_response_code(404);
+        echo json_encode(["success" => false, "message" => "Restaurant not found."]);
+        return;
+    }
+
+    $orderCount = 0;
+    $totalRevenue = 0.0;
+    $countStmt = $conn->prepare("SELECT COUNT(*) AS cnt, COALESCE(SUM(subtotal), 0) AS rev FROM orders WHERE restaurant_id = ? AND status NOT IN ('cancelled','rejected')");
+    if ($countStmt) {
+        $countStmt->bind_param("i", $id);
+        $countStmt->execute();
+        $row = $countStmt->get_result()->fetch_assoc();
+        $orderCount = intval($row["cnt"] ?? 0);
+        $totalRevenue = round((float)($row["rev"] ?? 0), 2);
+        $countStmt->close();
+    }
+
+    $avgRating = null;
+    $ratingCheck = $conn->query("SHOW TABLES LIKE 'order_reviews'");
+    if ($ratingCheck && $ratingCheck->num_rows > 0) {
+        $ratingStmt = $conn->prepare("SELECT AVG(rating) AS avg_rating FROM order_reviews WHERE restaurant_id = ?");
+        if ($ratingStmt) {
+            $ratingStmt->bind_param("i", $id);
+            $ratingStmt->execute();
+            $ratingRow = $ratingStmt->get_result()->fetch_assoc();
+            $avgRating = $ratingRow["avg_rating"] !== null ? round((float)$ratingRow["avg_rating"], 1) : null;
+            $ratingStmt->close();
+        }
+    }
+
+    $restaurant["order_count"]   = $orderCount;
+    $restaurant["total_revenue"] = $totalRevenue;
+    $restaurant["avg_rating"]    = $avgRating;
+
+    echo json_encode(["success" => true, "data" => $restaurant]);
 }
 ?>

@@ -115,6 +115,7 @@
                 <th>Contact</th>
                 <th>City</th>
                 <th>Cuisine</th>
+                <th>Rating</th>
                 <th>Status</th>
                 <th>Created</th>
                 <th>Actions</th>
@@ -122,7 +123,7 @@
             </thead>
             <tbody id="restaurantsTableBody">
               <tr>
-                <td colspan="8">
+                <td colspan="9">
                   <div class="loading-state">
                     <h3>Loading restaurants...</h3>
                     <p>
@@ -164,13 +165,6 @@
       </div>
     </main>
 
-    <script>
-      function adminLogout() {
-        localStorage.removeItem("foodExpressCurrentAdmin");
-        localStorage.removeItem("isAdminLoggedIn");
-        window.location.href = "login.html";
-      }
-    </script>
     <script src="../js/admin-restaurants-page.js"></script>
   </body>
 </html>

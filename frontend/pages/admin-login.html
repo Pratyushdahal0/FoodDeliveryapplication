@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login - FoodExpress</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+
+    <style>
+      body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(160deg, #fff5f5 0%, #f6f8fb 50%);
+        font-family: "Inter", sans-serif;
+      }
+
+      .login-shell {
+        width: 100%;
+        max-width: 460px;
+        padding: 24px 16px 48px;
+      }
+
+      .login-brand {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+
+      .login-brand a {
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: #e53935;
+        font-size: 1.8rem;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+      }
+
+      .login-brand a:hover {
+        opacity: 0.85;
+      }
+
+      .login-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 10px;
+        padding: 7px 14px;
+        border-radius: 999px;
+        background: rgba(229, 57, 53, 0.08);
+        border: 1px solid rgba(229, 57, 53, 0.16);
+        color: #e53935;
+        font-size: 0.82rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .login-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 26px;
+        box-shadow: 0 18px 50px rgba(17, 24, 39, 0.09);
+        padding: 36px 32px 28px;
+      }
+
+      .login-card h2 {
+        margin: 0 0 6px;
+        font-size: 1.75rem;
+        font-weight: 900;
+        color: #111827;
+        letter-spacing: -0.04em;
+      }
+
+      .login-card .subtitle {
+        margin: 0 0 28px;
+        color: #6b7280;
+        font-size: 0.95rem;
+        line-height: 1.65;
+      }
+
+      .form-group {
+        margin-bottom: 18px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #374151;
+      }
+
+      .input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      .input-wrap i {
+        position: absolute;
+        left: 16px;
+        color: #9ca3af;
+        font-size: 0.95rem;
+        pointer-events: none;
+      }
+
+      .form-group input {
+        width: 100%;
+        height: 54px;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 0 16px 0 42px;
+        font: inherit;
+        font-size: 0.97rem;
+        color: #111827;
+        background: #f9fafb;
+        transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: rgba(229, 57, 53, 0.5);
+        background: #ffffff;
+        box-shadow: 0 0 0 4px rgba(229, 57, 53, 0.1);
+      }
+
+      .password-toggle {
+        position: absolute;
+        right: 14px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: #9ca3af;
+        font-size: 1rem;
+        padding: 4px;
+        transition: color 0.2s;
+      }
+
+      .password-toggle:hover {
+        color: #6b7280;
+      }
+
+      .login-btn {
+        width: 100%;
+        height: 54px;
+        border: none;
+        border-radius: 999px;
+        background: #e53935;
+        color: #ffffff;
+        font: inherit;
+        font-size: 1rem;
+        font-weight: 900;
+        cursor: pointer;
+        margin-top: 8px;
+        transition: background 0.2s, transform 0.2s, opacity 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .login-btn:hover {
+        background: #c62828;
+        transform: translateY(-1px);
+      }
+
+      .login-btn:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .message-box {
+        display: none;
+        margin-top: 16px;
+        padding: 13px 16px;
+        border-radius: 14px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.5;
+      }
+
+      .message-box.error {
+        display: block;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+      }
+
+      .message-box.success {
+        display: block;
+        background: #ecfdf3;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+      }
+
+      .card-footer {
+        margin-top: 22px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 0.9rem;
+        line-height: 1.6;
+      }
+
+      .card-footer a {
+        color: #e53935;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .card-footer a:hover {
+        text-decoration: underline;
+      }
+
+      .admin-note {
+        margin-top: 24px;
+        padding: 13px 16px;
+        border-radius: 14px;
+        background: #fafafa;
+        border: 1px solid #e5e7eb;
+        color: #6b7280;
+        font-size: 0.88rem;
+        line-height: 1.6;
+        text-align: center;
+      }
+
+      @media (max-width: 480px) {
+        .login-card {
+          padding: 28px 20px 22px;
+          border-radius: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-shell">
+      <div class="login-brand">
+        <a href="landingpage.html">
+          <i class="fa-solid fa-bowl-food"></i>
+          FoodExpress
+        </a>
+        <div>
+          <span class="login-badge">
+            <i class="fa-solid fa-user-shield"></i>
+            Admin Portal
+          </span>
+        </div>
+      </div>
+
+      <div class="login-card">
+        <h2>Admin Sign In</h2>
+        <p class="subtitle">
+          Access is restricted to FoodExpress platform administrators.
+        </p>
+
+        <form id="adminLoginForm" novalidate>
+          <div class="form-group">
+            <label for="adminEmail">Email Address</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-envelope"></i>
+              <input
+                type="email"
+                id="adminEmail"
+                placeholder="admin@foodexpress.com"
+                autocomplete="email"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="adminPassword">Password</label>
+            <div class="input-wrap">
+              <i class="fa-solid fa-lock"></i>
+              <input
+                type="password"
+                id="adminPassword"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                id="togglePasswordBtn"
+                aria-label="Toggle password visibility"
+              >
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="login-btn" id="adminLoginBtn">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            Sign In to Admin Panel
+          </button>
+
+          <div id="loginMessage" class="message-box"></div>
+        </form>
+
+        <div class="card-footer">
+          <a href="landingpage.html">
+            <i class="fa-solid fa-arrow-left"></i>
+            Back to main site
+          </a>
+        </div>
+
+        <div class="admin-note">
+          Admin accounts are created manually by the platform team.<br />
+          Contact your system administrator if you need access.
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/admin-login.js"></script>
+  </body>
+</html>

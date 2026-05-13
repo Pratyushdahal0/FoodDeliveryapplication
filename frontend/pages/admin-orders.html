@@ -52,6 +52,25 @@
 
       <div id="messageBar" class="message-bar"></div>
 
+      <section class="stats-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr))">
+        <div class="stat-card">
+          <div class="stat-label"><i class="fa-solid fa-receipt"></i>&nbsp; Total Orders</div>
+          <div class="stat-value" id="statTotalOrders">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><i class="fa-solid fa-circle-check"></i>&nbsp; Completed</div>
+          <div class="stat-value" id="statCompletedOrders">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><i class="fa-solid fa-circle-xmark"></i>&nbsp; Cancelled</div>
+          <div class="stat-value" id="statCancelledOrders">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><i class="fa-solid fa-coins"></i>&nbsp; Revenue Today</div>
+          <div class="stat-value" id="statRevenueToday">—</div>
+        </div>
+      </section>
+
       <section class="controls-card">
         <div class="controls-row">
           <input
@@ -90,6 +109,13 @@
           <button id="refreshBtn" class="refresh-btn" type="button">
             Refresh Orders
           </button>
+        </div>
+
+        <div class="date-range-row">
+          <label for="dateFrom">From</label>
+          <input type="date" id="dateFrom" />
+          <label for="dateTo">To</label>
+          <input type="date" id="dateTo" />
         </div>
       </section>
 
@@ -136,14 +162,6 @@
         <div id="orderModalBody"></div>
       </div>
     </div>
-
-    <script>
-      function adminLogout() {
-        localStorage.removeItem("foodExpressCurrentAdmin");
-        localStorage.removeItem("isAdminLoggedIn");
-        window.location.href = "login.html";
-      }
-    </script>
 
     <script src="../js/admin-orders.js"></script>
   </body>

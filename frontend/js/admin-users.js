@@ -1,7 +1,20 @@
 const ADMIN_USERS_API =
   "../../backend/controllers/AdminUsersController.php";
 
+if (!localStorage.getItem("isAdminLoggedIn")) {
+  window.location.href = "admin-login.html";
+}
+
+window.adminLogout = function () {
+  localStorage.removeItem("foodExpressCurrentAdmin");
+  localStorage.removeItem("isAdminLoggedIn");
+  localStorage.removeItem("authToken");
+  window.location.href = "admin-login.html";
+};
+
 let allUsers = [];
+let _pendingBlockId     = null;
+let _pendingBlockStatus = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("refreshBtn")?.addEventListener("click", loadUsers);
@@ -12,14 +25,21 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("closeUserOrdersModal")?.addEventListener("click", closeUserOrdersModal);
 
   document.getElementById("userOrdersModal")?.addEventListener("click", (event) => {
-    if (event.target.id === "userOrdersModal") {
-      closeUserOrdersModal();
-    }
+    if (event.target.id === "userOrdersModal") closeUserOrdersModal();
+  });
+
+  document.getElementById("closeBlockModal")?.addEventListener("click",  closeBlockModal);
+  document.getElementById("cancelBlockBtn")?.addEventListener("click",   closeBlockModal);
+  document.getElementById("confirmBlockBtn")?.addEventListener("click",  applyUserStatus);
+
+  document.getElementById("blockConfirmModal")?.addEventListener("click", (event) => {
+    if (event.target.id === "blockConfirmModal") closeBlockModal();
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeUserOrdersModal();
+      closeBlockModal();
     }
   });
 
@@ -127,12 +147,22 @@ function renderUsers() {
       const role = normalizeUserRole(user.role);
       const isBlocked = status === "blocked";
 
+      const initials = String(user.name || "U")
+        .split(" ")
+        .map(w => w[0] || "")
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
+
       return `
         <tr>
           <td>
-            <strong>${escapeHtml(user.name || "Unnamed User")}</strong>
-            <div style="color:#6b7280; font-size:0.88rem;">
-              ID: ${escapeHtml(user.id)}
+            <div class="user-cell">
+              <div class="user-avatar">${escapeHtml(initials)}</div>
+              <div class="user-info">
+                <strong>${escapeHtml(user.name || "Unnamed User")}</strong>
+                <span>ID: ${escapeHtml(user.id)}</span>
+              </div>
             </div>
           </td>
 
@@ -182,21 +212,50 @@ function renderUsers() {
     .join("");
 }
 
-async function toggleUserStatus(id, status) {
-  const confirmAction = confirm(
-    status === "blocked"
-      ? "Are you sure you want to block this user?"
-      : "Are you sure you want to unblock this user?"
-  );
+function toggleUserStatus(id, status) {
+  _pendingBlockId     = id;
+  _pendingBlockStatus = status;
 
-  if (!confirmAction) return;
+  const isBlocking = status === "blocked";
+  const titleEl    = document.getElementById("blockModalTitle");
+  const descEl     = document.getElementById("blockModalDesc");
+  const confirmBtn = document.getElementById("confirmBlockBtn");
+  const reasonEl   = document.getElementById("blockReasonInput");
+
+  if (titleEl)    titleEl.textContent  = isBlocking ? "Block User" : "Unblock User";
+  if (descEl)     descEl.textContent   = isBlocking
+    ? "Blocking this user will prevent them from logging in. You can unblock them at any time."
+    : "This will restore the user's access to the platform.";
+  if (confirmBtn) {
+    confirmBtn.textContent  = isBlocking ? "Block" : "Unblock";
+    confirmBtn.className    = `action-btn ${isBlocking ? "btn-reject" : "btn-approve"}`;
+  }
+  if (reasonEl) reasonEl.value = "";
+
+  const reasonRow = reasonEl?.closest("p") || reasonEl?.parentElement;
+  if (reasonEl) reasonEl.style.display = isBlocking ? "block" : "none";
+
+  document.getElementById("blockConfirmModal")?.classList.add("show");
+}
+
+function closeBlockModal() {
+  document.getElementById("blockConfirmModal")?.classList.remove("show");
+  _pendingBlockId     = null;
+  _pendingBlockStatus = null;
+}
+
+async function applyUserStatus() {
+  if (!_pendingBlockId) return;
+
+  const id     = _pendingBlockId;
+  const status = _pendingBlockStatus;
+
+  closeBlockModal();
 
   try {
     const response = await fetch(`${ADMIN_USERS_API}?action=update_status`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status })
     });
 
@@ -256,16 +315,17 @@ async function viewUserOrders(userId) {
       <div class="list">
         ${orders
           .map((order) => {
-            const status = normalizeOrderStatus(order.status);
+            const status      = normalizeOrderStatus(order.status);
+            const restaurant  = order.restaurant_name || ("Restaurant #" + (order.restaurant_id || "?"));
 
             return `
               <div class="list-item">
                 <div class="list-item-left">
                   <h4>#${escapeHtml(order.order_number || order.id)}</h4>
                   <p>
-                    ${escapeHtml(order.city || "No city")} • 
-                    ${escapeHtml(formatDate(order.created_at))} • 
-                    ${escapeHtml(formatCurrency(order.total))}
+                    ${escapeHtml(restaurant)} &bull;
+                    ${escapeHtml(formatDate(order.created_at))} &bull;
+                    Rs ${parseFloat(order.total || 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                   </p>
                 </div>
 

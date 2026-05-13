@@ -1,5 +1,16 @@
 const ADMIN_ORDERS_API = "../../backend/controllers/OrderController.php";
 
+if (!localStorage.getItem("isAdminLoggedIn")) {
+  window.location.href = "admin-login.html";
+}
+
+window.adminLogout = function () {
+  localStorage.removeItem("foodExpressCurrentAdmin");
+  localStorage.removeItem("isAdminLoggedIn");
+  localStorage.removeItem("authToken");
+  window.location.href = "admin-login.html";
+};
+
 let allOrders = [];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -8,6 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("statusFilter")?.addEventListener("change", renderOrders);
   document.getElementById("paymentFilter")?.addEventListener("change", renderOrders);
   document.getElementById("issueFilter")?.addEventListener("change", renderOrders);
+  document.getElementById("dateFrom")?.addEventListener("change", renderOrders);
+  document.getElementById("dateTo")?.addEventListener("change", renderOrders);
 
   document.getElementById("closeOrderModal")?.addEventListener("click", closeOrderModal);
 
@@ -78,11 +91,6 @@ function updateOrderStats() {
   setText("statTotalOrders", allOrders.length);
 
   setText(
-    "statPendingOrders",
-    allOrders.filter((order) => normalizeStatus(order.status) === "pending").length
-  );
-
-  setText(
     "statCompletedOrders",
     allOrders.filter((order) => {
       const status = normalizeStatus(order.status);
@@ -94,6 +102,17 @@ function updateOrderStats() {
     "statCancelledOrders",
     allOrders.filter((order) => normalizeStatus(order.status) === "cancelled").length
   );
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayRevenue = allOrders
+    .filter((order) => {
+      const s = normalizeStatus(order.status);
+      return s !== "cancelled" && s !== "rejected" &&
+             order.created_at && order.created_at.slice(0, 10) === todayStr;
+    })
+    .reduce((sum, order) => sum + (parseFloat(order.subtotal) || 0), 0);
+
+  setText("statRevenueToday", "Rs " + todayRevenue.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 }));
 }
 
 function renderOrders() {
@@ -102,18 +121,27 @@ function renderOrders() {
 
   const search =
     document.getElementById("searchInput")?.value.trim().toLowerCase() || "";
-  const selectedStatus = document.getElementById("statusFilter")?.value || "all";
+  const selectedStatus  = document.getElementById("statusFilter")?.value  || "all";
   const selectedPayment = document.getElementById("paymentFilter")?.value || "all";
-  const selectedIssue = document.getElementById("issueFilter")?.value || "all";
+  const selectedIssue   = document.getElementById("issueFilter")?.value   || "all";
+  const dateFrom        = document.getElementById("dateFrom")?.value || "";
+  const dateTo          = document.getElementById("dateTo")?.value   || "";
 
   const filteredOrders = allOrders.filter((order) => {
-    const status = normalizeStatus(order.status);
+    const status  = normalizeStatus(order.status);
     const payment = normalizePayment(order.payment_method);
-    const issue = getOrderIssue(order);
+    const issue   = getOrderIssue(order);
 
-    const matchesStatus = selectedStatus === "all" || status === selectedStatus;
+    const matchesStatus  = selectedStatus  === "all" || status  === selectedStatus;
     const matchesPayment = selectedPayment === "all" || payment === selectedPayment;
-    const matchesIssue = selectedIssue === "all" || issue === selectedIssue;
+    const matchesIssue   = selectedIssue   === "all" || issue   === selectedIssue;
+
+    let matchesDate = true;
+    if (dateFrom || dateTo) {
+      const orderDate = order.created_at ? order.created_at.slice(0, 10) : "";
+      if (dateFrom && orderDate < dateFrom) matchesDate = false;
+      if (dateTo   && orderDate > dateTo)   matchesDate = false;
+    }
 
     const searchText = [
       order.id,
@@ -135,6 +163,7 @@ function renderOrders() {
       matchesStatus &&
       matchesPayment &&
       matchesIssue &&
+      matchesDate &&
       searchText.includes(search)
     );
   });
