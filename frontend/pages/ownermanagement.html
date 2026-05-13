@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FoodExpress - Order Management</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/ownerdashboard.css" />
+    <link rel="stylesheet" href="../css/odermanagement.css" />
+  </head>
+
+  <body>
+    <nav class="navbar">
+      <div class="container">
+        <div class="navbar-brand">FoodExpress</div>
+
+        <div class="navbar-nav">
+          <a href="ownerdashboard.html" class="nav-link">Dashboard</a>
+          <a href="ownermanagement.html" class="nav-link active">Orders</a>
+          <a href="ownerMenu.html" class="nav-link">Menu</a>
+          <a href="ownerearning.html" class="nav-link">Earnings</a>
+          <a href="ownerSettings.html" class="nav-link">Settings</a>
+        </div>
+
+        <div class="navbar-right">
+          <div class="search-box">
+            <input
+              type="text"
+              id="orderSearchInput"
+              placeholder="Search orders..."
+              autocomplete="off"
+            />
+          </div>
+
+          <button class="login-btn" type="button" id="ownerLogoutBtn">
+            Logout
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-profile">
+          <div class="avatar">R</div>
+          <div>
+            <div class="name">Restaurant Name</div>
+            <div class="sub">Owner Dashboard</div>
+          </div>
+        </div>
+
+        <a href="ownerdashboard.html" class="nav-item">
+          <i class="fa-solid fa-table-cells-large"></i>
+          Dashboard
+        </a>
+
+        <a href="ownermanagement.html" class="nav-item active">
+          <i class="fa-solid fa-bag-shopping"></i>
+          Orders
+        </a>
+
+        <a href="ownerMenu.html" class="nav-item">
+          <i class="fa-solid fa-bars-staggered"></i>
+          Menu
+        </a>
+
+        <a href="ownerearning.html" class="nav-item">
+          <i class="fa-solid fa-chart-line"></i>
+          Earnings
+        </a>
+
+        <a href="ownerSettings.html" class="nav-item">
+          <i class="fa-solid fa-gear"></i>
+          Settings
+        </a>
+      </aside>
+
+      <main class="main">
+        <section class="orders-main-header">
+          <div>
+            <p class="orders-eyebrow">Restaurant operations</p>
+            <h1>Order Management</h1>
+            <p>
+              Manage incoming orders, kitchen preparation, rider pickup, and
+              completed deliveries.
+            </p>
+          </div>
+
+          <button class="orders-refresh-btn" type="button" id="ownerRefreshBtn">
+            <i class="fa fa-rotate-right"></i>
+            Refresh
+          </button>
+        </section>
+
+        <section class="owner-order-toolbar">
+          <div class="owner-toolbar-card">
+            <label for="ownerStatusFilter">Filter</label>
+            <select id="ownerStatusFilter">
+              <option value="all">All orders</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="preparing">Preparing</option>
+              <option value="ready_for_pickup">Ready for pickup</option>
+              <option value="delivery">With rider</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div class="owner-toolbar-card">
+            <label for="ownerSortMode">Sort</label>
+            <select id="ownerSortMode">
+              <option value="latest">Latest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="highest">Highest amount</option>
+              <option value="urgent">Most urgent</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="tabs owner-order-tabs">
+          <button class="tab active-pending" type="button" data-tab="pending">
+            <i class="fa fa-clock"></i>
+            <span>Pending (0)</span>
+          </button>
+
+          <button class="tab" type="button" data-tab="accepted">
+            <i class="fa fa-utensils"></i>
+            <span>In Progress (0)</span>
+          </button>
+
+          <button class="tab" type="button" data-tab="ready">
+            <i class="fa fa-box-open"></i>
+            <span>Ready for Pickup (0)</span>
+          </button>
+
+          <button class="tab" type="button" data-tab="delivery">
+            <i class="fa fa-motorcycle"></i>
+            <span>In Delivery (0)</span>
+          </button>
+
+          <button class="tab" type="button" data-tab="delivered">
+            <i class="fa fa-circle-check"></i>
+            <span>Completed (0)</span>
+          </button>
+
+          <button class="tab" type="button" data-tab="cancelled">
+            <i class="fa fa-circle-xmark"></i>
+            <span>Cancelled (0)</span>
+          </button>
+        </section>
+
+        <section class="orders-content-card">
+          <div class="order-section active" id="section-pending"></div>
+          <div class="order-section" id="section-accepted"></div>
+          <div class="order-section" id="section-ready"></div>
+          <div class="order-section" id="section-delivery"></div>
+          <div class="order-section" id="section-delivered"></div>
+          <div class="order-section" id="section-cancelled"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="../js/shared.js?v=owner-orders-safe-1"></script>
+    <script src="../js/ownerOrders.js?v=owner-orders-safe-2"></script>
+  </body>
+</html>

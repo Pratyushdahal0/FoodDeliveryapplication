@@ -3,14 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FoodExpress — Shop</title>
+    <title>FoodExpress — Restaurants</title>
+
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../assets/images/brand/foodexpress-favicon-32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="64x64"
+      href="../assets/images/brand/foodexpress-favicon-64.png"
+    />
+
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/layout.css" />
-    <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/shop.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
   </head>
+
   <body>
-    <!-- AUTH PROTECTION -->
     <script>
       if (!localStorage.getItem("isLoggedIn")) {
         alert("Please login first");
@@ -18,140 +35,1168 @@
       }
     </script>
 
-    <!-- ══════════════════ NAVBAR ══════════════════ -->
-    <nav class="navbar" id="navbar">
-      <div class="container">
-        <div class="navbar-brand">FoodExpress</div>
+    <div id="navbarContainer"></div>
 
-        <div class="navbar-nav">
-          <a href="dashboard.html" class="nav-link">Home</a>
-          <a href="shop.html" class="nav-link">Shop</a>
-          <a href="food.html" class="nav-link">Food</a>
-          <a href="loggedContact.html" class="nav-link">Contact</a>
-        </div>
+    <!-- ── What Should I Eat? Modal ────────────────────── -->
+    <div
+      id="recommenderOverlay"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(10px);
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      "
+    >
+      <div
+        id="recommenderModal"
+        style="
+          width: min(540px, 100%);
+          background: #fff;
+          border-radius: 32px;
+          border: 1px solid #e5e7eb;
+          box-shadow: 0 32px 100px rgba(15, 23, 42, 0.28);
+          overflow: hidden;
+          max-height: 92vh;
+          overflow-y: auto;
+        "
+      >
+        <!-- Header -->
+        <div
+          style="
+            background: linear-gradient(135deg, #f97316 0%, #e53935 100%);
+            padding: 32px 32px 28px;
+            position: relative;
+            color: #fff;
+          "
+        >
+          <button
+            onclick="closeRecommender()"
+            style="
+              position: absolute;
+              top: 18px;
+              right: 18px;
+              background: rgba(255, 255, 255, 0.2);
+              border: none;
+              border-radius: 50%;
+              width: 38px;
+              height: 38px;
+              cursor: pointer;
+              color: #fff;
+              font-size: 15px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: background 0.15s;
+            "
+            onmouseover="this.style.background = 'rgba(255,255,255,.3)'"
+            onmouseout="this.style.background = 'rgba(255,255,255,.2)'"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
 
-        <div class="navbar-right">
-          <div class="search-box">
-            <input type="text" placeholder="Search food..." />
+          <div
+            style="
+              width: 56px;
+              height: 56px;
+              background: rgba(255, 255, 255, 0.2);
+              border-radius: 16px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 16px;
+              font-size: 26px;
+            "
+          >
+            <i class="fa-solid fa-utensils" style="color: #fff"></i>
           </div>
-          <div class="hamburger" id="hamburger">
-            <span></span>
-            <span></span>
-            <span></span>
+
+          <h2
+            style="
+              margin: 0 0 6px;
+              font-size: 1.6rem;
+              font-weight: 900;
+              letter-spacing: -0.02em;
+            "
+            id="recommenderGreeting"
+          >
+            Good morning!
+          </h2>
+          <p
+            style="
+              margin: 0;
+              opacity: 0.85;
+              font-size: 0.95rem;
+              font-weight: 500;
+            "
+          >
+            Let us find the perfect meal for you right now.
+          </p>
+        </div>
+
+        <!-- Form -->
+        <div id="recommenderForm" style="padding: 28px 32px">
+          <!-- Budget -->
+          <div style="margin-bottom: 24px">
+            <p
+              style="
+                font-size: 0.75rem;
+                font-weight: 800;
+                color: #9ca3af;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                margin-bottom: 12px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              "
+            >
+              <i class="fa-solid fa-wallet" style="color: #f97316"></i>
+              Your budget
+            </p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap">
+              <button
+                class="rec-chip"
+                data-group="budget"
+                data-value="low"
+                onclick="selectChip(this, 'budget')"
+              >
+                <i class="fa-solid fa-coins"></i> Low
+                <small>under Rs.300</small>
+              </button>
+              <button
+                class="rec-chip active"
+                data-group="budget"
+                data-value="medium"
+                onclick="selectChip(this, 'budget')"
+              >
+                <i class="fa-solid fa-credit-card"></i> Medium
+                <small>Rs.300–700</small>
+              </button>
+              <button
+                class="rec-chip"
+                data-group="budget"
+                data-value="high"
+                onclick="selectChip(this, 'budget')"
+              >
+                <i class="fa-solid fa-gem"></i> High <small>above Rs.700</small>
+              </button>
+            </div>
           </div>
-          <a href="#" onclick="logout()">
-            <button class="login-btn">
-              <i class="fa-regular fa-user"></i>
-              Log out
-            </button>
-          </a>
+
+          <!-- Cuisine -->
+          <div style="margin-bottom: 28px">
+            <p
+              style="
+                font-size: 0.75rem;
+                font-weight: 800;
+                color: #9ca3af;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                margin-bottom: 12px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              "
+            >
+              <i class="fa-solid fa-bowl-food" style="color: #f97316"></i>
+              Cuisine preference
+            </p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap">
+              <button
+                class="rec-chip"
+                data-group="cuisine"
+                data-value="nepali"
+                onclick="selectChip(this, 'cuisine')"
+              >
+                <i class="fa-solid fa-bowl-rice"></i> Nepali
+              </button>
+              <button
+                class="rec-chip"
+                data-group="cuisine"
+                data-value="chinese"
+                onclick="selectChip(this, 'cuisine')"
+              >
+                <i class="fa-solid fa-fire-burner"></i> Chinese
+              </button>
+              <button
+                class="rec-chip"
+                data-group="cuisine"
+                data-value="fastfood"
+                onclick="selectChip(this, 'cuisine')"
+              >
+                <i class="fa-solid fa-burger"></i> Fast Food
+              </button>
+              <button
+                class="rec-chip active"
+                data-group="cuisine"
+                data-value="any"
+                onclick="selectChip(this, 'cuisine')"
+              >
+                <i class="fa-solid fa-star"></i> Any
+              </button>
+            </div>
+          </div>
+
+          <button
+            onclick="runRecommender()"
+            style="
+              width: 100%;
+              padding: 16px;
+              background: linear-gradient(135deg, #f97316, #e53935);
+              color: #fff;
+              border: none;
+              border-radius: 16px;
+              font-size: 1rem;
+              font-weight: 800;
+              cursor: pointer;
+              font-family: inherit;
+              transition:
+                opacity 0.15s,
+                transform 0.15s;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+            "
+            onmouseover="
+              this.style.opacity = '.9';
+              this.style.transform = 'translateY(-1px)';
+            "
+            onmouseout="
+              this.style.opacity = '1';
+              this.style.transform = 'translateY(0)';
+            "
+          >
+            <i class="fa-solid fa-magnifying-glass"></i>
+            Find food for me
+          </button>
         </div>
-      </div>
-    </nav>
 
-    <!-- ══════════════════ SHOP PAGE ══════════════════ -->
-    <div class="shop-page">
-      <!-- Hero -->
-      <div class="shop-hero">
-        <h1>Our <span>Shop</span></h1>
-        <p>
-          Browse our wide selection of delicious meals and place your order
-          today
-        </p>
-      </div>
-
-      <!-- Filter Bar -->
-      <div class="filter-bar">
-        <span class="filter-icon">⋮≡</span>
-        <button class="filter-btn active">All Items</button>
-        <button class="filter-btn">Popular</button>
-        <button class="filter-btn">Breakfast</button>
-        <button class="filter-btn">Lunch</button>
-        <button class="filter-btn">Dinner</button>
-        <button class="filter-btn">Desserts</button>
-        <button class="filter-btn">Drinks</button>
-      </div>
-
-      <!-- Products -->
-      <div class="products-section">
-        <div class="products-count">Loading products...</div>
-        <div class="products-grid" id="productsGrid">
-          <!-- Products will be loaded here -->
+        <!-- Loading -->
+        <div
+          id="recommenderLoading"
+          style="
+            display: none;
+            padding: 48px 32px;
+            text-align: center;
+            color: #9ca3af;
+          "
+        >
+          <div
+            style="
+              width: 56px;
+              height: 56px;
+              background: #fff7ed;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 0 auto 16px;
+            "
+          >
+            <i
+              class="fa-solid fa-spinner fa-spin"
+              style="font-size: 22px; color: #f97316"
+            ></i>
+          </div>
+          <p
+            style="margin: 0; font-size: 15px; font-weight: 700; color: #374151"
+          >
+            Finding your perfect meal…
+          </p>
+          <p style="margin: 6px 0 0; font-size: 13px">
+            Checking menu items and restaurants
+          </p>
         </div>
-        <!-- end .products-grid -->
-      </div>
-      <!-- end .products-section -->
 
-      <!-- CTA Banner -->
-      <div class="cta-banner">
-        <h2>Can't Find What You're Looking For?</h2>
-        <p>Contact us and we'll help you find the perfect meal</p>
-        <button class="btn-contact">Contact Us</button>
+        <!-- Results -->
+        <div
+          id="recommenderResults"
+          style="display: none; padding: 0 32px 32px"
+        >
+          <div
+            style="height: 1px; background: #f3f4f6; margin-bottom: 24px"
+          ></div>
+          <p
+            style="
+              font-size: 0.75rem;
+              font-weight: 800;
+              color: #9ca3af;
+              letter-spacing: 0.1em;
+              text-transform: uppercase;
+              margin-bottom: 16px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            "
+          >
+            <i
+              class="fa-solid fa-wand-magic-sparkles"
+              style="color: #f97316"
+            ></i>
+            Recommended for you
+          </p>
+          <div
+            id="recommenderCards"
+            style="display: flex; flex-direction: column; gap: 12px"
+          ></div>
+          <button
+            onclick="runRecommender()"
+            style="
+              width: 100%;
+              margin-top: 18px;
+              padding: 12px;
+              background: #f9fafb;
+              border: 1.5px solid #e5e7eb;
+              border-radius: 12px;
+              font-size: 13px;
+              font-weight: 700;
+              color: #6b7280;
+              cursor: pointer;
+              font-family: inherit;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+              transition: background 0.15s;
+            "
+            onmouseover="this.style.background = '#f3f4f6'"
+            onmouseout="this.style.background = '#f9fafb'"
+          >
+            <i class="fa-solid fa-rotate-right"></i> Try again with different
+            preferences
+          </button>
+        </div>
+
+        <!-- Empty -->
+        <div
+          id="recommenderEmpty"
+          style="
+            display: none;
+            padding: 48px 32px;
+            text-align: center;
+            color: #9ca3af;
+          "
+        >
+          <div
+            style="
+              width: 64px;
+              height: 64px;
+              background: #f3f4f6;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 0 auto 16px;
+            "
+          >
+            <i
+              class="fa-solid fa-face-sad-tear"
+              style="font-size: 24px; opacity: 0.5"
+            ></i>
+          </div>
+          <p
+            style="
+              margin: 0 0 6px;
+              font-size: 15px;
+              font-weight: 800;
+              color: #374151;
+            "
+          >
+            No matches found
+          </p>
+          <p style="margin: 0 0 20px; font-size: 13px">
+            Try a different budget or cuisine preference.
+          </p>
+          <button
+            onclick="
+              document.getElementById('recommenderEmpty').style.display =
+                'none';
+              document.getElementById('recommenderForm').style.display = '';
+            "
+            style="
+              padding: 10px 24px;
+              background: #f97316;
+              color: #fff;
+              border: none;
+              border-radius: 999px;
+              font-size: 13px;
+              font-weight: 700;
+              cursor: pointer;
+              font-family: inherit;
+            "
+          >
+            Try again
+          </button>
+        </div>
       </div>
     </div>
-    <!-- end .shop-page -->
 
-    <!-- ══════════════════ FOOTER ══════════════════ -->
-    <footer>
-      <div class="footer-grid">
+    <!-- ── Floating button ─────────── -->
+    <button
+      onclick="openRecommender()"
+      id="recommenderBtn"
+      style="
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        z-index: 9998;
+        background: linear-gradient(135deg, #f97316, #e53935);
+        color: #fff;
+        border: none;
+        border-radius: 999px;
+        padding: 14px 22px;
+        font-size: 0.88rem;
+        font-weight: 800;
+        font-family: inherit;
+        box-shadow: 0 8px 28px rgba(249, 115, 22, 0.4);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        transition:
+          transform 0.18s,
+          box-shadow 0.18s;
+      "
+      onmouseover="
+        this.style.transform = 'translateY(-2px) scale(1.04)';
+        this.style.boxShadow = '0 14px 40px rgba(249,115,22,.55)';
+      "
+      onmouseout="
+        this.style.transform = 'translateY(0) scale(1)';
+        this.style.boxShadow = '0 8px 28px rgba(249,115,22,.4)';
+      "
+    >
+      <i class="fa-solid fa-utensils"></i>
+      <span>What should I eat?</span>
+    </button>
+
+    <style>
+      .rec-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 16px;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 999px;
+        background: #f9fafb;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+        transition:
+          border-color 0.15s,
+          background 0.15s,
+          color 0.15s,
+          transform 0.1s;
+        white-space: nowrap;
+      }
+      .rec-chip small {
+        font-weight: 500;
+        opacity: 0.65;
+        font-size: 11px;
+      }
+      .rec-chip.active {
+        background: #fff7ed;
+        border-color: #f97316;
+        color: #f97316;
+      }
+      .rec-chip:hover:not(.active) {
+        background: #fff;
+        border-color: #d1d5db;
+        transform: translateY(-1px);
+      }
+      .rec-item-card {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        border: 1.5px solid #f3f4f6;
+        border-radius: 18px;
+        padding: 14px;
+        background: #fff;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s,
+          transform 0.15s;
+        cursor: default;
+      }
+      .rec-item-card:hover {
+        border-color: #fed7aa;
+        box-shadow: 0 4px 18px rgba(249, 115, 22, 0.1);
+        transform: translateY(-1px);
+      }
+      .rec-item-img {
+        width: 72px;
+        height: 72px;
+        border-radius: 14px;
+        object-fit: cover;
+        flex-shrink: 0;
+        background: #f3f4f6;
+      }
+      .rec-item-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .rec-item-name {
+        font-size: 14px;
+        font-weight: 800;
+        color: #111827;
+        margin: 0 0 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .rec-item-restaurant {
+        font-size: 12px;
+        color: #9ca3af;
+        margin: 0 0 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .rec-item-price {
+        font-size: 15px;
+        font-weight: 800;
+        color: #f97316;
+      }
+      .rec-add-btn {
+        padding: 9px 16px;
+        background: linear-gradient(135deg, #f97316, #e53935);
+        color: #fff;
+        border: none;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        font-family: inherit;
+        flex-shrink: 0;
+        transition:
+          opacity 0.15s,
+          transform 0.1s;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .rec-add-btn:hover {
+        opacity: 0.88;
+        transform: scale(1.04);
+      }
+      .rec-add-btn.added {
+        background: #16a34a;
+      }
+    </style>
+
+    <main class="restaurant-page">
+      <section class="restaurant-hero">
         <div>
-          <div class="footer-logo">FoodExpress</div>
-          <p class="footer-desc">
-            Delivering happiness to your doorstep, one meal at a time.
-          </p>
-          <div class="footer-socials">
-            <a href="#">f</a>
-            <a href="#">𝕏</a>
-            <a href="#">◎</a>
+          <span class="breadcrumb">Home › Restaurants</span>
+          <h1>Restaurants List</h1>
+          <p id="restaurantCount">Loading approved restaurants...</p>
+        </div>
+        <div class="restaurant-search">
+          <input
+            type="text"
+            id="restaurantSearchInput"
+            placeholder="Search restaurants..."
+          />
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+      </section>
+
+      <section class="restaurant-layout">
+        <aside class="restaurant-filter">
+          <div class="filter-title-row">
+            <h3>Filter</h3>
+            <button type="button" id="clearFilterBtn">Clear Filter</button>
           </div>
-        </div>
-        <div class="footer-col">
-          <h4>Quick Links</h4>
-          <ul>
-            <li><a href="home.html">Home</a></li>
-            <li><a href="shop.html">Our Menu</a></li>
-          </ul>
-        </div>
-        <div class="footer-col">
-          <h4>Support</h4>
-          <ul>
-            <li><a href="#">Help Center</a></li>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">Terms of Service</a></li>
-            <li><a href="contact.html">Contact Us</a></li>
-          </ul>
-        </div>
-        <div class="footer-col">
-          <h4>Contact</h4>
-          <div class="contact-item">📍 <span>Kathmandu, Nepal</span></div>
-          <div class="contact-item">📞 <span>+977 - 9841223344</span></div>
-          <div class="contact-item">✉️ <span>Lovely@gmail.com</span></div>
-        </div>
-      </div>
-      <div class="footer-bottom">©️ 2026 FoodExpress. All rights reserved.</div>
-    </footer>
+          <div class="filter-group">
+            <h4>Sort By</h4>
+            <label
+              ><input type="radio" name="sort" value="asc" checked /> A-Z
+              Ascending</label
+            >
+            <label
+              ><input type="radio" name="sort" value="desc" /> Z-A
+              Descending</label
+            >
+          </div>
+          <div class="filter-group">
+            <h4>Open Status</h4>
+            <label
+              ><input type="radio" name="openStatus" value="all" checked />
+              All</label
+            >
+            <label
+              ><input type="radio" name="openStatus" value="open" /> Open
+              Now</label
+            >
+          </div>
+          <div class="filter-group">
+            <h4>Cuisine</h4>
+            <div id="cuisineFilters">
+              <p class="filter-muted">Loading cuisines...</p>
+            </div>
+          </div>
+        </aside>
 
-    <!-- Help Bubble -->
-    <div class="help-bubble">?</div>
+        <section class="restaurant-results" id="restaurantList">
+          <div class="restaurant-loading">Loading approved restaurants...</div>
+        </section>
+      </section>
+    </main>
 
-    <!-- LOGOUT FUNCTION -->
+    <footer class="footer" id="footer"></footer>
+
+    <script src="../js/api/restaurantApi.js"></script>
+    <script src="../js/profile.js"></script>
+    <script src="../js/shared.js"></script>
+    <script src="../js/modules/cart.js"></script>
+    <script src="../js/components/notifications.js?v=backendnotif3"></script>
+    <script src="../js/components/navbar.js"></script>
+    <script src="../js/components/footer.js"></script>
+
     <script>
-      function logout() {
-        localStorage.removeItem("isLoggedIn");
-        localStorage.removeItem("userEmail");
-        localStorage.removeItem("foodDeliveryCartCount");
-        localStorage.removeItem("foodDeliveryCartItems");
-        localStorage.removeItem("checkoutTotal");
-        localStorage.removeItem("checkoutSubtotal");
-        localStorage.removeItem("checkoutTax");
-        localStorage.removeItem("lastOrder");
-        alert("You have been logged out");
-        window.location.href = "landingpage.html";
+      let approvedRestaurants = [];
+      let selectedCuisine = "all";
+
+      document.addEventListener("DOMContentLoaded", function () {
+        if (typeof window.renderNavbar === "function")
+          window.renderNavbar("shop");
+        if (typeof window.renderFooter === "function")
+          window.renderFooter("app");
+        if (typeof window.bindProfileEverywhere === "function")
+          window.bindProfileEverywhere();
+        if (typeof window.bindNotificationBell === "function")
+          window.bindNotificationBell();
+        setupRestaurantPage();
+      });
+
+      async function setupRestaurantPage() {
+        try {
+          approvedRestaurants = await getApprovedRestaurants();
+          if (!Array.isArray(approvedRestaurants)) approvedRestaurants = [];
+          buildCuisineFilters();
+          attachFilterEvents();
+          renderRestaurants();
+        } catch (error) {
+          console.error("[shop.html] Failed to load restaurants:", error);
+          const count = document.getElementById("restaurantCount");
+          const container = document.getElementById("restaurantList");
+          if (count) count.textContent = "0 restaurants found";
+          if (container)
+            container.innerHTML = `<div class="restaurant-empty"><h3>Unable to load restaurants</h3><p>Please check your backend connection and try again.</p></div>`;
+        }
+      }
+
+      function attachFilterEvents() {
+        const searchInput = document.getElementById("restaurantSearchInput");
+        const clearBtn = document.getElementById("clearFilterBtn");
+        if (searchInput)
+          searchInput.addEventListener("input", renderRestaurants);
+        document
+          .querySelectorAll("input[name='sort']")
+          .forEach((i) => i.addEventListener("change", renderRestaurants));
+        document
+          .querySelectorAll("input[name='openStatus']")
+          .forEach((i) => i.addEventListener("change", renderRestaurants));
+        if (clearBtn) {
+          clearBtn.addEventListener("click", () => {
+            if (searchInput) searchInput.value = "";
+            selectedCuisine = "all";
+            const ascSort = document.querySelector(
+              "input[name='sort'][value='asc']",
+            );
+            const allStatus = document.querySelector(
+              "input[name='openStatus'][value='all']",
+            );
+            if (ascSort) ascSort.checked = true;
+            if (allStatus) allStatus.checked = true;
+            buildCuisineFilters();
+            renderRestaurants();
+          });
+        }
+      }
+
+      function buildCuisineFilters() {
+        const cuisineContainer = document.getElementById("cuisineFilters");
+        if (!cuisineContainer) return;
+        const cuisines = [
+          ...new Set(
+            approvedRestaurants.map((r) => r.cuisine_type).filter(Boolean),
+          ),
+        ];
+        if (!cuisines.length) {
+          cuisineContainer.innerHTML = `<p class="filter-muted">No cuisines yet</p>`;
+          return;
+        }
+        cuisineContainer.innerHTML = `
+          <button type="button" class="cuisine-chip ${selectedCuisine === "all" ? "active" : ""}" onclick="setCuisineFilter('all')">All</button>
+          ${cuisines.map((cuisine) => `<button type="button" class="cuisine-chip ${selectedCuisine === cuisine ? "active" : ""}" onclick="setCuisineFilter('${escapeAttribute(cuisine)}')">${escapeHtml(cuisine)}</button>`).join("")}
+        `;
+      }
+
+      function setCuisineFilter(cuisine) {
+        selectedCuisine = cuisine;
+        buildCuisineFilters();
+        renderRestaurants();
+      }
+
+      function renderRestaurants() {
+        const container = document.getElementById("restaurantList");
+        const count = document.getElementById("restaurantCount");
+        if (!container || !count) return;
+        const query =
+          document
+            .getElementById("restaurantSearchInput")
+            ?.value.trim()
+            .toLowerCase() || "";
+        const sort =
+          document.querySelector("input[name='sort']:checked")?.value || "asc";
+        const openStatus =
+          document.querySelector("input[name='openStatus']:checked")?.value ||
+          "all";
+        let restaurants = approvedRestaurants.filter((restaurant) => {
+          const searchText = [
+            restaurant.restaurant_name,
+            restaurant.cuisine_type,
+            restaurant.city,
+            restaurant.location,
+          ]
+            .map((v) => String(v || "").toLowerCase())
+            .join(" ");
+          const matchesSearch = query ? searchText.includes(query) : true;
+          const matchesCuisine =
+            selectedCuisine === "all"
+              ? true
+              : restaurant.cuisine_type === selectedCuisine;
+          const operation = getRestaurantOperationalStatus(restaurant);
+          const matchesOpen =
+            openStatus === "all"
+              ? true
+              : operation.key === "open" || operation.key === "busy";
+          return matchesSearch && matchesCuisine && matchesOpen;
+        });
+        restaurants.sort((a, b) => {
+          const nameA = String(a.restaurant_name || "").toLowerCase();
+          const nameB = String(b.restaurant_name || "").toLowerCase();
+          return sort === "asc"
+            ? nameA.localeCompare(nameB)
+            : nameB.localeCompare(nameA);
+        });
+        count.textContent = `${restaurants.length} restaurant${restaurants.length === 1 ? "" : "s"} found`;
+        if (!restaurants.length) {
+          container.innerHTML = `<div class="restaurant-empty"><h3>No restaurants found</h3><p>Try changing your search or filters.</p></div>`;
+          return;
+        }
+        container.innerHTML = restaurants
+          .map((r) => createRestaurantCard(r))
+          .join("");
+      }
+
+      function createRestaurantCard(restaurant) {
+        const operation = getRestaurantOperationalStatus(restaurant);
+        const eta = calculateSmartEta(restaurant);
+        const image =
+          restaurant.logo_url && restaurant.logo_url !== "null"
+            ? restaurant.logo_url
+            : restaurant.cover_image_url &&
+                restaurant.cover_image_url !== "null"
+              ? restaurant.cover_image_url
+              : "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80";
+        return `
+    <article class="restaurant-row-card ${operation.key}">
+      <div class="restaurant-logo-wrap">
+        <img src="${escapeHtml(image)}" alt="${escapeHtml(restaurant.restaurant_name || "Restaurant")}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80';" />
+      </div>
+      <div class="restaurant-main-info">
+        <div class="restaurant-title-line">
+          <h3>${escapeHtml(restaurant.restaurant_name || "Unnamed Restaurant")}</h3>
+          <span class="open-badge ${operation.badgeClass}">${escapeHtml(operation.label)}</span>
+        </div>
+        <p class="restaurant-meta"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(restaurant.location || restaurant.city || "Location not added")}</p>
+        <p class="restaurant-meta"><i class="fa-solid fa-utensils"></i> ${escapeHtml(restaurant.cuisine_type || "Restaurant")}</p>
+        <p class="restaurant-meta ${operation.key === "busy" ? "restaurant-busy-text" : ""}"><i class="fa-solid fa-clock"></i> ${escapeHtml(operation.message)}</p>
+        <p class="restaurant-rating">
+          <i class="fa-solid fa-star"></i>
+          <span>${escapeHtml(restaurant.rating || "4.8")}</span>
+          <span class="eta-pill"><i class="fa-solid fa-motorcycle"></i> ${escapeHtml(eta.label)}</span>
+        </p>
+        <p class="restaurant-desc">${escapeHtml(restaurant.description || "Fresh food available from this restaurant.")}</p>
+        <div class="restaurant-offer ${operation.canCheckout ? "" : "warning"}">${operation.offerHtml}</div>
+      </div>
+      <div class="restaurant-action">
+        <button type="button" class="${operation.canViewMenu ? "" : "disabled"}" onclick="viewRestaurantMenu(${Number(restaurant.id || 0)},'${escapeAttribute(restaurant.restaurant_name || "Restaurant")}')">View Menu</button>
+        ${operation.canCheckout ? `<small class="restaurant-action-note">Ordering available</small>` : `<small class="restaurant-action-note blocked">${escapeHtml(operation.blockReason)}</small>`}
+      </div>
+    </article>`;
+      }
+
+      function viewRestaurantMenu(id, restaurantName = "Restaurant") {
+        if (!id) {
+          alert("Restaurant ID not found.");
+          return;
+        }
+        const restaurant = approvedRestaurants.find(
+          (item) => Number(item.id) === Number(id),
+        );
+        const operation = restaurant
+          ? getRestaurantOperationalStatus(restaurant)
+          : {
+              key: "open",
+              canAddToCart: true,
+              canCheckout: true,
+              message: "Open",
+            };
+        const selectedRestaurant = {
+          ...(restaurant || {}),
+          id: Number(id),
+          restaurant_id: Number(id),
+          name: restaurantName,
+          restaurant_name: restaurantName,
+          operation_status: operation.key,
+          can_add_to_cart: operation.canAddToCart,
+          can_checkout: operation.canCheckout,
+          operation_message: operation.message,
+          selectedAt: new Date().toISOString(),
+        };
+        localStorage.setItem("selectedRestaurantId", String(id));
+        localStorage.setItem("selectedRestaurantName", restaurantName);
+        localStorage.setItem(
+          "foodExpressSelectedRestaurant",
+          JSON.stringify(selectedRestaurant),
+        );
+        window.location.href = `food.html?restaurant_id=${encodeURIComponent(id)}&restaurant=${encodeURIComponent(restaurantName)}`;
+      }
+
+      function getRestaurantOperationalStatus(restaurant) {
+        const isOpenFlag = Number(restaurant.is_open ?? 1) === 1;
+        const acceptingOrders = Number(restaurant.accepting_orders ?? 1) === 1;
+        const deliveryAvailable =
+          Number(restaurant.delivery_available ?? 1) === 1;
+        const busyMode = Number(restaurant.busy_mode ?? 0) === 1;
+        const showBusyBanner = Number(restaurant.show_busy_banner ?? 1) === 1;
+        const timeOpen = isWithinOpeningHours(restaurant);
+        const openingTime = restaurant.opening_time || "09:00:00";
+        const closingTime = restaurant.closing_time || "22:00:00";
+        if (!isOpenFlag || !timeOpen)
+          return {
+            key: "closed",
+            label: "Closed",
+            badgeClass: "closed",
+            message: `Closed · Opens at ${formatRestaurantTime(openingTime)}`,
+            canViewMenu: true,
+            canAddToCart: false,
+            canCheckout: false,
+            blockReason: "Ordering closed",
+            offerHtml: `<i class="fa-solid fa-door-closed"></i> Ordering is currently closed`,
+          };
+        if (!acceptingOrders)
+          return {
+            key: "paused",
+            label: "Paused",
+            badgeClass: "closed",
+            message: "Open · Not accepting orders",
+            canViewMenu: true,
+            canAddToCart: false,
+            canCheckout: false,
+            blockReason: "Not accepting orders",
+            offerHtml: `<i class="fa-solid fa-circle-pause"></i> Not accepting new orders right now`,
+          };
+        if (!deliveryAvailable)
+          return {
+            key: "delivery_off",
+            label: "Delivery Off",
+            badgeClass: "closed",
+            message: "Delivery unavailable right now",
+            canViewMenu: true,
+            canAddToCart: false,
+            canCheckout: false,
+            blockReason: "Delivery unavailable",
+            offerHtml: `<i class="fa-solid fa-truck-ramp-box"></i> Delivery unavailable right now`,
+          };
+        if (busyMode)
+          return {
+            key: "busy",
+            label: "Busy",
+            badgeClass: "busy",
+            message: showBusyBanner
+              ? "Busy · Longer wait time"
+              : `Open · Until ${formatRestaurantTime(closingTime)}`,
+            canViewMenu: true,
+            canAddToCart: true,
+            canCheckout: true,
+            blockReason: "",
+            offerHtml: `<i class="fa-solid fa-fire-burner"></i> Kitchen busy · ETA may be longer`,
+          };
+        return {
+          key: "open",
+          label: "Open",
+          badgeClass: "open",
+          message: `Open · Until ${formatRestaurantTime(closingTime)}`,
+          canViewMenu: true,
+          canAddToCart: true,
+          canCheckout: true,
+          blockReason: "",
+          offerHtml: `<i class="fa-solid fa-truck"></i> Delivery available`,
+        };
+      }
+
+      function isWithinOpeningHours(restaurant) {
+        if (!restaurant.opening_time || !restaurant.closing_time) return true;
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const openMinutes = timeToMinutes(restaurant.opening_time);
+        const closeMinutes = timeToMinutes(restaurant.closing_time);
+        if (openMinutes === null || closeMinutes === null) return true;
+        if (openMinutes === closeMinutes) return true;
+        if (openMinutes < closeMinutes)
+          return (
+            currentMinutes >= openMinutes && currentMinutes <= closeMinutes
+          );
+        return currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
+      }
+
+      function timeToMinutes(time) {
+        const [hourRaw, minuteRaw] = String(time).split(":");
+        const hour = Number(hourRaw);
+        const minute = Number(minuteRaw || 0);
+        if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+        return hour * 60 + minute;
+      }
+
+      function formatRestaurantTime(time) {
+        const minutes = timeToMinutes(time);
+        if (minutes === null) return "soon";
+        const hour24 = Math.floor(minutes / 60);
+        const minute = minutes % 60;
+        const suffix = hour24 >= 12 ? "PM" : "AM";
+        const hour12 = hour24 % 12 || 12;
+        return `${hour12}:${String(minute).padStart(2, "0")} ${suffix}`;
+      }
+
+      function calculateSmartEta(restaurant) {
+        const operation = getRestaurantOperationalStatus(restaurant);
+        if (!operation.canCheckout)
+          return { min: 0, max: 0, label: "Unavailable" };
+        const basePrep = Number(restaurant.estimated_prep_minutes || 25);
+        const handoff = Number(restaurant.avg_handoff_minutes || 5);
+        const radius = Number(restaurant.delivery_radius_km || 5);
+        const busyExtra = Number(restaurant.busy_mode || 0) === 1 ? 8 : 0;
+        const travelEstimate = Math.ceil(radius * 1.5);
+        const min = Math.max(
+          15,
+          basePrep + handoff + busyExtra + travelEstimate,
+        );
+        const max = min + 12;
+        return { min, max, label: `${min}–${max} mins` };
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function escapeAttribute(value) {
+        return String(value ?? "")
+          .replace(/\\/g, "\\\\")
+          .replace(/'/g, "\\'");
       }
     </script>
 
-    <script src="../js/api/productApi2.js"></script>
-    <script src="../js/modules/cart.js"></script>
-    <script src="../js/shop.js"></script>
+    <script>
+      /* ── What Should I Eat? recommender ─────────────────── */
+      (function () {
+        var RECOMMEND_API =
+          "../../backend/controllers/PublicRestaurantController.php";
+
+        var greetings = {
+          morning: "Good morning!",
+          afternoon: "Good afternoon!",
+          evening: "Good evening!",
+          night: "Good night!",
+        };
+
+        var greetingIcons = {
+          morning: "fa-sun",
+          afternoon: "fa-cloud-sun",
+          evening: "fa-city",
+          night: "fa-moon",
+        };
+
+        function getLocalTimeSlot() {
+          var h = new Date().getHours();
+          if (h >= 6 && h < 11) return "morning";
+          if (h >= 11 && h < 15) return "afternoon";
+          if (h >= 15 && h < 19) return "evening";
+          return "night";
+        }
+
+        function esc(v) {
+          return String(v ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function getSelected(group) {
+          var active = document.querySelector(
+            '.rec-chip.active[data-group="' + group + '"]',
+          );
+          return active ? active.dataset.value : "any";
+        }
+
+        window.selectChip = function (btn, group) {
+          document
+            .querySelectorAll('.rec-chip[data-group="' + group + '"]')
+            .forEach(function (b) {
+              b.classList.remove("active");
+            });
+          btn.classList.add("active");
+        };
+
+        window.openRecommender = function () {
+          var overlay = document.getElementById("recommenderOverlay");
+          overlay.style.display = "flex";
+          var slot = getLocalTimeSlot();
+          var greetEl = document.getElementById("recommenderGreeting");
+          greetEl.innerHTML =
+            '<i class="fa-solid ' +
+            greetingIcons[slot] +
+            '" style="margin-right:8px;opacity:.85;"></i>' +
+            greetings[slot];
+          document.getElementById("recommenderResults").style.display = "none";
+          document.getElementById("recommenderLoading").style.display = "none";
+          document.getElementById("recommenderEmpty").style.display = "none";
+          document.getElementById("recommenderForm").style.display = "";
+        };
+
+        window.closeRecommender = function () {
+          document.getElementById("recommenderOverlay").style.display = "none";
+        };
+
+        document
+          .getElementById("recommenderOverlay")
+          .addEventListener("click", function (e) {
+            if (e.target === this) window.closeRecommender();
+          });
+
+        window.runRecommender = async function () {
+          var budget = getSelected("budget");
+          var cuisine = getSelected("cuisine");
+
+          document.getElementById("recommenderForm").style.display = "none";
+          document.getElementById("recommenderResults").style.display = "none";
+          document.getElementById("recommenderEmpty").style.display = "none";
+          document.getElementById("recommenderLoading").style.display = "";
+
+          try {
+            var url =
+              RECOMMEND_API +
+              "?action=recommend&budget=" +
+              budget +
+              "&cuisine=" +
+              cuisine;
+            var resp = await fetch(url);
+            var data = await resp.json();
+
+            document.getElementById("recommenderLoading").style.display =
+              "none";
+
+            if (!data.success || !data.data || !data.data.length) {
+              document.getElementById("recommenderEmpty").style.display = "";
+              return;
+            }
+
+            var cards = data.data
+              .map(function (item) {
+                var img = item.image_url
+                  ? esc(item.image_url)
+                  : "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=70";
+
+                var itemJson = esc(JSON.stringify(item));
+
+                return (
+                  '<div class="rec-item-card">' +
+                  '<img class="rec-item-img" src="' +
+                  img +
+                  '"' +
+                  " onerror=\"this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=70'\"" +
+                  ' alt="' +
+                  esc(item.name) +
+                  '">' +
+                  '<div class="rec-item-info">' +
+                  '<p class="rec-item-name">' +
+                  esc(item.name) +
+                  "</p>" +
+                  '<p class="rec-item-restaurant">' +
+                  '<i class="fa-solid fa-store" style="margin-right:5px;color:#e5e7eb;font-size:11px;"></i>' +
+                  esc(item.restaurant_name) +
+                  "</p>" +
+                  '<span class="rec-item-price">Rs. ' +
+                  Number(item.price).toLocaleString() +
+                  "</span>" +
+                  "</div>" +
+                  '<button class="rec-add-btn" id="rec-add-' +
+                  item.id +
+                  '" onclick="addFromRecommender(' +
+                  JSON.stringify(item) +
+                  ', this)">' +
+                  '<i class="fa-solid fa-plus"></i> Add' +
+                  "</button>" +
+                  "</div>"
+                );
+              })
+              .join("");
+
+            document.getElementById("recommenderCards").innerHTML = cards;
+            document.getElementById("recommenderResults").style.display = "";
+            document.getElementById("recommenderForm").style.display = "";
+          } catch (e) {
+            document.getElementById("recommenderLoading").style.display =
+              "none";
+            document.getElementById("recommenderEmpty").style.display = "";
+          }
+        };
+
+        window.addFromRecommender = function (item, btn) {
+          if (typeof window.addItemToCart !== "function") {
+            alert("Cart not ready. Please try again.");
+            return;
+          }
+          var added = window.addItemToCart({
+            id: String(item.id),
+            name: item.name,
+            price: item.price,
+            image_url: item.image_url || "",
+            quantity: 1,
+            restaurant_id: String(item.restaurant_id),
+            restaurant_name: item.restaurant_name || "Restaurant",
+          });
+          if (added !== false) {
+            if (btn) {
+              btn.classList.add("added");
+              btn.innerHTML = '<i class="fa-solid fa-check"></i> Added!';
+              setTimeout(function () {
+                window.closeRecommender();
+              }, 800);
+            } else {
+              window.closeRecommender();
+            }
+          }
+        };
+      })();
+    </script>
   </body>
 </html>

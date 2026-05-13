@@ -4,459 +4,2130 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkout - FoodExpress</title>
+
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../assets/images/brand/foodexpress-favicon-32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="64x64"
+      href="../assets/images/brand/foodexpress-favicon-64.png"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
     <link rel="stylesheet" href="../css/layout.css" />
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/shared.css" />
-    <style>
-      .checkout-page {
-        max-width: 900px;
-        margin: 80px auto 40px;
-        padding: 0 20px;
-      }
-
-      .checkout-header {
-        text-align: center;
-        margin-bottom: 40px;
-      }
-
-      .checkout-header h1 {
-        font-size: 2.5rem;
-        color: var(--text-dark);
-        margin-bottom: 10px;
-      }
-
-      .checkout-container {
-        display: grid;
-        grid-template-columns: 1fr 300px;
-        gap: 30px;
-        margin-bottom: 40px;
-      }
-
-      @media (max-width: 768px) {
-        .checkout-container {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      .form-section {
-        background: #fff;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 30px;
-      }
-
-      .form-section h2 {
-        font-size: 1.25rem;
-        margin-bottom: 20px;
-        color: var(--text-dark);
-      }
-
-      .form-group {
-        margin-bottom: 20px;
-      }
-
-      .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 500;
-        color: var(--text-dark);
-      }
-
-      .form-group input,
-      .form-group select {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        font-size: 1rem;
-        font-family: inherit;
-      }
-
-      .form-group input:focus,
-      .form-group select:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
-      }
-
-      .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-      }
-
-      .order-summary {
-        background: #f9fafb;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 20px;
-        position: sticky;
-        top: 90px;
-      }
-
-      .order-summary h3 {
-        font-size: 1.1rem;
-        margin-bottom: 15px;
-        color: var(--text-dark);
-      }
-
-      .summary-item {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 10px;
-        font-size: 0.9rem;
-      }
-
-      .summary-item.total {
-        border-top: 2px solid var(--border);
-        padding-top: 10px;
-        margin-top: 10px;
-        font-weight: 700;
-        font-size: 1rem;
-        color: var(--text-dark);
-      }
-
-      .payment-methods {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        margin-bottom: 30px;
-      }
-
-      .payment-method {
-        display: flex;
-        align-items: center;
-        padding: 15px;
-        border: 2px solid var(--border);
-        border-radius: var(--radius);
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .payment-method:hover {
-        border-color: var(--primary);
-        background: #f9fafb;
-      }
-
-      .payment-method input[type="radio"] {
-        margin-right: 12px;
-        cursor: pointer;
-        width: 18px;
-        height: 18px;
-      }
-
-      .payment-method.selected {
-        border-color: var(--primary);
-        background: rgba(var(--primary-rgb), 0.05);
-      }
-
-      .payment-label {
-        flex: 1;
-        font-weight: 500;
-        color: var(--text-dark);
-      }
-
-      .place-order-btn {
-        width: 100%;
-        background: var(--primary);
-        color: white;
-        border: none;
-        padding: 16px 20px;
-        border-radius: var(--radius-full);
-        font-weight: 600;
-        font-size: 1.1rem;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .place-order-btn:hover {
-        background: var(--primary-dark);
-        transform: translateY(-2px);
-      }
-
-      .place-order-btn:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-        transform: none;
-      }
-    </style>
+    <link rel="stylesheet" href="../css/payment.css?v=premiumcheckout1" />
   </head>
+
   <body>
-    <!-- AUTH PROTECTION -->
     <script>
-      // Check if user is logged in
       if (!localStorage.getItem("isLoggedIn")) {
-        alert("Please login first to proceed with payment");
+        alert("Please login first to continue checkout.");
         window.location.href = "login.html";
       }
     </script>
 
-    <!-- NAVBAR -->
-    <nav class="navbar">
-      <div class="container">
-        <div class="navbar-brand">FoodExpress</div>
-        <div class="navbar-nav">
-          <a href="dashboard.html" class="nav-link">Home</a>
-          <a href="shop.html" class="nav-link">Shop</a>
-          <a href="food.html" class="nav-link">Food</a>
-          <a href="loggedContact.html" class="nav-link">Contact</a>
+    <div id="navbarContainer"></div>
+    <div id="checkoutStatusModal" class="checkout-modal-overlay">
+      <div class="checkout-status-modal">
+        <div id="checkoutStatusBadge" class="checkout-status-badge">
+          <i class="fa-solid fa-lock"></i>
+          <span>Secure checkout</span>
         </div>
-        <div class="navbar-right">
-          <div class="search-box">
-            <input type="text" placeholder="Search food..." />
-          </div>
-          <div class="hamburger" id="hamburger">
-            <span></span><span></span><span></span>
-          </div>
-          <a href="landingpage.html">
-            <button class="login-btn">
-              <i class="fa-regular fa-user"></i>
-              Log out
-            </button>
-          </a>
+
+        <div id="checkoutStatusIcon" class="checkout-status-icon loading">
+          <div class="checkout-spinner"></div>
         </div>
-      </div>
-    </nav>
 
-    <!-- CHECKOUT PAGE -->
-    <div class="checkout-page">
-      <div class="checkout-header">
-        <h1>Checkout</h1>
-        <p>Complete your order</p>
-      </div>
+        <h3 id="checkoutStatusTitle">Finalising your order</h3>
 
-      <div class="checkout-container">
-        <!-- Left: Forms -->
-        <div>
-          <!-- Delivery Address -->
-          <div class="form-section">
-            <h2>Delivery Address</h2>
-            <div class="form-group">
-              <label>Full Name *</label>
-              <input
-                type="text"
-                id="fullName"
-                required
-                placeholder="Your name"
-              />
-            </div>
-            <div class="form-group">
-              <label>Phone Number *</label>
-              <input
-                type="tel"
-                id="phoneNumber"
-                required
-                placeholder="+977 98XXXXXXXX"
-              />
-            </div>
-            <div class="form-group">
-              <label>Address *</label>
-              <input
-                type="text"
-                id="address"
-                required
-                placeholder="Street address"
-              />
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>City *</label>
-                <input type="text" id="city" required placeholder="City" />
-              </div>
-              <div class="form-group">
-                <label>Postal Code *</label>
-                <input
-                  type="text"
-                  id="postalCode"
-                  required
-                  placeholder="12345"
-                />
-              </div>
-            </div>
+        <p id="checkoutStatusMessage">
+          We’re confirming your checkout, saving your order, and sending it to
+          the restaurant.
+        </p>
+
+        <div id="checkoutLiveSteps" class="checkout-live-steps">
+          <div class="checkout-live-step">
+            <i class="fa-solid fa-receipt"></i>
+            <strong>Order saved</strong>
+            <span>Creating your order record</span>
           </div>
 
-          <!-- Payment Method -->
-          <div class="form-section" style="margin-top: 30px">
-            <h2>Payment Method</h2>
-            <div class="payment-methods">
-              <label class="payment-method selected">
-                <input type="radio" name="paymentMethod" value="cash" checked />
-                <span class="payment-label">💵 Cash on Delivery</span>
-              </label>
-              <label class="payment-method">
-                <input type="radio" name="paymentMethod" value="card" />
-                <span class="payment-label">💳 Credit/Debit Card</span>
-              </label>
-              <label class="payment-method">
-                <input type="radio" name="paymentMethod" value="digital" />
-                <span class="payment-label"
-                  >📱 Digital Wallet (eSewa, Khalti)</span
-                >
-              </label>
-            </div>
-
-            <!-- Card Details (Hidden by default) -->
-            <div
-              id="cardDetails"
-              style="
-                display: none;
-                margin-top: 20px;
-                padding-top: 20px;
-                border-top: 1px solid var(--border);
-              "
-            >
-              <div class="form-group">
-                <label>Card Number *</label>
-                <input
-                  type="text"
-                  id="cardNumber"
-                  placeholder="1234 5678 9012 3456"
-                />
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Expiry Date *</label>
-                  <input type="text" id="cardExpiry" placeholder="MM/YY" />
-                </div>
-                <div class="form-group">
-                  <label>CVV *</label>
-                  <input type="text" id="cardCVV" placeholder="123" />
-                </div>
-              </div>
-            </div>
+          <div class="checkout-live-step">
+            <i class="fa-solid fa-store"></i>
+            <strong>Restaurant</strong>
+            <span>Sending order details</span>
           </div>
 
-          <!-- Place Order Button -->
+          <div class="checkout-live-step">
+            <i class="fa-solid fa-location-dot"></i>
+            <strong>Tracking</strong>
+            <span>Preparing live updates</span>
+          </div>
+        </div>
+
+        <div
+          id="checkoutOrderSummary"
+          class="checkout-order-summary"
+          style="display: none"
+        >
+          <h4>Order details</h4>
+
+          <div class="checkout-order-grid">
+            <div class="checkout-order-item">
+              <span>Order Number</span>
+              <strong id="checkoutOrderNumberText">-</strong>
+            </div>
+
+            <div class="checkout-order-item">
+              <span>Estimated Delivery</span>
+              <strong id="checkoutEtaText">30–40 min</strong>
+            </div>
+
+            <div class="checkout-order-item">
+              <span>Payment Method</span>
+              <strong id="checkoutPaymentMethodText">Cash on Delivery</strong>
+            </div>
+
+            <div class="checkout-order-item">
+              <span>Total</span>
+              <strong id="checkoutTotalText">Rs. 0.00</strong>
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="checkoutStatusSteps"
+          class="checkout-status-steps"
+          style="display: none"
+        >
+          <div class="checkout-status-step">
+            <i class="fa-solid fa-circle-check"></i>
+            Sent to restaurant
+          </div>
+
+          <div class="checkout-status-step">
+            <i class="fa-solid fa-utensils"></i>
+            Preparing soon
+          </div>
+
+          <div class="checkout-status-step">
+            <i class="fa-solid fa-motorcycle"></i>
+            Rider matching
+          </div>
+        </div>
+
+        <div
+          id="checkoutStatusFooter"
+          class="checkout-status-footer"
+          style="display: none"
+        >
+          <div class="checkout-redirect-text">
+            Opening live tracking in a few seconds…
+          </div>
+
+          <div class="checkout-redirect-track">
+            <div id="checkoutRedirectFill" class="checkout-redirect-fill"></div>
+          </div>
+
           <button
-            class="place-order-btn"
-            onclick="placeOrder()"
-            style="margin-top: 30px"
+            type="button"
+            id="checkoutTrackNowBtn"
+            class="checkout-track-now-btn"
           >
-            Place Order
+            <i class="fa-solid fa-location-arrow"></i>
+            Track order now
           </button>
         </div>
 
-        <!-- Right: Order Summary -->
-        <div class="order-summary">
-          <h3>Order Summary</h3>
-          <div class="summary-item">
-            <span>Subtotal:</span>
-            <span>$<span id="summarySubtotal">0.00</span></span>
-          </div>
-          <div class="summary-item">
-            <span>Delivery Fee:</span>
-            <span>$5.00</span>
-          </div>
-          <div class="summary-item">
-            <span>Tax (10%):</span>
-            <span>$<span id="summaryTax">0.00</span></span>
-          </div>
-          <div class="summary-item total">
-            <span>Total:</span>
-            <span>$<span id="summaryTotal">0.00</span></span>
-          </div>
+        <div class="checkout-secure-note">
+          <i class="fa-solid fa-shield-halved"></i>
+          Your order details are stored securely by FoodExpress.
         </div>
       </div>
     </div>
 
-    <!-- FOOTER -->
-    <footer>
-      <div class="footer-grid">
-        <div>
-          <div class="footer-logo">FoodExpress</div>
-          <p class="footer-desc">
-            Delivering happiness to your doorstep, one meal at a time.
-          </p>
+    <div id="checkoutToast" class="checkout-toast">
+      <i class="fa-solid fa-circle-info"></i>
+      <span id="checkoutToastText">Checkout update</span>
+    </div>
+
+    <main class="checkout-shell">
+      <div id="emptyCheckout" class="card empty-checkout">
+        <h2>Your checkout is empty</h2>
+        <p>
+          Looks like there is nothing ready for payment yet. Add a few dishes
+          from a restaurant and come back to complete your order.
+        </p>
+        <a href="shop.html">Browse restaurants</a>
+      </div>
+
+      <div id="checkoutContent">
+        <div class="checkout-topbar">
+          <div class="checkout-heading">
+            <h1>Review and place your order</h1>
+            <p>
+              Double-check your delivery details, payment method, and items
+              before FoodExpress sends your order to the restaurant.
+            </p>
+          </div>
+
+          <div class="checkout-pill" id="checkoutRestaurantPill">
+            Restaurant
+          </div>
+        </div>
+
+        <div class="checkout-layout">
+          <section class="checkout-main">
+            <div class="card">
+              <div class="section-head">
+                <div>
+                  <h2 class="section-title">Your order</h2>
+                  <p class="section-subtitle">
+                    Freshly prepared items from your selected restaurant
+                  </p>
+                </div>
+              </div>
+
+              <div class="restaurant-banner">
+                <div class="restaurant-meta">
+                  <h3 id="restaurantName">Restaurant name</h3>
+                  <p id="restaurantMeta">
+                    Estimated preparation and delivery details
+                  </p>
+                </div>
+                <div class="eta-badge" id="estimatedEta">30–40 min</div>
+              </div>
+
+              <div
+                id="orderItems"
+                class="order-items"
+                style="margin-top: 18px"
+              ></div>
+            </div>
+
+            <div class="card">
+              <div class="section-head">
+                <div>
+                  <h2 class="section-title">Delivery details</h2>
+                  <p class="section-subtitle">
+                    We’ll use these details to deliver your order and contact
+                    you if needed.
+                  </p>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label for="fullName">Full name *</label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+
+                <div class="form-group full">
+                  <label for="customerEmail">Email address *</label>
+                  <input
+                    type="email"
+                    id="customerEmail"
+                    placeholder="Enter your email address"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="phoneNumber">Phone number *</label>
+                  <input
+                    type="tel"
+                    id="phoneNumber"
+                    placeholder="+977 98XXXXXXXX"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="city">City *</label>
+                  <input type="text" id="city" placeholder="Kathmandu" />
+                </div>
+
+                <div class="form-group full">
+                  <label for="address">Address *</label>
+                  <input
+                    type="text"
+                    id="address"
+                    placeholder="Street, area, landmark"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="postalCode">Postal code *</label>
+                  <input type="text" id="postalCode" placeholder="44600" />
+                </div>
+
+                <div class="form-group">
+                  <label for="deliveryNote">Delivery note</label>
+                  <textarea
+                    id="deliveryNote"
+                    placeholder="Example: Leave at door, call before arrival, gate code, floor number"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="section-head">
+                <div>
+                  <h2 class="section-title">Payment method</h2>
+                  <p class="section-subtitle">
+                    Choose the most convenient way to pay for this order.
+                  </p>
+                </div>
+              </div>
+
+              <div class="payment-methods">
+                <label class="payment-method selected">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="cash"
+                    checked
+                  />
+                  <div class="payment-method-content">
+                    <span class="payment-method-title"
+                      >💵 Cash on Delivery</span
+                    >
+                    <span class="payment-method-desc">
+                      Pay when your order arrives at your doorstep
+                    </span>
+                  </div>
+                </label>
+
+                <label class="payment-method">
+                  <input type="radio" name="paymentMethod" value="card" />
+                  <div class="payment-method-content">
+                    <span class="payment-method-title">
+                      💳 Credit / Debit Card
+                    </span>
+                    <span class="payment-method-desc">
+                      Fast and secure payment for a smooth checkout
+                    </span>
+                  </div>
+                </label>
+
+                <label class="payment-method">
+                  <input type="radio" name="paymentMethod" value="digital" />
+                  <div class="payment-method-content">
+                    <span class="payment-method-title">📱 Digital Wallet</span>
+                    <span class="payment-method-desc">
+                      Use eSewa or Khalti for quick digital payments
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              <div id="cardFields" class="card-fields">
+                <div class="form-grid">
+                  <div class="form-group full">
+                    <label for="cardNumber">Card number *</label>
+                    <input
+                      type="text"
+                      id="cardNumber"
+                      placeholder="1234 5678 9012 3456"
+                      maxlength="19"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="cardExpiry">Expiry date *</label>
+                    <input
+                      type="text"
+                      id="cardExpiry"
+                      placeholder="MM/YY"
+                      maxlength="5"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="cardCVV">CVV *</label>
+                    <input
+                      type="text"
+                      id="cardCVV"
+                      placeholder="123"
+                      maxlength="4"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="summary-card">
+            <div class="card">
+              <div class="summary-top">
+                <div>
+                  <h3>Order summary</h3>
+                  <p id="summaryItemsLabel">0 items</p>
+                </div>
+                <div class="summary-status">Live checkout</div>
+              </div>
+
+              <div class="summary-lines">
+                <div class="summary-line">
+                  <span>Subtotal</span>
+                  <strong>Rs.<span id="summarySubtotal">0.00</span></strong>
+                </div>
+
+                <div class="summary-line">
+                  <span>Delivery fee</span>
+                  <strong>Rs.<span id="summaryDelivery">5.00</span></strong>
+                </div>
+
+                <div class="summary-line">
+                  <span>Tax</span>
+                  <strong>Rs.<span id="summaryTax">0.00</span></strong>
+                </div>
+
+                <div
+                  class="summary-line"
+                  id="discountRow"
+                  style="display: none"
+                >
+                  <span>Discount</span>
+                  <strong>Rs.<span id="summaryDiscount">0.00</span></strong>
+                </div>
+
+                <div class="summary-divider"></div>
+
+                <div class="summary-total">
+                  <span>Total</span>
+                  <span>Rs.<span id="summaryTotal">0.00</span></span>
+                </div>
+              </div>
+
+              <div class="summary-note">
+                Your order will be sent to the restaurant as soon as you confirm
+                payment. You can track the latest status from pending to
+                delivered after checkout.
+              </div>
+              <div class="checkout-trust-row">
+                <span class="checkout-trust-badge">
+                  <i class="fa-solid fa-shield-halved"></i>
+                  Secure checkout
+                </span>
+
+                <span class="checkout-trust-badge">
+                  <i class="fa-solid fa-bell"></i>
+                  Live updates
+                </span>
+
+                <span class="checkout-trust-badge">
+                  <i class="fa-solid fa-motorcycle"></i>
+                  Rider tracking
+                </span>
+              </div>
+            </div>
+
+            <div class="rewards-box">
+              <h4>Rewards preview</h4>
+              <p>
+                You’ll earn points on this order after it is delivered
+                successfully.
+              </p>
+
+              <div class="rewards-points" id="rewardPreview">+0 points</div>
+
+              <div class="coupon-box">
+                <h5>Use reward coupon</h5>
+                <p>Apply an unlocked discount to this order.</p>
+
+                <div class="coupon-row">
+                  <select id="couponSelect">
+                    <option value="">Select a coupon</option>
+                  </select>
+                  <button type="button" id="applyCouponBtn">Apply</button>
+                </div>
+
+                <div id="couponMessage" class="coupon-message"></div>
+              </div>
+
+              <div class="coupon-box promo-coupon-box">
+                <h5>Have a promo code?</h5>
+                <p>Apply a promo code for extra savings.</p>
+
+                <div class="coupon-row promo-row">
+                  <input
+                    type="text"
+                    id="promoCodeInput"
+                    placeholder="Enter promo code (e.g., WELCOME10)"
+                    autocomplete="off"
+                  />
+                  <button type="button" id="applyPromoBtn">Apply</button>
+                  <button
+                    type="button"
+                    id="removePromoBtn"
+                    style="display: none"
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                <div id="promoMessage" class="coupon-message"></div>
+              </div>
+            </div>
+
+            <button id="placeOrderBtn" class="place-order-btn" type="button">
+              Place Order
+            </button>
+          </aside>
         </div>
       </div>
-      <div class="footer-bottom">© 2026 FoodExpress. All rights reserved.</div>
-    </footer>
+    </main>
+
+    <footer class="footer" id="footer"></footer>
+
+    <script src="../js/profile.js?v=profile1"></script>
+    <script src="../js/shared.js?v=shared-canonical-user-1"></script>
+    <script src="../js/modules/cart.js?v=cartstable1"></script>
+    <script src="../js/components/notifications.js?v=routefix4"></script>
+    <script src="../js/components/navbar.js?v=paymentnav1"></script>
+    <script src="../js/reward.js?v=reward1"></script>
+    <script src="../js/stripe-payment.js"></script>
+    <script src="../js/components/footer.js"></script>
 
     <script>
-      // Load checkout totals
-      window.addEventListener("load", function () {
-        const subtotal = parseFloat(
-          localStorage.getItem("checkoutSubtotal") || 0,
-        );
-        const tax = parseFloat(localStorage.getItem("checkoutTax") || 0);
-        const total = parseFloat(localStorage.getItem("checkoutTotal") || 0);
+      function initPaymentNavbar(attempt = 0) {
+        const container = document.getElementById("navbarContainer");
+        if (!container) return;
 
-        document.getElementById("summarySubtotal").textContent =
-          subtotal.toFixed(2);
-        document.getElementById("summaryTax").textContent = tax.toFixed(2);
-        document.getElementById("summaryTotal").textContent = total.toFixed(2);
-      });
+        if (typeof window.renderNavbar === "function") {
+          window.renderNavbar("payment");
+        } else if (typeof window.getLoggedInNavbar === "function") {
+          container.innerHTML = window.getLoggedInNavbar("payment");
+        }
 
-      // Show/hide card details
-      document
-        .querySelectorAll('input[name="paymentMethod"]')
-        .forEach((radio) => {
-          radio.addEventListener("change", function () {
-            const cardDetails = document.getElementById("cardDetails");
-            const paymentMethod = document.querySelector(
-              'input[name="paymentMethod"]:checked',
-            );
-
-            // Update selected styling
-            document
-              .querySelectorAll(".payment-method")
-              .forEach((m) => m.classList.remove("selected"));
-            paymentMethod.closest(".payment-method").classList.add("selected");
-
-            if (paymentMethod.value === "card") {
-              cardDetails.style.display = "block";
-            } else {
-              cardDetails.style.display = "none";
-            }
-          });
-        });
-
-      async function placeOrder() {
-        const fullName = document.getElementById("fullName").value;
-        const phoneNumber = document.getElementById("phoneNumber").value;
-        const address = document.getElementById("address").value;
-        const city = document.getElementById("city").value;
-        const postalCode = document.getElementById("postalCode").value;
-        const paymentMethod = document.querySelector(
-          'input[name="paymentMethod"]:checked',
-        ).value;
-
-        if (!fullName || !phoneNumber || !address || !city || !postalCode) {
-          alert("Please fill in all required fields");
+        if (!container.innerHTML.trim() && attempt < 15) {
+          setTimeout(function () {
+            initPaymentNavbar(attempt + 1);
+          }, 100);
           return;
         }
 
-        const subtotal = parseFloat(
-          localStorage.getItem("checkoutSubtotal") || 0,
-        );
-        const tax = parseFloat(localStorage.getItem("checkoutTax") || 0);
-        const total = parseFloat(localStorage.getItem("checkoutTotal") || 0);
-        const cartItems = JSON.parse(
-          localStorage.getItem("foodDeliveryCartItems") || "[]",
-        );
+        if (typeof window.initializeCartCount === "function") {
+          window.initializeCartCount();
+        }
 
-        // Prepare order data for database
-        const orderData = {
-          customer_name: fullName,
-          phone_number: phoneNumber,
-          address: address,
-          city: city,
-          postal_code: postalCode,
-          payment_method: paymentMethod,
-          subtotal: subtotal,
-          tax: tax,
-          delivery_fee: 5.0,
-          total: total,
-          items: cartItems,
-        };
+        if (typeof window.bindNotificationBell === "function") {
+          window.bindNotificationBell();
+        }
+      }
+
+      function initPaymentFooter(attempt = 0) {
+        if (typeof window.renderFooter === "function") {
+          window.renderFooter("app");
+          return;
+        }
+
+        if (attempt < 10) {
+          setTimeout(function () {
+            initPaymentFooter(attempt + 1);
+          }, 100);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initPaymentNavbar();
+        initPaymentFooter();
+      });
+    </script>
+
+    <script>
+      const PAYMENT_ORDER_HISTORY_KEY = "foodExpressOrders";
+      const PAYMENT_USER_PROFILE_KEY = "foodExpressUserProfile";
+      const PAYMENT_DEFAULT_IMAGE =
+        "https://placehold.co/400x300?text=FoodExpress";
+
+      const CHECKOUT_RESTAURANT_API =
+        "../../backend/controllers/PublicRestaurantController.php?action=approved";
+      const CHECKOUT_COUPON_PREVIEW_API =
+        "../../backend/controllers/CouponController.php?action=preview";
+
+      let checkoutRestaurantSettings = null;
+      let checkoutRestaurantMode = {
+        key: "open",
+        label: "Open",
+        message: "Ordering available.",
+        canCheckout: true,
+        etaLabel: "30–40 min",
+      };
+
+      let checkoutItems = [];
+      let checkoutSummary = {
+        subtotal: 0,
+        deliveryFee: 0,
+        tax: 0,
+        discount: 0,
+        total: 0,
+      };
+
+      let checkoutRestaurant = {
+        id: "",
+        name: "Restaurant",
+      };
+
+      let appliedCouponId = "";
+      let appliedCouponData = null;
+
+      let appliedPromoCode = "";
+      let appliedPromoCoupon = null;
+
+      document.addEventListener("DOMContentLoaded", async function () {
+        normalizeCheckoutCurrencyLabels();
+        initializeCheckout();
+
+        await loadCheckoutRestaurantSettings();
+
+        initializePaymentMethods();
+        initializeCardFormatting();
+        initializeCoupons();
+
+        setTimeout(function () {
+          applyAccountSettingsToCheckout();
+        }, 150);
+
+        const placeOrderBtn = document.getElementById("placeOrderBtn");
+        if (placeOrderBtn) {
+          placeOrderBtn.addEventListener("click", placeOrder);
+        }
+
+        const applyCouponBtn = document.getElementById("applyCouponBtn");
+        if (applyCouponBtn) {
+          applyCouponBtn.addEventListener("click", applyCouponToCheckout);
+        }
+
+        const applyPromoBtn = document.getElementById("applyPromoBtn");
+        if (applyPromoBtn) {
+          applyPromoBtn.addEventListener("click", applyPromoCode);
+        }
+
+        const removePromoBtn = document.getElementById("removePromoBtn");
+        if (removePromoBtn) {
+          removePromoBtn.addEventListener("click", removePromoCode);
+        }
+
+        syncPromoAndRewardUiState();
+      });
+
+      /* ===============================
+     REALISTIC NEPAL DELIVERY FEE
+  ================================ */
+
+      function calculateFoodExpressDeliveryFee(subtotal) {
+        const amount = Number(subtotal || 0);
+
+        if (amount <= 0) return 0;
+        if (amount >= 1500) return 0;
+        if (amount >= 1000) return 20;
+        if (amount >= 500) return 30;
+
+        return 50;
+      }
+
+      function calculateFoodExpressTax(subtotal) {
+        return Number(subtotal || 0) * 0.1;
+      }
+
+      function formatMoney(amount) {
+        return Number(amount || 0).toFixed(2);
+      }
+
+      async function loadCheckoutRestaurantSettings() {
+        if (!checkoutRestaurant || !checkoutRestaurant.id) {
+          renderCheckoutOperationWarning({
+            key: "unknown",
+            label: "Restaurant check unavailable",
+            message:
+              "Restaurant details could not be verified. Please return to the restaurant menu and try again.",
+            canCheckout: false,
+            etaLabel: "Unavailable",
+          });
+          return;
+        }
 
         try {
-          // Save order to database
-          console.log(
-            "📤 Sending order data:",
-            JSON.stringify(orderData, null, 2),
+          const response = await fetch(
+            `${CHECKOUT_RESTAURANT_API}&_=${Date.now()}`,
+          );
+          const raw = await response.text();
+
+          let data;
+          try {
+            data = JSON.parse(raw);
+          } catch (error) {
+            console.error("[checkout] Restaurant API non-JSON:", raw);
+            throw new Error("Restaurant status check failed.");
+          }
+
+          if (!data.success || !Array.isArray(data.data)) {
+            throw new Error(data.message || "Restaurant status check failed.");
+          }
+
+          checkoutRestaurantSettings =
+            data.data.find(function (restaurant) {
+              return String(restaurant.id) === String(checkoutRestaurant.id);
+            }) || null;
+
+          if (!checkoutRestaurantSettings) {
+            checkoutRestaurantMode = {
+              key: "unavailable",
+              label: "Restaurant unavailable",
+              message: "This restaurant is no longer available for checkout.",
+              canCheckout: false,
+              etaLabel: "Unavailable",
+            };
+          } else {
+            checkoutRestaurantMode = getCheckoutRestaurantOperationalStatus(
+              checkoutRestaurantSettings,
+            );
+          }
+
+          renderCheckoutOperationWarning(checkoutRestaurantMode);
+          renderCheckoutHeader();
+        } catch (error) {
+          console.error("[checkout] Failed to verify restaurant:", error);
+
+          checkoutRestaurantMode = {
+            key: "check_failed",
+            label: "Status check failed",
+            message:
+              "Could not verify restaurant status. Please refresh and try again.",
+            canCheckout: false,
+            etaLabel: "Unavailable",
+          };
+
+          renderCheckoutOperationWarning(checkoutRestaurantMode);
+        }
+      }
+
+      function getCheckoutRestaurantOperationalStatus(restaurant) {
+        const isOpen = Number(restaurant.is_open ?? 1) === 1;
+        const acceptingOrders = Number(restaurant.accepting_orders ?? 1) === 1;
+        const deliveryAvailable =
+          Number(restaurant.delivery_available ?? 1) === 1;
+        const busyMode = Number(restaurant.busy_mode ?? 0) === 1;
+
+        const openingTime = restaurant.opening_time || "09:00:00";
+        const closingTime = restaurant.closing_time || "22:00:00";
+        const withinHours = isCheckoutWithinOpeningHours(restaurant);
+
+        if (!isOpen || !withinHours) {
+          return {
+            key: "closed",
+            label: "Restaurant closed",
+            message: `This restaurant is closed. Opens at ${formatCheckoutTime(openingTime)}. You cannot place a new order right now.`,
+            canCheckout: false,
+            etaLabel: "Unavailable",
+          };
+        }
+
+        if (!acceptingOrders) {
+          return {
+            key: "paused",
+            label: "Not accepting orders",
+            message:
+              "This restaurant is open but not accepting new orders right now.",
+            canCheckout: false,
+            etaLabel: "Unavailable",
+          };
+        }
+
+        if (!deliveryAvailable) {
+          return {
+            key: "delivery_off",
+            label: "Delivery unavailable",
+            message: "Delivery is unavailable for this restaurant right now.",
+            canCheckout: false,
+            etaLabel: "Unavailable",
+          };
+        }
+
+        const eta = calculateCheckoutSmartEta(restaurant);
+
+        if (busyMode) {
+          return {
+            key: "busy",
+            label: "Kitchen busy",
+            message: `Restaurant is accepting orders, but ETA is longer than usual: ${eta.label}.`,
+            canCheckout: true,
+            etaLabel: eta.label,
+          };
+        }
+
+        return {
+          key: "open",
+          label: "Restaurant open",
+          message: `Open until ${formatCheckoutTime(closingTime)}. Estimated delivery ${eta.label}.`,
+          canCheckout: true,
+          etaLabel: eta.label,
+        };
+      }
+
+      function calculateCheckoutSmartEta(restaurant) {
+        const itemCount = checkoutItems.reduce(function (sum, item) {
+          return sum + Number(item.quantity || 0);
+        }, 0);
+
+        const basePrep = Number(restaurant?.estimated_prep_minutes || 25);
+        const handoff = Number(restaurant?.avg_handoff_minutes || 5);
+        const radius = Number(restaurant?.delivery_radius_km || 5);
+        const busyExtra = Number(restaurant?.busy_mode || 0) === 1 ? 8 : 0;
+        const itemExtra = Math.max(0, itemCount - 1) * 2;
+        const travelEstimate = Math.ceil(radius * 1.5);
+
+        const min = Math.max(
+          15,
+          basePrep + handoff + busyExtra + itemExtra + travelEstimate,
+        );
+        const max = min + 12;
+
+        return {
+          min,
+          max,
+          label: `${min}–${max} min`,
+        };
+      }
+
+      function isCheckoutWithinOpeningHours(restaurant) {
+        if (!restaurant.opening_time || !restaurant.closing_time) return true;
+
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const openMinutes = checkoutTimeToMinutes(restaurant.opening_time);
+        const closeMinutes = checkoutTimeToMinutes(restaurant.closing_time);
+
+        if (openMinutes === null || closeMinutes === null) return true;
+        if (openMinutes === closeMinutes) return true;
+
+        if (openMinutes < closeMinutes) {
+          return (
+            currentMinutes >= openMinutes && currentMinutes <= closeMinutes
+          );
+        }
+
+        return currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
+      }
+
+      function checkoutTimeToMinutes(time) {
+        const [hourRaw, minuteRaw] = String(time || "").split(":");
+        const hour = Number(hourRaw);
+        const minute = Number(minuteRaw || 0);
+
+        if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+        return hour * 60 + minute;
+      }
+
+      function formatCheckoutTime(time) {
+        const minutes = checkoutTimeToMinutes(time);
+        if (minutes === null) return "soon";
+
+        const hour24 = Math.floor(minutes / 60);
+        const minute = minutes % 60;
+        const suffix = hour24 >= 12 ? "PM" : "AM";
+        const hour12 = hour24 % 12 || 12;
+
+        return `${hour12}:${String(minute).padStart(2, "0")} ${suffix}`;
+      }
+
+      function renderCheckoutOperationWarning(mode) {
+        const restaurantBanner = document.querySelector(".restaurant-banner");
+        if (!restaurantBanner) return;
+
+        let box = document.getElementById("checkoutRestaurantModeBox");
+
+        if (!box) {
+          box = document.createElement("div");
+          box.id = "checkoutRestaurantModeBox";
+          box.className = "checkout-restaurant-mode-box";
+          restaurantBanner.insertAdjacentElement("afterend", box);
+        }
+
+        const icon = mode.canCheckout
+          ? mode.key === "busy"
+            ? "fa-fire-burner"
+            : "fa-circle-check"
+          : "fa-circle-exclamation";
+
+        box.className = `checkout-restaurant-mode-box ${mode.canCheckout ? mode.key : "blocked"}`;
+        box.innerHTML = `
+    <i class="fa-solid ${icon}"></i>
+    <div>
+      <strong>${escapeHtml(mode.label)}</strong>
+      <span>${escapeHtml(mode.message)}</span>
+    </div>
+  `;
+
+        const placeOrderBtn = document.getElementById("placeOrderBtn");
+
+        if (placeOrderBtn) {
+          placeOrderBtn.disabled = !mode.canCheckout;
+          placeOrderBtn.textContent = mode.canCheckout
+            ? "Place Order"
+            : "Ordering unavailable";
+        }
+      }
+
+      function normalizeCheckoutCurrencyLabels() {
+        const moneyIds = [
+          "summarySubtotal",
+          "summaryDelivery",
+          "summaryTax",
+          "summaryDiscount",
+          "summaryTotal",
+        ];
+
+        moneyIds.forEach(function (id) {
+          const span = document.getElementById(id);
+          if (!span || !span.parentElement) return;
+
+          const isDiscount = id === "summaryDiscount";
+          span.parentElement.innerHTML = `${
+            isDiscount ? "-Rs. " : "Rs. "
+          }<span id="${id}">${span.textContent || "0.00"}</span>`;
+        });
+      }
+
+      /* ===============================
+     ACCOUNT SETTINGS INTEGRATION
+  ================================ */
+
+      function getAccountSettings() {
+        try {
+          const raw = localStorage.getItem("foodExpressAccountSettings");
+          const parsed = raw ? JSON.parse(raw) : {};
+
+          return {
+            ...parsed,
+
+            defaultDeliveryNote:
+              localStorage.getItem("foodExpressDefaultDeliveryNote") ||
+              parsed.defaultDeliveryNote ||
+              "",
+
+            contactlessDelivery:
+              localStorage.getItem("foodExpressContactlessDelivery") ===
+                "true" || parsed.contactlessDelivery === true,
+
+            defaultPaymentMethod:
+              localStorage.getItem("foodExpressPreferredPayment") ||
+              parsed.defaultPaymentMethod ||
+              "cash",
+
+            autoApplyBestCoupon:
+              localStorage.getItem("foodExpressAutoApplyBestCoupon") !==
+                "false" && parsed.autoApplyBestCoupon !== false,
+
+            saveDeliveryDetails:
+              localStorage.getItem("foodExpressSaveDeliveryDetails") !==
+                "false" && parsed.saveDeliveryDetails !== false,
+
+            saveOrderHistory:
+              localStorage.getItem("foodExpressSaveOrderHistory") !== "false" &&
+              parsed.saveOrderHistory !== false,
+          };
+        } catch (error) {
+          return {
+            defaultDeliveryNote:
+              localStorage.getItem("foodExpressDefaultDeliveryNote") || "",
+            contactlessDelivery:
+              localStorage.getItem("foodExpressContactlessDelivery") === "true",
+            defaultPaymentMethod:
+              localStorage.getItem("foodExpressPreferredPayment") || "cash",
+            autoApplyBestCoupon:
+              localStorage.getItem("foodExpressAutoApplyBestCoupon") !==
+              "false",
+            saveDeliveryDetails:
+              localStorage.getItem("foodExpressSaveDeliveryDetails") !==
+              "false",
+            saveOrderHistory:
+              localStorage.getItem("foodExpressSaveOrderHistory") !== "false",
+          };
+        }
+      }
+
+      function applyAccountSettingsToCheckout() {
+        const settings = getAccountSettings();
+
+        applyPreferredPayment(settings.defaultPaymentMethod);
+        applyDeliveryNoteSettings(settings);
+        autoApplyBestRewardCoupon(settings);
+      }
+
+      function applyPreferredPayment(preferredPayment) {
+        const paymentValue =
+          preferredPayment ||
+          localStorage.getItem("foodExpressPreferredPayment") ||
+          "cash";
+
+        const radio = document.querySelector(
+          `input[name="paymentMethod"][value="${paymentValue}"]`,
+        );
+
+        if (!radio) return;
+
+        radio.checked = true;
+
+        document.querySelectorAll(".payment-method").forEach(function (method) {
+          method.classList.remove("selected");
+        });
+
+        const wrapper = radio.closest(".payment-method");
+        if (wrapper) wrapper.classList.add("selected");
+
+        const cardFields = document.getElementById("cardFields");
+        if (cardFields) {
+          cardFields.style.display = paymentValue === "card" ? "block" : "none";
+        }
+      }
+
+      function applyDeliveryNoteSettings(settings) {
+        const deliveryNoteInput = document.getElementById("deliveryNote");
+        if (!deliveryNoteInput) return;
+
+        // Only populate if the field is empty — never append to an existing value.
+        if (deliveryNoteInput.value.trim() !== "") return;
+
+        const notes = [];
+        if (settings.defaultDeliveryNote)
+          notes.push(settings.defaultDeliveryNote);
+        if (settings.contactlessDelivery)
+          notes.push("Contactless delivery enabled");
+
+        const uniqueNotes = [
+          ...new Set(notes.map((note) => note.trim()).filter(Boolean)),
+        ];
+
+        deliveryNoteInput.value = uniqueNotes.join(" | ");
+      }
+
+      function autoApplyBestRewardCoupon(settings) {
+        if (isPromoApplied()) {
+          return;
+        }
+
+        if (!settings.autoApplyBestCoupon) return;
+
+        const couponSelect = document.getElementById("couponSelect");
+
+        if (
+          !couponSelect ||
+          typeof window.getAvailableCoupons !== "function" ||
+          typeof window.previewCouponDiscount !== "function"
+        ) {
+          return;
+        }
+
+        const coupons = window.getAvailableCoupons();
+
+        if (!Array.isArray(coupons) || !coupons.length) {
+          setCouponMessage(
+            "No active reward coupon yet. Redeem one from Rewards first.",
+            "error",
+          );
+          return;
+        }
+
+        const bestCoupon = [...coupons].sort(function (a, b) {
+          return Number(b.discount || 0) - Number(a.discount || 0);
+        })[0];
+
+        if (!bestCoupon) return;
+
+        couponSelect.value = bestCoupon.id;
+        applyCouponToCheckout();
+
+        setCouponMessage(
+          `Best reward coupon auto-applied: ${bestCoupon.discount}% OFF.`,
+          "success",
+        );
+      }
+
+      /* ===============================
+     CHECKOUT INIT
+  ================================ */
+
+      function initializeCheckout() {
+        const preparedItems = readJson("checkoutItems", []);
+        const cartItems = readJson("foodDeliveryCartItems", []);
+
+        checkoutItems =
+          Array.isArray(preparedItems) && preparedItems.length
+            ? preparedItems
+            : cartItems;
+
+        if (!Array.isArray(checkoutItems) || !checkoutItems.length) {
+          showEmptyCheckout();
+          return;
+        }
+
+        const storedRestaurantName =
+          localStorage.getItem("checkoutRestaurantName") ||
+          checkoutItems[0]?.restaurant_name ||
+          checkoutItems[0]?.restaurantName ||
+          "Restaurant";
+
+        const storedRestaurantId =
+          localStorage.getItem("checkoutRestaurantId") ||
+          checkoutItems[0]?.restaurant_id ||
+          checkoutItems[0]?.restaurantId ||
+          "";
+
+        checkoutRestaurant = {
+          id: String(storedRestaurantId || ""),
+          name: storedRestaurantName,
+        };
+
+        const subtotalFromStorage = parseFloat(
+          localStorage.getItem("checkoutSubtotal") || "0",
+        );
+
+        const deliveryFeeFromStorage = parseFloat(
+          localStorage.getItem("checkoutDeliveryFee") || "0",
+        );
+
+        const taxFromStorage = parseFloat(
+          localStorage.getItem("checkoutTax") || "0",
+        );
+
+        const calculatedSubtotal = checkoutItems.reduce(function (sum, item) {
+          return sum + Number(item.price || 0) * Number(item.quantity || 0);
+        }, 0);
+
+        const subtotal =
+          subtotalFromStorage > 0 ? subtotalFromStorage : calculatedSubtotal;
+
+        const deliveryFee =
+          deliveryFeeFromStorage > 0
+            ? deliveryFeeFromStorage
+            : calculateFoodExpressDeliveryFee(subtotal);
+
+        const tax =
+          taxFromStorage > 0
+            ? taxFromStorage
+            : calculateFoodExpressTax(subtotal);
+        const total = subtotal + deliveryFee + tax;
+
+        checkoutSummary = {
+          subtotal,
+          deliveryFee,
+          tax,
+          discount: 0,
+          total,
+        };
+
+        renderCheckoutHeader();
+        renderOrderItems();
+        renderSummary();
+        prefillUserDetails();
+      }
+
+      function initializeCoupons() {
+        const couponSelect = document.getElementById("couponSelect");
+
+        if (!couponSelect || typeof window.getAvailableCoupons !== "function") {
+          return;
+        }
+
+        const coupons = window.getAvailableCoupons();
+        couponSelect.innerHTML = `<option value="">Select a coupon</option>`;
+
+        if (!Array.isArray(coupons) || !coupons.length) {
+          couponSelect.innerHTML = `<option value="">No active coupons available</option>`;
+          return;
+        }
+
+        coupons.forEach(function (coupon) {
+          const option = document.createElement("option");
+          option.value = coupon.id;
+          option.textContent = `${coupon.discount}% OFF (${coupon.id})`;
+          couponSelect.appendChild(option);
+        });
+      }
+
+      function applyCouponToCheckout() {
+        if (isPromoApplied()) {
+          setCouponMessage(
+            "Remove promo code before using a reward coupon.",
+            "error",
+          );
+          return;
+        }
+
+        const couponSelect = document.getElementById("couponSelect");
+        if (!couponSelect) return;
+
+        const selectedCouponId = couponSelect.value;
+
+        if (!selectedCouponId) {
+          setCouponMessage("Please select a coupon first.", "error");
+          return;
+        }
+
+        if (typeof window.previewCouponDiscount !== "function") {
+          setCouponMessage("Rewards preview is not available.", "error");
+          return;
+        }
+
+        const baseTotal =
+          Number(checkoutSummary.subtotal) +
+          Number(checkoutSummary.deliveryFee) +
+          Number(checkoutSummary.tax);
+
+        const preview = window.previewCouponDiscount(
+          selectedCouponId,
+          baseTotal,
+        );
+
+        if (!preview.success) {
+          checkoutSummary.discount = 0;
+          checkoutSummary.total = baseTotal;
+          appliedCouponId = "";
+          appliedCouponData = null;
+          renderSummary();
+          setCouponMessage(
+            preview.message || "Could not apply coupon.",
+            "error",
+          );
+          return;
+        }
+
+        appliedCouponId = selectedCouponId;
+        appliedCouponData = preview.coupon;
+        checkoutSummary.discount = Number(preview.discountAmount || 0);
+        checkoutSummary.total = Math.max(0, Number(preview.finalTotal || 0));
+
+        renderSummary();
+        syncPromoAndRewardUiState();
+
+        setCouponMessage(
+          `${preview.coupon.discount}% coupon applied successfully.`,
+          "success",
+        );
+      }
+
+      function setCouponMessage(message, type) {
+        const couponMessage = document.getElementById("couponMessage");
+        if (!couponMessage) return;
+
+        couponMessage.textContent = message;
+        couponMessage.className = `coupon-message ${type}`;
+      }
+
+      /* ===============================
+         PROMO CODE (SERVER-SIDE PREVIEW)
+      ================================ */
+
+      function isPromoApplied() {
+        return Boolean(appliedPromoCode && appliedPromoCoupon);
+      }
+
+      function isRewardCouponApplied() {
+        return Boolean(appliedCouponId && appliedCouponData);
+      }
+
+      function setPromoMessage(message, type) {
+        const promoMessage = document.getElementById("promoMessage");
+        if (!promoMessage) return;
+        promoMessage.textContent = message;
+        promoMessage.className = `coupon-message ${type}`;
+      }
+
+      function setRewardCouponUiDisabled(disabled) {
+        const couponSelect = document.getElementById("couponSelect");
+        const applyBtn = document.getElementById("applyCouponBtn");
+        if (couponSelect) couponSelect.disabled = Boolean(disabled);
+        if (applyBtn) applyBtn.disabled = Boolean(disabled);
+      }
+
+      function setPromoUiDisabled(disabled) {
+        const promoInput = document.getElementById("promoCodeInput");
+        const applyBtn = document.getElementById("applyPromoBtn");
+        if (promoInput) promoInput.disabled = Boolean(disabled);
+        if (applyBtn) applyBtn.disabled = Boolean(disabled);
+      }
+
+      function syncPromoAndRewardUiState() {
+        if (isPromoApplied()) {
+          setRewardCouponUiDisabled(true);
+          setPromoUiDisabled(false);
+          return;
+        }
+
+        if (isRewardCouponApplied()) {
+          setPromoUiDisabled(true);
+          return;
+        }
+
+        setRewardCouponUiDisabled(false);
+        setPromoUiDisabled(false);
+      }
+
+      async function applyPromoCode() {
+        if (isRewardCouponApplied()) {
+          setPromoMessage(
+            "Remove reward coupon before using promo code.",
+            "error",
+          );
+          return;
+        }
+
+        const promoInput = document.getElementById("promoCodeInput");
+        const removeBtn = document.getElementById("removePromoBtn");
+
+        const rawCode = promoInput ? promoInput.value : "";
+        const promoCode = String(rawCode || "")
+          .trim()
+          .toUpperCase();
+
+        if (!promoCode) {
+          setPromoMessage("Please enter a promo code first.", "error");
+          return;
+        }
+
+        setPromoMessage("Validating promo code...", "success");
+
+        const canonicalUser =
+          typeof window.getCurrentLoggedInUser === "function"
+            ? window.getCurrentLoggedInUser()
+            : null;
+
+        const payload = {
+          code: promoCode,
+          subtotal: checkoutSummary.subtotal,
+        };
+
+        if (canonicalUser && canonicalUser.id) {
+          payload.user_id = canonicalUser.id;
+        }
+
+        const canonicalEmail =
+          (canonicalUser && canonicalUser.email) ||
+          localStorage.getItem("userEmail") ||
+          "";
+
+        if (canonicalEmail) {
+          payload.customer_email = canonicalEmail;
+        }
+
+        try {
+          const response = await fetch(CHECKOUT_COUPON_PREVIEW_API, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const raw = await response.text();
+          let result = null;
+
+          try {
+            result = JSON.parse(raw);
+          } catch (parseError) {
+            console.error("[promo] Raw preview response:", raw);
+            throw new Error("Invalid server response while validating promo.");
+          }
+
+          if (!result.success) {
+            throw new Error(result.message || "Invalid promo code.");
+          }
+
+          const coupon = result.coupon || null;
+          const discountAmount = Number(coupon?.discount_amount || 0);
+
+          if (!coupon || !coupon.code) {
+            throw new Error("Invalid promo response.");
+          }
+
+          appliedPromoCode = String(coupon.code || promoCode).toUpperCase();
+          appliedPromoCoupon = coupon;
+
+          checkoutSummary.discount = Math.max(0, discountAmount);
+          checkoutSummary.total = Math.max(
+            0,
+            Number(checkoutSummary.subtotal || 0) +
+              Number(checkoutSummary.deliveryFee || 0) +
+              Number(checkoutSummary.tax || 0) -
+              Number(checkoutSummary.discount || 0),
           );
 
+          renderSummary();
+          syncPromoAndRewardUiState();
+
+          if (promoInput) {
+            promoInput.value = appliedPromoCode;
+          }
+
+          if (removeBtn) {
+            removeBtn.style.display = "inline-flex";
+          }
+
+          setPromoMessage("Promo code applied successfully.", "success");
+        } catch (error) {
+          console.error("[promo] apply failed:", error);
+          setPromoMessage(
+            error.message || "Could not apply promo code.",
+            "error",
+          );
+        }
+      }
+
+      function removePromoCode() {
+        appliedPromoCode = "";
+        appliedPromoCoupon = null;
+
+        const promoInput = document.getElementById("promoCodeInput");
+        const removeBtn = document.getElementById("removePromoBtn");
+
+        if (promoInput) promoInput.value = "";
+        if (removeBtn) removeBtn.style.display = "none";
+
+        checkoutSummary.discount = 0;
+        checkoutSummary.total = Math.max(
+          0,
+          Number(checkoutSummary.subtotal || 0) +
+            Number(checkoutSummary.deliveryFee || 0) +
+            Number(checkoutSummary.tax || 0),
+        );
+
+        renderSummary();
+        syncPromoAndRewardUiState();
+        setPromoMessage("Promo code removed.", "success");
+      }
+
+      function showEmptyCheckout() {
+        const empty = document.getElementById("emptyCheckout");
+        const content = document.getElementById("checkoutContent");
+
+        if (empty) empty.style.display = "block";
+        if (content) content.style.display = "none";
+      }
+
+      function renderCheckoutHeader() {
+        const itemCount = checkoutItems.reduce(function (sum, item) {
+          return sum + Number(item.quantity || 0);
+        }, 0);
+
+        const eta =
+          checkoutRestaurantMode && checkoutRestaurantMode.etaLabel
+            ? checkoutRestaurantMode.etaLabel
+            : generateEstimatedEta(itemCount);
+
+        setText("restaurantName", checkoutRestaurant.name);
+        setText(
+          "restaurantMeta",
+          `${itemCount} item${itemCount !== 1 ? "s" : ""} • ${
+            checkoutRestaurantMode?.label || "Fresh prep"
+          } • FoodExpress delivery`,
+        );
+
+        setText("estimatedEta", eta);
+        setText("checkoutRestaurantPill", checkoutRestaurant.name);
+      }
+
+      function renderOrderItems() {
+        const container = document.getElementById("orderItems");
+        if (!container) return;
+
+        container.innerHTML = checkoutItems
+          .map(function (item) {
+            const name = escapeHtml(item.name || "Unnamed Item");
+            const image = escapeHtml(
+              item.image_url || item.image || PAYMENT_DEFAULT_IMAGE,
+            );
+            const quantity = Number(item.quantity || 0);
+            const unitPrice = Number(item.price || 0);
+            const lineTotal = unitPrice * quantity;
+
+            return `
+          <div class="order-item">
+            <img
+              src="${image}"
+              alt="${name}"
+              onerror="this.src='${PAYMENT_DEFAULT_IMAGE}'"
+            />
+
+            <div class="item-info">
+              <h4>${name}</h4>
+              <div class="item-meta">
+                <span>${escapeHtml(
+                  item.restaurant_name ||
+                    item.restaurantName ||
+                    checkoutRestaurant.name,
+                )}</span>
+                <span>Rs. ${formatMoney(unitPrice)} each</span>
+              </div>
+            </div>
+
+            <div class="item-total">
+              <span class="qty">Qty ${quantity}</span>
+              <span class="price">Rs. ${formatMoney(lineTotal)}</span>
+            </div>
+          </div>
+        `;
+          })
+          .join("");
+      }
+
+      function renderSummary() {
+        const itemCount = checkoutItems.reduce(function (sum, item) {
+          return sum + Number(item.quantity || 0);
+        }, 0);
+
+        const baseTotal =
+          Number(checkoutSummary.subtotal) +
+          Number(checkoutSummary.deliveryFee) +
+          Number(checkoutSummary.tax);
+
+        if (!checkoutSummary.discount) {
+          checkoutSummary.total = baseTotal;
+        }
+
+        setText(
+          "summaryItemsLabel",
+          `${itemCount} item${itemCount !== 1 ? "s" : ""}`,
+        );
+
+        setText("summarySubtotal", formatMoney(checkoutSummary.subtotal));
+        setText("summaryDelivery", formatMoney(checkoutSummary.deliveryFee));
+        setText("summaryTax", formatMoney(checkoutSummary.tax));
+        setText("summaryTotal", formatMoney(checkoutSummary.total));
+
+        const discountRow = document.getElementById("discountRow");
+
+        if (checkoutSummary.discount > 0) {
+          if (discountRow) discountRow.style.display = "flex";
+          setText("summaryDiscount", formatMoney(checkoutSummary.discount));
+        } else {
+          if (discountRow) discountRow.style.display = "none";
+          setText("summaryDiscount", "0.00");
+        }
+
+        setText(
+          "rewardPreview",
+          `+${Math.floor(Math.max(0, checkoutSummary.total) / 10)} points`,
+        );
+      }
+
+      function prefillUserDetails() {
+        const settings = getAccountSettings();
+
+        // ---- Priority #3: canonical session is the SOURCE OF TRUTH. ----
+        // If a real user is logged in, their identity wins over every
+        // other localStorage key. This prevents stale data from a
+        // previous user/session leaking into a new user's checkout.
+        const canonicalUser =
+          typeof window.getCurrentLoggedInUser === "function"
+            ? window.getCurrentLoggedInUser()
+            : null;
+
+        const profileFromGlobal =
+          typeof window.getSavedUserProfile === "function"
+            ? window.getSavedUserProfile()
+            : {};
+
+        const foodExpressProfile = readJson(PAYMENT_USER_PROFILE_KEY, {});
+        const userProfile = readJson("userProfile", {});
+        const currentUser = readJson("currentUser", {});
+        const loggedInUser = readJson("loggedInUser", {});
+        const authUser = readJson("foodExpressAuthUser", {});
+
+        // Merge order: legacy keys first, then global profile, then
+        // canonicalUser LAST so its identity (id, email, name) overrides
+        // anything stale from older keys. Field-level fallbacks below
+        // still let saved address/phone/etc. fill in if canonicalUser
+        // doesn't have them.
+        const profile = {
+          ...authUser,
+          ...loggedInUser,
+          ...currentUser,
+          ...foodExpressProfile,
+          ...userProfile,
+          ...profileFromGlobal,
+          ...(canonicalUser || {}),
+        };
+
+        const fallbackEmail =
+          (canonicalUser && canonicalUser.email) ||
+          localStorage.getItem("userEmail") ||
+          localStorage.getItem("pendingVerificationEmail") ||
+          localStorage.getItem("foodExpressUserEmail") ||
+          "";
+
+        const fallbackName =
+          (canonicalUser && canonicalUser.name) ||
+          localStorage.getItem("userName") ||
+          localStorage.getItem("pendingVerificationName") ||
+          localStorage.getItem("foodExpressUserName") ||
+          getNameFromEmail(fallbackEmail) ||
+          "";
+
+        const derivedName =
+          profile.name ||
+          profile.full_name ||
+          profile.fullName ||
+          [profile.first_name, profile.last_name].filter(Boolean).join(" ") ||
+          fallbackName ||
+          "";
+
+        const fullNameInput = document.getElementById("fullName");
+        const emailInput = document.getElementById("customerEmail");
+        const phoneInput = document.getElementById("phoneNumber");
+        const addressInput = document.getElementById("address");
+        const cityInput = document.getElementById("city");
+        const postalInput = document.getElementById("postalCode");
+        const deliveryNoteInput = document.getElementById("deliveryNote");
+
+        if (fullNameInput) fullNameInput.value = derivedName;
+
+        if (emailInput) {
+          // If a real user is logged in, force their canonical email and
+          // lock the field so a typo can never create an order under a
+          // different identity.
+          if (canonicalUser && canonicalUser.email) {
+            emailInput.value = canonicalUser.email;
+            emailInput.readOnly = true;
+            emailInput.title =
+              "This is your account email. Edit your profile to change it.";
+            emailInput.style.backgroundColor = "#f5f5f5";
+            emailInput.style.cursor = "not-allowed";
+          } else {
+            emailInput.value =
+              profile.email ||
+              profile.user_email ||
+              profile.email_address ||
+              fallbackEmail ||
+              "";
+            emailInput.readOnly = false;
+            emailInput.removeAttribute("title");
+            emailInput.style.backgroundColor = "";
+            emailInput.style.cursor = "";
+          }
+        }
+
+        if (phoneInput) {
+          phoneInput.value =
+            profile.phone ||
+            profile.phone_number ||
+            localStorage.getItem("userPhone") ||
+            "";
+        }
+
+        if (addressInput) {
+          addressInput.value =
+            profile.address ||
+            profile.address_line1 ||
+            localStorage.getItem("userAddress") ||
+            "";
+        }
+
+        if (cityInput) {
+          cityInput.value =
+            profile.city || localStorage.getItem("userCity") || "";
+        }
+
+        if (postalInput) {
+          postalInput.value =
+            profile.postal_code ||
+            profile.postalCode ||
+            localStorage.getItem("userPostalCode") ||
+            "";
+        }
+
+        if (deliveryNoteInput) {
+          deliveryNoteInput.value =
+            profile.delivery_note ||
+            localStorage.getItem("foodExpressDefaultDeliveryNote") ||
+            settings.defaultDeliveryNote ||
+            "";
+        }
+
+        if (!derivedName && fallbackEmail && fullNameInput) {
+          fullNameInput.placeholder = `Order for ${fallbackEmail}`;
+        }
+      }
+
+      function initializePaymentMethods() {
+        document
+          .querySelectorAll('input[name="paymentMethod"]')
+          .forEach(function (radio) {
+            radio.addEventListener("change", function () {
+              document
+                .querySelectorAll(".payment-method")
+                .forEach(function (method) {
+                  method.classList.remove("selected");
+                });
+
+              const selected = document.querySelector(
+                'input[name="paymentMethod"]:checked',
+              );
+
+              if (selected) {
+                const wrapper = selected.closest(".payment-method");
+                if (wrapper) wrapper.classList.add("selected");
+              }
+
+              const cardFields = document.getElementById("cardFields");
+              if (cardFields) {
+                cardFields.style.display =
+                  selected && selected.value === "card" ? "block" : "none";
+              }
+            });
+          });
+      }
+
+      function initializeCardFormatting() {
+        const cardNumber = document.getElementById("cardNumber");
+        const cardExpiry = document.getElementById("cardExpiry");
+        const cardCVV = document.getElementById("cardCVV");
+
+        if (cardNumber) {
+          cardNumber.addEventListener("input", function () {
+            let value = cardNumber.value.replace(/\D/g, "").slice(0, 16);
+            value = value.replace(/(.{4})/g, "$1 ").trim();
+            cardNumber.value = value;
+          });
+        }
+
+        if (cardExpiry) {
+          cardExpiry.addEventListener("input", function () {
+            let value = cardExpiry.value.replace(/\D/g, "").slice(0, 4);
+            if (value.length >= 3) {
+              value = value.slice(0, 2) + "/" + value.slice(2);
+            }
+            cardExpiry.value = value;
+          });
+        }
+
+        if (cardCVV) {
+          cardCVV.addEventListener("input", function () {
+            cardCVV.value = cardCVV.value.replace(/\D/g, "").slice(0, 4);
+          });
+        }
+      }
+
+      /* ===============================
+     PLACE ORDER
+  ================================ */
+      function showCheckoutStatusModal(type, title, message, options = {}) {
+        const trackNowBtn = document.getElementById("checkoutTrackNowBtn");
+        const modal = document.getElementById("checkoutStatusModal");
+        const badge = document.getElementById("checkoutStatusBadge");
+        const icon = document.getElementById("checkoutStatusIcon");
+        const titleEl = document.getElementById("checkoutStatusTitle");
+        const messageEl = document.getElementById("checkoutStatusMessage");
+
+        const liveSteps = document.getElementById("checkoutLiveSteps");
+        const summary = document.getElementById("checkoutOrderSummary");
+        const steps = document.getElementById("checkoutStatusSteps");
+        const footer = document.getElementById("checkoutStatusFooter");
+        const redirectFill = document.getElementById("checkoutRedirectFill");
+
+        const orderNumberText = document.getElementById(
+          "checkoutOrderNumberText",
+        );
+        const etaText = document.getElementById("checkoutEtaText");
+        const paymentMethodText = document.getElementById(
+          "checkoutPaymentMethodText",
+        );
+        const totalText = document.getElementById("checkoutTotalText");
+
+        if (
+          !modal ||
+          !badge ||
+          !icon ||
+          !titleEl ||
+          !messageEl ||
+          !liveSteps ||
+          !summary ||
+          !steps ||
+          !footer ||
+          !redirectFill
+        ) {
+          return;
+        }
+
+        modal.classList.add("show");
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        liveSteps.style.display = "grid";
+        summary.style.display = "none";
+        steps.style.display = "none";
+        footer.style.display = "none";
+
+        if (trackNowBtn && options.trackUrl) {
+          trackNowBtn.style.display = "flex";
+          trackNowBtn.onclick = function () {
+            window.location.href = options.trackUrl;
+          };
+        }
+
+        redirectFill.classList.remove("animate");
+        if (trackNowBtn) {
+          trackNowBtn.style.display = "none";
+          trackNowBtn.onclick = null;
+        }
+        icon.className = `checkout-status-icon ${type}`;
+
+        if (type === "loading") {
+          badge.innerHTML = `
+      <i class="fa-solid fa-lock"></i>
+      <span>Secure checkout</span>
+    `;
+
+          icon.innerHTML = `<div class="checkout-spinner"></div>`;
+        } else if (type === "success") {
+          badge.innerHTML = `
+      <i class="fa-solid fa-circle-check"></i>
+      <span>Order confirmed</span>
+    `;
+
+          icon.innerHTML = `<i class="fa-solid fa-check"></i>`;
+
+          liveSteps.style.display = "none";
+          summary.style.display = "block";
+          steps.style.display = "flex";
+          footer.style.display = "block";
+
+          if (orderNumberText) {
+            orderNumberText.textContent = options.orderNumber || "-";
+          }
+
+          if (etaText) {
+            etaText.textContent = options.eta || "30–40 min";
+          }
+
+          if (paymentMethodText) {
+            paymentMethodText.textContent =
+              options.paymentMethod || "Cash on Delivery";
+          }
+
+          if (totalText) {
+            totalText.textContent = options.totalText || "Rs. 0.00";
+          }
+
+          setTimeout(() => {
+            redirectFill.classList.add("animate");
+          }, 80);
+        } else {
+          badge.innerHTML = `
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>Checkout issue</span>
+    `;
+
+          icon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+
+          liveSteps.style.display = "none";
+        }
+      }
+
+      function hideCheckoutStatusModal() {
+        const modal = document.getElementById("checkoutStatusModal");
+        const redirectFill = document.getElementById("checkoutRedirectFill");
+
+        if (redirectFill) {
+          redirectFill.classList.remove("animate");
+        }
+
+        if (modal) {
+          modal.classList.remove("show");
+        }
+      }
+
+      function clearCheckoutErrors() {
+        [
+          "fullName",
+          "customerEmail",
+          "phoneNumber",
+          "address",
+          "city",
+          "postalCode",
+          "cardNumber",
+          "cardExpiry",
+          "cardCVV",
+        ].forEach(function (id) {
+          const input = document.getElementById(id);
+          if (input) input.classList.remove("input-error");
+        });
+      }
+
+      function markCheckoutError(id) {
+        const input = document.getElementById(id);
+        if (!input) return;
+
+        input.classList.add("input-error");
+
+        input.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+
+        setTimeout(function () {
+          input.focus();
+        }, 250);
+      }
+
+      function showCheckoutToast(message, type = "success") {
+        const toast = document.getElementById("checkoutToast");
+        const text = document.getElementById("checkoutToastText");
+
+        if (!toast || !text) {
+          console.log(`[checkout:${type}]`, message);
+          return;
+        }
+
+        text.textContent = message;
+        toast.className = `checkout-toast show ${type}`;
+
+        clearTimeout(window.__checkoutToastTimer);
+        window.__checkoutToastTimer = setTimeout(function () {
+          toast.classList.remove("show");
+        }, 3600);
+      }
+
+      function formatPaymentMethodLabel(value) {
+        const method = String(value || "cash").toLowerCase();
+
+        const labels = {
+          cash: "Cash on Delivery",
+          card: "Credit / Debit Card",
+          digital: "Digital Wallet",
+        };
+
+        return labels[method] || "Cash on Delivery";
+      }
+
+      async function placeOrder() {
+        const fullName = document.getElementById("fullName").value.trim();
+        const customerEmail = document
+          .getElementById("customerEmail")
+          .value.trim();
+        const phoneNumber = document.getElementById("phoneNumber").value.trim();
+        const address = document.getElementById("address").value.trim();
+        const city = document.getElementById("city").value.trim();
+        const postalCode = document.getElementById("postalCode").value.trim();
+        const deliveryNote = document
+          .getElementById("deliveryNote")
+          .value.trim();
+
+        const selectedPayment = document.querySelector(
+          'input[name="paymentMethod"]:checked',
+        );
+
+        const paymentMethod = selectedPayment ? selectedPayment.value : "cash";
+
+        clearCheckoutErrors();
+
+        if (!fullName) {
+          markCheckoutError("fullName");
+          showCheckoutToast("Please enter your full name.", "warning");
+          return;
+        }
+
+        if (!customerEmail) {
+          markCheckoutError("customerEmail");
+          showCheckoutToast("Please enter your email address.", "warning");
+          return;
+        }
+
+        if (!phoneNumber) {
+          markCheckoutError("phoneNumber");
+          showCheckoutToast("Please enter your phone number.", "warning");
+          return;
+        }
+
+        if (!address) {
+          markCheckoutError("address");
+          showCheckoutToast("Please enter your delivery address.", "warning");
+          return;
+        }
+
+        if (!city) {
+          markCheckoutError("city");
+          showCheckoutToast("Please enter your city.", "warning");
+          return;
+        }
+
+        if (!postalCode) {
+          markCheckoutError("postalCode");
+          showCheckoutToast("Please enter your postal code.", "warning");
+          return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+          markCheckoutError("customerEmail");
+          showCheckoutToast("Please enter a valid email address.", "warning");
+          return;
+        }
+
+        if (paymentMethod === "card") {
+          const cardNumber = document.getElementById("cardNumber").value.trim();
+          const cardExpiry = document.getElementById("cardExpiry").value.trim();
+          const cardCVV = document.getElementById("cardCVV").value.trim();
+
+          if (!cardNumber) {
+            markCheckoutError("cardNumber");
+            showCheckoutToast("Please enter your card number.", "warning");
+            return;
+          }
+
+          if (!cardExpiry) {
+            markCheckoutError("cardExpiry");
+            showCheckoutToast("Please enter the card expiry date.", "warning");
+            return;
+          }
+
+          if (!cardCVV) {
+            markCheckoutError("cardCVV");
+            showCheckoutToast("Please enter the card CVV.", "warning");
+            return;
+          }
+        }
+
+        if (!checkoutItems.length) {
+          showCheckoutToast(
+            "Your checkout is empty. Please add items first.",
+            "warning",
+          );
+          return;
+        }
+
+        await loadCheckoutRestaurantSettings();
+
+        if (!checkoutRestaurantMode.canCheckout) {
+          showCheckoutToast(
+            checkoutRestaurantMode.message ||
+              "This restaurant is not accepting orders right now.",
+            "error",
+          );
+
+          renderCheckoutOperationWarning(checkoutRestaurantMode);
+          return;
+        }
+
+        checkoutSummary.deliveryFee = calculateFoodExpressDeliveryFee(
+          checkoutSummary.subtotal,
+        );
+        checkoutSummary.tax = calculateFoodExpressTax(checkoutSummary.subtotal);
+
+        const baseTotal =
+          Number(checkoutSummary.subtotal) +
+          Number(checkoutSummary.deliveryFee) +
+          Number(checkoutSummary.tax);
+
+        checkoutSummary.total = Math.max(
+          0,
+          baseTotal - Number(checkoutSummary.discount || 0),
+        );
+
+        renderSummary();
+
+        const btn = document.getElementById("placeOrderBtn");
+        const originalText = btn ? btn.textContent : "Place Order";
+
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "Placing Order...";
+        }
+
+        showCheckoutStatusModal(
+          "loading",
+          "Finalising your order",
+          "We’re confirming your checkout, saving your order, and sending it to the restaurant.",
+        );
+
+        const orderData = {
+          customer_name: fullName,
+          customer_email: customerEmail,
+          phone_number: phoneNumber,
+          address,
+          city,
+          postal_code: postalCode,
+          delivery_note: deliveryNote,
+          payment_method: paymentMethod,
+          subtotal: checkoutSummary.subtotal,
+          tax: checkoutSummary.tax,
+          delivery_fee: checkoutSummary.deliveryFee,
+          discount_amount: checkoutSummary.discount,
+          coupon_id: appliedCouponId || null,
+          coupon_discount: appliedCouponData ? appliedCouponData.discount : 0,
+          total: checkoutSummary.total,
+          restaurant_id: checkoutRestaurant.id,
+          restaurant_name: checkoutRestaurant.name,
+          status: "pending",
+          delivery_status: "searching",
+          estimatedDelivery:
+            checkoutRestaurantMode.etaLabel ||
+            generateEstimatedEta(checkoutItems.length),
+
+          estimated_delivery:
+            checkoutRestaurantMode.etaLabel ||
+            generateEstimatedEta(checkoutItems.length),
+
+          restaurantOperationStatus: checkoutRestaurantMode.key,
+          restaurant_operation_status: checkoutRestaurantMode.key,
+
+          restaurantOperationMessage: checkoutRestaurantMode.message,
+          restaurant_operation_message: checkoutRestaurantMode.message,
+          estimatedDelivery:
+            checkoutRestaurantMode.etaLabel ||
+            generateEstimatedEta(checkoutItems.length),
+          restaurant_operation_status: checkoutRestaurantMode.key,
+          restaurant_operation_message: checkoutRestaurantMode.message,
+          items: checkoutItems,
+        };
+
+        // Promo code flow: send coupon_code only. Backend will validate and compute discount again.
+        if (appliedPromoCode) {
+          orderData.coupon_code = appliedPromoCode;
+          orderData.coupon_id = null;
+          delete orderData.coupon_discount;
+        }
+
+        // ---- Priority #3: stamp the order with the logged-in user's
+        // canonical identity. This guarantees the order ends up tied
+        // to the user who actually placed it (so dashboard, profile,
+        // and customer_orders queries all match), regardless of what
+        // the form fields contain.
+        const canonicalUserForOrder =
+          typeof window.getCurrentLoggedInUser === "function"
+            ? window.getCurrentLoggedInUser()
+            : null;
+
+        if (canonicalUserForOrder) {
+          if (canonicalUserForOrder.id) {
+            orderData.user_id = canonicalUserForOrder.id;
+          }
+
+          if (canonicalUserForOrder.email) {
+            // Force the canonical email — never trust an editable form
+            // field for identity.
+            orderData.customer_email = canonicalUserForOrder.email;
+          }
+        }
+        // ---- end Priority #3 stamp ----
+
+        try {
           const response = await fetch(
             "../../backend/controllers/OrderController.php?action=create",
             {
@@ -468,52 +2139,501 @@
             },
           );
 
-          console.log("📥 Response status:", response.status);
-          const responseText = await response.text();
-          console.log("📥 Raw response:", responseText);
+          const raw = await response.text();
+          let result = null;
 
-          const result = JSON.parse(responseText);
-
-          if (result.success) {
-            // Store order details locally
-            const orderDetails = {
-              orderId: result.order_id,
-              orderNumber: result.order_number,
-              fullName,
-              phoneNumber,
-              address,
-              city,
-              postalCode,
-              paymentMethod,
-              total: total,
-              items: cartItems,
-              timestamp: new Date().toISOString(),
-            };
-
-            localStorage.setItem("lastOrder", JSON.stringify(orderDetails));
-
-            // Clear cart after successful order
-            localStorage.removeItem("foodDeliveryCartCount");
-            localStorage.removeItem("foodDeliveryCartItems");
-            localStorage.removeItem("checkoutTotal");
-            localStorage.removeItem("checkoutSubtotal");
-            localStorage.removeItem("checkoutTax");
-
-            alert(
-              "✅ Order placed successfully!\n\nOrder Number: " +
-                result.order_number,
-            );
-            window.location.href = "dashboard.html";
-          } else {
-            alert("Failed to place order: " + result.message);
+          try {
+            result = JSON.parse(raw);
+          } catch (parseError) {
+            console.error("Raw create order response:", raw);
+            throw new Error("Invalid server response while creating order.");
           }
-        } catch (error) {
-          console.error("❌ Error placing order:", error);
-          alert(
-            "Error placing order. Please try again.\n\nCheck console for details: " +
-              error.message,
+
+          if (!result.success) {
+            throw new Error(result.message || "Failed to place order.");
+          }
+
+          const fallbackOrderId = generateFallbackOrderId();
+          const fallbackOrderNumber = generateFallbackOrderNumber();
+
+          const newOrder = {
+            id: result.order_id || fallbackOrderId,
+            orderId: result.order_id || fallbackOrderId,
+            orderNumber: result.order_number || fallbackOrderNumber,
+
+            restaurantId: checkoutRestaurant.id,
+            restaurantName: checkoutRestaurant.name,
+
+            fullName,
+            customerName: fullName,
+            customerEmail,
+            phoneNumber,
+            address,
+            city,
+            postalCode,
+            deliveryNote,
+            paymentMethod,
+
+            subtotal: checkoutSummary.subtotal,
+            tax: checkoutSummary.tax,
+            deliveryFee: checkoutSummary.deliveryFee,
+            discountAmount: checkoutSummary.discount,
+            couponId: appliedCouponId || null,
+            couponDiscount: appliedCouponData ? appliedCouponData.discount : 0,
+            total: checkoutSummary.total,
+
+            items: checkoutItems,
+            itemCount: checkoutItems.reduce(function (sum, item) {
+              return sum + Number(item.quantity || 0);
+            }, 0),
+
+            status: "pending",
+            deliveryStatus: result.delivery_status || "searching",
+            delivery_status: result.delivery_status || "searching",
+
+            riderId: null,
+            riderName: "",
+            riderEmail: "",
+            riderPhone: "",
+
+            statusHistory: [
+              {
+                status: "pending",
+                time: new Date().toISOString(),
+              },
+            ],
+
+            deliveryHistory: [
+              {
+                status: result.delivery_status || "searching",
+                time: new Date().toISOString(),
+              },
+            ],
+
+            timestamp: new Date().toISOString(),
+            estimatedDelivery:
+              checkoutRestaurantMode.etaLabel ||
+              generateEstimatedEta(checkoutItems.length),
+          };
+
+          localStorage.setItem("latestOrder", JSON.stringify(newOrder));
+          localStorage.setItem("lastOrder", JSON.stringify(newOrder));
+
+          saveOrderHistory(newOrder);
+
+          if (
+            appliedCouponId &&
+            typeof window.markCouponAsUsed === "function"
+          ) {
+            window.markCouponAsUsed(appliedCouponId);
+          }
+
+          updateSavedDeliveryProfile({
+            fullName,
+            customerEmail,
+            phoneNumber,
+            address,
+            city,
+            postalCode,
+            deliveryNote,
+          });
+
+          clearCheckoutState();
+
+          const trackUrl = `track-order.html?order=${encodeURIComponent(
+            newOrder.orderNumber,
+          )}`;
+
+          /* ── eSewa digital payment redirect ──────────────────────────────
+           * If the user chose Digital Wallet, initiate eSewa and redirect
+           * to the sandbox instead of going to order tracking.
+           * Order is already saved in DB at this point.
+           * ─────────────────────────────────────────────────────────────── */
+          if (paymentMethod === "digital" && newOrder.id) {
+            showCheckoutStatusModal(
+              "loading",
+              "Redirecting to eSewa…",
+              "Your order is saved. We're launching eSewa secure payment. Please do not close this tab.",
+            );
+
+            try {
+              const esewaResp = await fetch(
+                "../../backend/controllers/EsewaController.php?action=initiate",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ order_id: newOrder.id }),
+                },
+              );
+
+              const esewaRaw = await esewaResp.text();
+              let esewaResult = null;
+              try {
+                esewaResult = JSON.parse(esewaRaw);
+              } catch (_) {
+                console.error("[eSewa] Non-JSON response:", esewaRaw);
+                throw new Error(
+                  "eSewa server returned an unexpected response.",
+                );
+              }
+
+              if (esewaResult && esewaResult.already_paid) {
+                // Edge case: order already paid (replay) → go to tracking
+                window.location.href = trackUrl;
+                return;
+              }
+
+              if (
+                !esewaResult ||
+                !esewaResult.success ||
+                !esewaResult.form_url
+              ) {
+                throw new Error(
+                  esewaResult?.message || "eSewa initiation failed.",
+                );
+              }
+
+              /* Build and auto-submit the eSewa form */
+              const form = document.createElement("form");
+              form.method = "POST";
+              form.action = esewaResult.form_url;
+
+              const fields = esewaResult.fields || {};
+              Object.entries(fields).forEach(([name, value]) => {
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = name;
+                input.value = value;
+                form.appendChild(input);
+              });
+
+              document.body.appendChild(form);
+              form.submit();
+              return; // execution continues on esewa-success.html
+            } catch (esewaError) {
+              console.error("[eSewa] initiation error:", esewaError);
+              hideCheckoutStatusModal();
+              showCheckoutToast(
+                "Could not launch eSewa: " +
+                  esewaError.message +
+                  ". Your order is saved — please contact support.",
+                "error",
+              );
+              // Don't redirect — order is saved, user should contact support
+              return;
+            }
+          }
+
+          /* ── Stripe card payment ─────────────────────────────────────── */
+          if (paymentMethod === "card" && newOrder.id) {
+            showCheckoutStatusModal(
+              "loading",
+              "Processing card payment…",
+              "Initializing secure Stripe payment. Please wait.",
+            );
+
+            try {
+              const stripeInit = await window.initStripeForOrder(newOrder.id);
+              if (stripeInit && stripeInit.already_paid) {
+                window.location.href = trackUrl;
+                return;
+              }
+
+              await new Promise((resolve) => setTimeout(resolve, 1800));
+
+              const modalInner = document.querySelector(
+                ".checkout-status-modal",
+              );
+              if (
+                modalInner &&
+                !document.getElementById("stripe-modal-wrapper")
+              ) {
+                document.getElementById("checkoutLiveSteps").style.display =
+                  "none";
+
+                const wrapper = document.createElement("div");
+                wrapper.id = "stripe-modal-wrapper";
+                wrapper.style.cssText = "padding:16px 0";
+                wrapper.innerHTML = `
+                  <p style="font-size:14px;color:#12203A;font-weight:700;margin-bottom:12px;">Enter card details</p>
+                  <div id="stripe-modal-card" style="border:1.5px solid #e5e7eb;border-radius:12px;padding:16px;background:#fff;margin-bottom:8px;"></div>
+                  <div id="stripe-modal-errors" style="color:#dc2626;font-size:13px;min-height:18px;margin-bottom:12px;"></div>
+                  <p style="font-size:12px;color:#6B7280;margin-bottom:16px;">🔒 Test: 4242 4242 4242 4242 | 12/28 | 123</p>
+                  <button id="stripePayBtn" style="width:100%;padding:14px;border-radius:999px;border:none;background:#12203A;color:#fff;font-size:15px;font-weight:800;cursor:pointer;">
+                    Pay Rs. ${Number(newOrder.total || 0).toFixed(2)}
+                  </button>
+                `;
+                modalInner.appendChild(wrapper);
+
+                const stripe = window.__stripeInstance;
+                const elements = stripe.elements();
+                const card = elements.create("card", {
+                  style: {
+                    base: {
+                      fontSize: "15px",
+                      color: "#12203A",
+                      fontFamily: "Segoe UI, system-ui, sans-serif",
+                    },
+                  },
+                });
+                card.mount("#stripe-modal-card");
+
+                document.getElementById("checkoutStatusTitle").textContent =
+                  "Enter card details";
+                document.getElementById("checkoutStatusMessage").textContent =
+                  "Your order is saved. Complete payment below.";
+
+                document
+                  .getElementById("stripePayBtn")
+                  .addEventListener("click", async () => {
+                    const payBtn = document.getElementById("stripePayBtn");
+                    payBtn.disabled = true;
+                    payBtn.textContent = "Processing…";
+
+                    try {
+                      const { paymentIntent, error } =
+                        await stripe.confirmCardPayment(
+                          window.__stripeClientSecret,
+                          { payment_method: { card } },
+                        );
+
+                      if (error) throw new Error(error.message);
+                      if (paymentIntent.status !== "succeeded")
+                        throw new Error("Payment not completed.");
+
+                      const vResp = await fetch(
+                        "../../backend/controllers/StripeController.php?action=verify",
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            payment_intent_id: paymentIntent.id,
+                            order_id: newOrder.id,
+                          }),
+                        },
+                      );
+                      const vResult = await vResp.json();
+                      if (!vResult.success && !vResult.already_paid)
+                        throw new Error(
+                          vResult.message || "Verification failed.",
+                        );
+
+                      document.getElementById("stripe-modal-wrapper")?.remove();
+
+                      showCheckoutStatusModal(
+                        "success",
+                        "Payment successful!",
+                        "Your card payment was confirmed. Order is being prepared.",
+                        {
+                          orderNumber: newOrder.orderNumber || "-",
+                          eta: newOrder.estimatedDelivery || "30–40 min",
+                          paymentMethod: "Credit / Debit Card",
+                          totalText: `Rs. ${Number(newOrder.total || 0).toFixed(2)}`,
+                          trackUrl,
+                        },
+                      );
+
+                      setTimeout(() => {
+                        window.location.href = trackUrl;
+                      }, 5000);
+                    } catch (err) {
+                      const errEl = document.getElementById(
+                        "stripe-modal-errors",
+                      );
+                      if (errEl) errEl.textContent = err.message;
+                      payBtn.disabled = false;
+                      payBtn.textContent = `Pay Rs. ${Number(newOrder.total || 0).toFixed(2)}`;
+                    }
+                  });
+              }
+              return;
+            } catch (stripeError) {
+              hideCheckoutStatusModal();
+              showCheckoutToast(
+                "Card payment error: " + stripeError.message,
+                "error",
+              );
+              if (btn) {
+                btn.disabled = false;
+                btn.textContent = originalText;
+              }
+              return;
+            }
+          }
+
+          /* ── COD: normal success flow ─────────────────────────── */
+          showCheckoutStatusModal(
+            "success",
+            "Order placed successfully",
+            `${checkoutRestaurant.name} has received your order. Opening live tracking now.`,
+            {
+              orderNumber: newOrder.orderNumber || "-",
+              eta: newOrder.estimatedDelivery || "30–40 min",
+              paymentMethod: formatPaymentMethodLabel(
+                newOrder.paymentMethod || "cash",
+              ),
+              totalText: `Rs. ${Number(newOrder.total || 0).toFixed(2)}`,
+              trackUrl: trackUrl,
+            },
           );
+
+          setTimeout(() => {
+            window.location.href = trackUrl;
+          }, 5000);
+        } catch (error) {
+          console.error("Order placement failed:", error);
+          hideCheckoutStatusModal();
+          showCheckoutToast(`Failed to place order: ${error.message}`, "error");
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+          }
         }
+      }
+
+      function saveOrderHistory(order) {
+        const settings = getAccountSettings();
+
+        if (settings.saveOrderHistory === false) {
+          return;
+        }
+
+        const orders = readJson(PAYMENT_ORDER_HISTORY_KEY, []);
+        orders.unshift(order);
+
+        localStorage.setItem(
+          PAYMENT_ORDER_HISTORY_KEY,
+          JSON.stringify(orders.slice(0, 25)),
+        );
+      }
+
+      function updateSavedDeliveryProfile(details) {
+        const settings = getAccountSettings();
+
+        if (settings.saveDeliveryDetails === false) {
+          return;
+        }
+
+        const profile = readJson(PAYMENT_USER_PROFILE_KEY, {});
+        const existingName =
+          profile.name ||
+          profile.full_name ||
+          [profile.first_name, profile.last_name].filter(Boolean).join(" ");
+
+        const updatedProfile = {
+          ...profile,
+          name: existingName || details.fullName,
+          full_name: existingName || details.fullName,
+          email: profile.email || details.customerEmail,
+          user_email: profile.user_email || details.customerEmail,
+          phone: details.phoneNumber,
+          phone_number: details.phoneNumber,
+          address: details.address,
+          city: details.city,
+          postal_code: details.postalCode,
+          delivery_note: details.deliveryNote,
+        };
+
+        localStorage.setItem(
+          PAYMENT_USER_PROFILE_KEY,
+          JSON.stringify(updatedProfile),
+        );
+
+        const globalProfile = readJson("userProfile", {});
+        const updatedGlobalProfile = {
+          ...globalProfile,
+          name: globalProfile.name || existingName || details.fullName,
+          email:
+            globalProfile.email ||
+            localStorage.getItem("userEmail") ||
+            details.customerEmail ||
+            "",
+          phone: details.phoneNumber,
+          address: details.address,
+          city: details.city,
+          postal_code: details.postalCode,
+          delivery_note: details.deliveryNote,
+        };
+
+        localStorage.setItem(
+          "userProfile",
+          JSON.stringify(updatedGlobalProfile),
+        );
+
+        localStorage.setItem("userEmail", updatedGlobalProfile.email);
+        localStorage.setItem("userPhone", details.phoneNumber);
+        localStorage.setItem("userAddress", details.address);
+        localStorage.setItem("userCity", details.city);
+        localStorage.setItem("userPostalCode", details.postalCode);
+      }
+
+      function clearCheckoutState() {
+        localStorage.removeItem("foodDeliveryCartCount");
+        localStorage.removeItem("foodDeliveryCartItems");
+        localStorage.removeItem("checkoutItems");
+        localStorage.removeItem("checkoutRestaurantId");
+        localStorage.removeItem("checkoutRestaurantName");
+        localStorage.removeItem("checkoutTotal");
+        localStorage.removeItem("checkoutSubtotal");
+        localStorage.removeItem("checkoutDeliveryFee");
+        localStorage.removeItem("checkoutTax");
+
+        if (typeof window.updateCartCount === "function") {
+          window.updateCartCount();
+        }
+      }
+
+      /* ===============================
+     HELPERS
+  ================================ */
+
+      function generateEstimatedEta(itemCount) {
+        const baseMin = 25 + itemCount * 2;
+        const baseMax = 35 + itemCount * 3;
+        return `${baseMin}–${baseMax} min`;
+      }
+
+      function generateFallbackOrderId() {
+        return "FE-" + Date.now();
+      }
+
+      function generateFallbackOrderNumber() {
+        return "FDX-" + String(Date.now()).slice(-6);
+      }
+
+      function getNameFromEmail(email) {
+        if (!email) return "";
+
+        return String(email)
+          .split("@")[0]
+          .replace(/[._-]+/g, " ")
+          .replace(/\b\w/g, function (char) {
+            return char.toUpperCase();
+          });
+      }
+
+      function readJson(key, fallback) {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch (error) {
+          return fallback;
+        }
+      }
+
+      function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
       }
     </script>
   </body>

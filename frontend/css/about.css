@@ -3,31 +3,11 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Inter", sans-serif;
+  /*font-family: "Inter", sans-serif;*/
 }
 
 body {
   background: #f6f6f6;
-}
-
-/* NAVBAR */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  padding: 20px 8%;
-  background: white;
-}
-
-.logo {
-  font-size: 26px;
-  font-weight: 700;
-  color: #ff2e2e;
-}
-
-nav a {
-  margin: 0 15px;
-  color: #444;
-  text-decoration: none;
 }
 
 /* HERO */

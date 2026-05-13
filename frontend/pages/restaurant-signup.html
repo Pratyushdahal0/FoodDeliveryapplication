@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register Your Restaurant - FoodExpress</title>
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/restaurant-signup.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <main class="restaurant-signup-page">
+      <!-- PREMIUM AUTH TOPBAR -->
+      <header class="auth-topbar">
+        <a href="landingpage.html" class="auth-brand">
+          <i class="fa-solid fa-bowl-food"></i>
+          FoodExpress
+        </a>
+
+        <nav class="auth-links">
+          <a href="landingpage.html">Home</a>
+          <a href="restaurant-login.html">Owner Login</a>
+        </nav>
+      </header>
+
+      <section class="hero-section">
+        <div class="eyebrow">
+          <i class="fa-solid fa-store"></i>
+          Restaurant Partner Application
+        </div>
+
+        <h1>Register Your <span>Restaurant</span></h1>
+        <p>
+          Submit your business, owner, verification, and payment details to join
+          FoodExpress as a verified restaurant partner.
+        </p>
+      </section>
+
+      <section class="steps-card">
+        <div class="steps-wrapper">
+          <div class="step-item active" data-step="1">
+            <div class="step-circle">1</div>
+            <p>Basic Info</p>
+          </div>
+
+          <div class="step-line" data-line="1"></div>
+
+          <div class="step-item" data-step="2">
+            <div class="step-circle">2</div>
+            <p>Owner Details</p>
+          </div>
+
+          <div class="step-line" data-line="2"></div>
+
+          <div class="step-item" data-step="3">
+            <div class="step-circle">3</div>
+            <p>Verification</p>
+          </div>
+
+          <div class="step-line" data-line="3"></div>
+
+          <div class="step-item" data-step="4">
+            <div class="step-circle">4</div>
+            <p>Restaurant Details</p>
+          </div>
+
+          <div class="step-line" data-line="4"></div>
+
+          <div class="step-item" data-step="5">
+            <div class="step-circle">5</div>
+            <p>Legal & Payment</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <form id="restaurantSignupForm">
+          <!-- STEP 1 -->
+          <div class="step-panel active" data-panel="1">
+            <h2>Basic Information</h2>
+            <p class="section-note">
+              Add the core details customers and FoodExpress will use to
+              identify your restaurant.
+            </p>
+
+            <div class="form-group full-width">
+              <label for="restaurantName">Restaurant Name *</label>
+              <input
+                type="text"
+                id="restaurantName"
+                name="restaurantName"
+                placeholder="Enter restaurant name"
+              />
+            </div>
+
+            <div class="form-group full-width">
+              <label for="restaurantLocation">Location *</label>
+              <input
+                type="text"
+                id="restaurantLocation"
+                name="restaurantLocation"
+                placeholder="Enter full restaurant address"
+              />
+            </div>
+
+            <div
+              class="map-box"
+              style="
+                padding: 0;
+                overflow: hidden;
+                border-radius: 16px;
+                height: 220px;
+              "
+            >
+              <iframe
+                id="locationMapPreview"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=85.2,27.6,85.4,27.8&layer=mapnik&marker=27.7172,85.3240"
+                style="width: 100%; height: 100%; border: none"
+                title="Location preview"
+              ></iframe>
+            </div>
+            <p
+              style="
+                font-size: 12px;
+                color: #9ca3af;
+                margin-top: 6px;
+                margin-bottom: 16px;
+              "
+            >
+              <i class="fa-solid fa-circle-info"></i> Map shows Kathmandu area.
+              Enter your exact location above.
+            </p>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="restaurantPhone">Phone Number *</label>
+                <input
+                  type="text"
+                  id="restaurantPhone"
+                  name="restaurantPhone"
+                  placeholder="+977 98XXXXXXXX"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="restaurantEmail">Email Address *</label>
+                <input
+                  type="email"
+                  id="restaurantEmail"
+                  name="restaurantEmail"
+                  placeholder="restaurant@example.com"
+                />
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="restaurantPassword">Password *</label>
+              <div class="password-wrapper">
+                <input
+                  type="password"
+                  id="restaurantPassword"
+                  name="restaurantPassword"
+                  placeholder="Create a strong password"
+                />
+                <button
+                  type="button"
+                  class="toggle-password"
+                  onclick="toggleRestaurantPassword()"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-footer">
+              <button type="button" class="next-btn" data-next="2">
+                Next Step
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 2 -->
+          <div class="step-panel" data-panel="2">
+            <h2>Owner Details</h2>
+            <p class="section-note">
+              Add the person responsible for managing this restaurant account.
+            </p>
+
+            <div class="form-group full-width">
+              <label for="ownerFullName">Owner Full Name *</label>
+              <input
+                type="text"
+                id="ownerFullName"
+                placeholder="Enter owner's full name"
+              />
+            </div>
+
+            <div class="form-group full-width">
+              <label for="ownerIdUpload">Upload Citizenship / ID</label>
+              <label class="upload-box" for="ownerIdUpload">
+                <i class="fa-solid fa-id-card upload-icon"></i>
+                <span class="upload-title">
+                  Drag and drop your file here or <b>browse</b>
+                </span>
+                <span class="upload-subtitle">
+                  Supported formats: JPG, PNG, PDF (Max 5MB)
+                </span>
+              </label>
+              <input type="file" id="ownerIdUpload" class="hidden-file" />
+            </div>
+
+            <div class="form-footer split-footer">
+              <button type="button" class="prev-btn" data-prev="1">
+                <i class="fa-solid fa-arrow-left"></i>
+                Previous
+              </button>
+
+              <button type="button" class="next-btn" data-next="3">
+                Next Step
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 3 -->
+          <div class="step-panel" data-panel="3">
+            <h2>Email Verification</h2>
+            <p class="section-note">
+              Verify the restaurant email before continuing the application.
+            </p>
+
+            <div class="info-box">
+              <i class="fa-solid fa-envelope-circle-check"></i>
+              We've sent a 6-digit verification code to
+              <strong>your email</strong>.
+            </div>
+
+            <div class="verification-block">
+              <p class="verification-label">Enter Verification Code</p>
+
+              <div class="otp-row">
+                <input type="text" maxlength="1" class="otp-input" />
+                <input type="text" maxlength="1" class="otp-input" />
+                <input type="text" maxlength="1" class="otp-input" />
+                <input type="text" maxlength="1" class="otp-input" />
+                <input type="text" maxlength="1" class="otp-input" />
+                <input type="text" maxlength="1" class="otp-input" />
+              </div>
+
+              <p class="resend-text">
+                Didn't receive the code? <span>Resend</span>
+              </p>
+            </div>
+
+            <div class="form-footer split-footer">
+              <button type="button" class="prev-btn" data-prev="2">
+                <i class="fa-solid fa-arrow-left"></i>
+                Previous
+              </button>
+
+              <button type="button" class="next-btn" data-next="4">
+                Next Step
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 4 -->
+          <div class="step-panel" data-panel="4">
+            <h2>Restaurant Details</h2>
+            <p class="section-note">
+              Tell customers what your restaurant serves and when you operate.
+            </p>
+
+            <div class="form-group full-width">
+              <label for="restaurantLogo">Restaurant Logo *</label>
+              <label class="upload-box logo-upload" for="restaurantLogo">
+                <i class="fa-solid fa-image upload-icon"></i>
+                <span class="upload-title">Upload your restaurant logo</span>
+                <span class="upload-subtitle">PNG or JPG (Max 2MB)</span>
+              </label>
+              <input type="file" id="restaurantLogo" class="hidden-file" />
+            </div>
+
+            <div class="form-group full-width">
+              <label for="restaurantDescription">Description *</label>
+              <textarea
+                id="restaurantDescription"
+                rows="5"
+                placeholder="Tell customers about your restaurant..."
+              ></textarea>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="cuisineType">Cuisine Type *</label>
+              <select id="cuisineType">
+                <option value="">Select cuisine type</option>
+                <option value="nepali">Nepali</option>
+                <option value="indian">Indian</option>
+                <option value="chinese">Chinese</option>
+                <option value="continental">Continental</option>
+                <option value="fast-food">Fast Food</option>
+                <option value="multi-cuisine">Multi Cuisine</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="openingTime">Opening Time *</label>
+                <input type="time" id="openingTime" />
+              </div>
+
+              <div class="form-group">
+                <label for="closingTime">Closing Time *</label>
+                <input type="time" id="closingTime" />
+              </div>
+            </div>
+
+            <div class="checkbox-card">
+              <label class="checkbox-label">
+                <span>Delivery Available</span>
+                <input type="checkbox" id="deliveryAvailable" checked />
+              </label>
+            </div>
+
+            <div class="form-footer split-footer">
+              <button type="button" class="prev-btn" data-prev="3">
+                <i class="fa-solid fa-arrow-left"></i>
+                Previous
+              </button>
+
+              <button type="button" class="next-btn" data-next="5">
+                Next Step
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 5 -->
+          <div class="step-panel" data-panel="5">
+            <h2>Legal & Payment Information</h2>
+            <p class="section-note">
+              These details are required for verification, compliance, and
+              restaurant payouts.
+            </p>
+
+            <div class="form-group full-width">
+              <label for="panNumber">PAN Number *</label>
+              <input
+                type="text"
+                id="panNumber"
+                placeholder="Enter PAN number"
+              />
+            </div>
+
+            <div class="form-group full-width">
+              <label for="panImage">Upload PAN Image *</label>
+              <label class="upload-box" for="panImage">
+                <i class="fa-solid fa-file-invoice upload-icon"></i>
+                <span class="upload-title">Upload PAN card image</span>
+                <span class="upload-subtitle">JPG or PNG (Max 5MB)</span>
+              </label>
+              <input type="file" id="panImage" class="hidden-file" />
+            </div>
+
+            <div class="form-group full-width">
+              <label for="businessRegNumber">
+                Business Registration Number *
+              </label>
+              <input
+                type="text"
+                id="businessRegNumber"
+                placeholder="Enter registration number"
+              />
+            </div>
+
+            <div class="note-box">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>
+                <strong>Note:</strong> All information will be verified by our
+                team within 24–48 hours. You'll receive a confirmation once
+                approved.
+              </span>
+            </div>
+
+            <div class="form-footer split-footer">
+              <button type="button" class="prev-btn" data-prev="4">
+                <i class="fa-solid fa-arrow-left"></i>
+                Previous
+              </button>
+
+              <button type="submit" class="next-btn">
+                Register Restaurant
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script src="../js/restaurant-signup.js"></script>
+    <script>
+      const locationInput = document.getElementById("restaurantLocation");
+      const mapIframe = document.getElementById("locationMapPreview");
+
+      let searchTimer = null;
+
+      locationInput.addEventListener("input", function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(async () => {
+          const query = locationInput.value.trim();
+          if (!query) return;
+
+          try {
+            const resp = await fetch(
+              `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
+              { headers: { "Accept-Language": "en" } },
+            );
+            const data = await resp.json();
+
+            if (data && data.length > 0) {
+              const lat = parseFloat(data[0].lat);
+              const lng = parseFloat(data[0].lon);
+              const d = 0.008;
+
+              mapIframe.src =
+                `https://www.openstreetmap.org/export/embed.html` +
+                `?bbox=${lng - d},${lat - d},${lng + d},${lat + d}&layer=mapnik&marker=${lat},${lng}`;
+            }
+          } catch (e) {}
+        }, 1000); // wait 1 second after user stops typing
+      });
+    </script>
+  </body>
+</html>

@@ -1,51 +1,87 @@
 // ══════════════════════════
-//  shop.js
-//  Shop page interactions
+// shop.js
+// FoodExpress Nepal currency version
 // ══════════════════════════
 
-let allProducts = []; // Store all products for filtering
-const FAVORITES_KEY = "foodDeliveryFavorites";
+console.log("[shop.js] Loaded - Nepal Rs currency version");
 
-function getFavoriteIds() {
+let allProducts = [];
+const SHOP_FAVORITES_KEY = "foodDeliveryFavorites";
+const DEFAULT_IMAGE =
+  "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80";
+
+/* ===============================
+   MONEY FORMAT
+================================ */
+
+function formatNpr(amount) {
+  const value = Number(amount || 0);
+
+  return `Rs. ${value.toLocaleString("en-NP", {
+    maximumFractionDigits: 0,
+  })}`;
+}
+
+/* ===============================
+   FAVORITES
+================================ */
+
+function shopGetFavoriteIds() {
   try {
-    return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
-  } catch {
+    const stored = JSON.parse(localStorage.getItem(SHOP_FAVORITES_KEY) || "[]");
+    return Array.isArray(stored) ? stored.map(String) : [];
+  } catch (error) {
+    console.error("Failed to parse favorites:", error);
     return [];
   }
 }
 
-function saveFavoriteIds(ids) {
-  localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids));
+function shopSaveFavoriteIds(ids) {
+  const normalized = Array.isArray(ids) ? ids.map(String) : [];
+  localStorage.setItem(SHOP_FAVORITES_KEY, JSON.stringify(normalized));
 }
 
-function isFavorite(productId) {
-  return getFavoriteIds().includes(String(productId));
+function shopIsFavorite(productId) {
+  return shopGetFavoriteIds().includes(String(productId || ""));
 }
 
-function toggleFavorite(productId, btn) {
-  const ids = getFavoriteIds();
+function shopRenderFavoriteButton(btn, isActive) {
+  if (!btn) return;
+
+  btn.innerHTML = isActive
+    ? `<i class="fa-solid fa-heart"></i>`
+    : `<i class="fa-regular fa-heart"></i>`;
+
+  btn.classList.toggle("liked", isActive);
+  btn.style.color = isActive ? "#e53935" : "";
+}
+
+function shopToggleFavorite(productId, btn) {
+  if (!productId) return;
+
+  const ids = shopGetFavoriteIds();
   const id = String(productId);
   const index = ids.indexOf(id);
+  const willBeActive = index === -1;
 
-  if (index === -1) {
+  if (willBeActive) {
     ids.push(id);
-    btn.textContent = "♥️";
-    btn.classList.add("liked");
   } else {
     ids.splice(index, 1);
-    btn.textContent = "♡";
-    btn.classList.remove("liked");
   }
 
-  saveFavoriteIds(ids);
+  shopSaveFavoriteIds(ids);
+  shopRenderFavoriteButton(btn, willBeActive);
 }
+
+/* ===============================
+   INIT
+================================ */
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadProducts();
 
-  // ── FILTER BUTTONS ──
   const filterBtns = document.querySelectorAll(".filter-btn");
-  const countEl = document.querySelector(".products-count");
 
   filterBtns.forEach((btn) => {
     btn.addEventListener("click", function () {
@@ -57,48 +93,80 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // ── ADD TO CART ──
   document.addEventListener("click", function (e) {
-    if (e.target.classList.contains("add-to-cart")) {
+    const addButton = e.target.closest(".add-to-cart");
+    if (addButton) {
       e.stopPropagation();
-      handleAddToCart(e.target);
+      handleAddToCart(addButton);
     }
   });
 
-  // ── CONTACT US BUTTON ──
   const contactBtn = document.querySelector(".btn-contact");
   if (contactBtn) {
     contactBtn.addEventListener("click", () => {
-      alert("📩 Opening contact form...");
+      alert("Opening contact form...");
     });
   }
 });
 
-// Load products from backend
+/* ===============================
+   LOAD PRODUCTS
+================================ */
+
 async function loadProducts() {
-  console.log("Starting to load products...");
+  const countEl = document.querySelector(".products-count");
+
   try {
-    console.log("Calling getAllProducts...");
+    console.log("[shop.js] Loading products...");
     allProducts = await getAllProducts();
-    console.log("Products loaded:", allProducts);
+    console.log("[shop.js] Loaded products:", allProducts);
+
+    if (!Array.isArray(allProducts)) {
+      allProducts = [];
+    }
+
     renderProducts(allProducts);
   } catch (error) {
-    console.error("Error loading products:", error);
-    document.querySelector(".products-count").textContent =
-      "Error loading products";
+    console.error("[shop.js] Error loading products:", error);
+    allProducts = [];
+
+    const grid = document.getElementById("productsGrid");
+    if (grid) {
+      grid.innerHTML = `
+        <div class="shop-empty-state">
+          <h3>Failed to load products</h3>
+          <p>Please refresh the page or check the product backend.</p>
+        </div>
+      `;
+    }
+
+    if (countEl) {
+      countEl.textContent = "Error loading products";
+    }
   }
 }
 
-// Render products to the grid
+/* ===============================
+   RENDER PRODUCTS
+================================ */
+
 function renderProducts(products) {
   const grid = document.getElementById("productsGrid");
   const countEl = document.querySelector(".products-count");
 
-  grid.innerHTML = ""; // Clear existing
+  if (!grid) return;
 
-  if (products.length === 0) {
-    grid.innerHTML = "<p>No products found.</p>";
-    countEl.textContent = "No items";
+  grid.innerHTML = "";
+
+  if (!Array.isArray(products) || products.length === 0) {
+    grid.innerHTML = `
+      <div class="shop-empty-state">
+        <h3>No products found</h3>
+        <p>Try another filter or check if products are available.</p>
+      </div>
+    `;
+
+    if (countEl) countEl.textContent = "No items";
     return;
   }
 
@@ -107,37 +175,92 @@ function renderProducts(products) {
     grid.appendChild(card);
   });
 
-  countEl.textContent = `Showing ${products.length} item${products.length !== 1 ? "s" : ""}`;
+  if (countEl) {
+    countEl.textContent = `Showing ${products.length} item${
+      products.length !== 1 ? "s" : ""
+    }`;
+  }
 
-  // Re-attach wishlist event listeners
   attachWishlistListeners();
 }
 
-// Create a product card element
+/* ===============================
+   PRODUCT CARD
+================================ */
+
 function createProductCard(product) {
   const card = document.createElement("div");
   card.className = "product-card";
 
-  const popularBadge = product.is_popular
-    ? '<span class="popular-badge">Popular</span>'
-    : "";
-  const favoriteClass = isFavorite(product.id) ? "liked" : "";
-  const favoriteIcon = isFavorite(product.id) ? "♥️" : "♡";
+  const productId = String(product.id || "");
+  const productName = product.name || "Unnamed Product";
+  const productPrice = Number(product.price || 0);
+  const productImage = product.image_url || DEFAULT_IMAGE;
+  const restaurantId = String(product.restaurant_id || "");
+  const restaurantName =
+    product.restaurant_name ||
+    product.restaurant ||
+    product.restaurant_title ||
+    "Unknown Restaurant";
+
+  const popularBadge =
+    Number(product.is_popular) === 1
+      ? `<span class="popular-badge">Popular</span>`
+      : "";
+
+  const favoriteActive = shopIsFavorite(productId);
+  const favoriteClass = favoriteActive ? "liked" : "";
+  const favoriteIcon = favoriteActive
+    ? `<i class="fa-solid fa-heart"></i>`
+    : `<i class="fa-regular fa-heart"></i>`;
 
   card.innerHTML = `
     <div class="product-img">
-      <img src="${product.image_url || "https://via.placeholder.com/400x300"}" alt="${product.name}" />
+      <img
+        src="${escapeHtml(productImage)}"
+        alt="${escapeHtml(productName)}"
+        onerror="this.src='${DEFAULT_IMAGE}'"
+      />
       ${popularBadge}
-      <button class="wishlist-btn ${favoriteClass}" data-product-id="${product.id}">${favoriteIcon}</button>
+      <button
+        class="wishlist-btn ${favoriteClass}"
+        data-product-id="${escapeHtml(productId)}"
+        type="button"
+        aria-label="Save item"
+      >
+        ${favoriteIcon}
+      </button>
     </div>
+
     <div class="product-info">
-      <div class="product-name">${product.name}</div>
-      <div class="product-rating">
-        <span class="star">★</span> ${product.rating || 0} <span>(${product.delivery_time || "N/A"})</span>
+      <div class="product-name">${escapeHtml(productName)}</div>
+
+      <div class="product-restaurant" style="font-size:0.95rem;color:#777;margin:6px 0 10px;">
+        from ${escapeHtml(restaurantName)}
       </div>
+
+      <div class="product-rating">
+        <span class="star">★</span> ${escapeHtml(product.rating || 0)}
+        <span>(${escapeHtml(product.delivery_time || "N/A")})</span>
+      </div>
+
       <div class="product-footer">
-        <span class="product-price">$${product.price}</span>
-        <button class="add-to-cart" data-product-id="${product.id}" data-product-name="${product.name}" data-product-price="${product.price}" data-product-image="${product.image_url || "https://via.placeholder.com/400x300"}">+</button>
+        <span class="product-price">${formatNpr(productPrice)}</span>
+
+        <button
+          class="add-to-cart"
+          data-product-id="${escapeHtml(productId)}"
+          data-product-name="${escapeHtml(productName)}"
+          data-product-price="${escapeHtml(productPrice)}"
+          data-product-image="${escapeHtml(productImage)}"
+          data-restaurant-id="${escapeHtml(restaurantId)}"
+          data-restaurant-name="${escapeHtml(restaurantName)}"
+          title="Add to cart"
+          type="button"
+        >
+          <i class="fa-solid fa-cart-shopping"></i>
+          Add
+        </button>
       </div>
     </div>
   `;
@@ -145,62 +268,111 @@ function createProductCard(product) {
   return card;
 }
 
-// Filter products based on category
+/* ===============================
+   FILTER
+================================ */
+
 function filterProducts(filter) {
   let filtered = [];
 
   if (filter === "all items") {
     filtered = allProducts;
   } else if (filter === "popular") {
-    filtered = allProducts.filter((p) => p.is_popular);
+    filtered = allProducts.filter((p) => Number(p.is_popular) === 1);
   } else {
-    // For specific categories like Breakfast, Lunch, etc.
-    filtered = allProducts.filter((p) => p.category.toLowerCase() === filter);
+    filtered = allProducts.filter(
+      (p) => String(p.category || "").toLowerCase() === filter
+    );
   }
 
   renderProducts(filtered);
 }
 
-// Attach wishlist button listeners
+/* ===============================
+   WISHLIST
+================================ */
+
 function attachWishlistListeners() {
   document.querySelectorAll(".wishlist-btn").forEach((btn) => {
     btn.addEventListener("click", function (e) {
       e.stopPropagation();
+
       const productId = this.dataset.productId;
       if (!productId) return;
-      toggleFavorite(productId, this);
+
+      shopToggleFavorite(productId, this);
     });
   });
 }
 
-// Handle add to cart animation
+/* ===============================
+   CART
+================================ */
+
 function handleAddToCart(btn) {
-  if (btn.classList.contains("adding")) return;
+  if (!btn || btn.classList.contains("adding")) return;
+
+  const product = {
+    id: btn.dataset.productId,
+    name: btn.dataset.productName,
+    price: Number(btn.dataset.productPrice || 0),
+    image_url: btn.dataset.productImage || DEFAULT_IMAGE,
+    quantity: 1,
+    restaurant_id: btn.dataset.restaurantId,
+    restaurant_name: btn.dataset.restaurantName || "Unknown Restaurant",
+  };
+
+  if (!product.id) {
+    alert("Product ID is missing.");
+    console.error("Missing product id:", product);
+    return;
+  }
+
+  if (!product.restaurant_id) {
+    alert("This item cannot be added because restaurant information is missing.");
+    console.error("Missing restaurant_id for product:", product);
+    return;
+  }
 
   btn.classList.add("adding");
-  const original = btn.textContent;
+  const originalHTML = btn.innerHTML;
 
-  btn.textContent = "✓";
+  btn.innerHTML = `<i class="fa-solid fa-check"></i> Added`;
   btn.style.background = "#22c55e";
-  btn.style.transform = "scale(1.15)";
+  btn.style.transform = "scale(1.05)";
 
-  // Add item to cart with product details
-  if (typeof addItemToCart === "function") {
-    const product = {
-      id: btn.dataset.productId,
-      name: btn.dataset.productName,
-      price: btn.dataset.productPrice,
-      image_url: btn.dataset.productImage,
-    };
-    addItemToCart(product);
-  } else {
-    console.warn("addItemToCart not available");
+  try {
+    if (typeof addItemToCart === "function") {
+      const added = addItemToCart(product);
+
+      if (!added) {
+        throw new Error("addItemToCart returned false");
+      }
+    } else {
+      throw new Error("addItemToCart is not available");
+    }
+  } catch (error) {
+    console.error("Failed to add item to cart:", error);
+    alert("Failed to add item to cart.");
   }
 
   setTimeout(() => {
-    btn.textContent = original;
+    btn.innerHTML = originalHTML;
     btn.style.background = "";
     btn.style.transform = "";
     btn.classList.remove("adding");
-  }, 1000);
+  }, 900);
+}
+
+/* ===============================
+   UTILS
+================================ */
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }

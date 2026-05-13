@@ -1,77 +1,84 @@
-import { renderNavbar } from "../components/navbar.js";
-import { renderFooter } from "../components/footer.js";
-import { loginUser, registerUser } from "../modules/auth.js";
+const registerForm = document.getElementById("registerForm");
 
-document.getElementById("navbar").innerHTML = renderNavbar();
-document.getElementById("footer").innerHTML = renderFooter();
+if (registerForm) {
+  registerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-const tabButtons = document.querySelectorAll(".tab-btn");
-const loginTab = document.getElementById("loginTab");
-const registerTab = document.getElementById("registerTab");
-const authMessage = document.getElementById("authMessage");
+    try {
+      const payload = {
+        name: document.getElementById("registerName")?.value.trim() || "",
+        email: document.getElementById("registerEmail")?.value.trim() || "",
+        password: document.getElementById("registerPassword")?.value || "",
+        phone: document.getElementById("registerPhone")?.value.trim() || "",
+        address: document.getElementById("registerAddress")?.value.trim() || "",
+        role: document.getElementById("registerRole")?.value || "customer"
+      };
 
-function showMessage(text, type = "success") {
-  authMessage.textContent = text;
-  authMessage.className = `message show ${type}`;
+      if (!payload.name || !payload.email || !payload.password) {
+        if (typeof showMessage === "function") {
+          showMessage("Please fill all required fields", "error");
+        }
+        return;
+      }
+
+      if (payload.role === "restaurant_owner") {
+        localStorage.setItem("restaurantOwnerBasicInfo", JSON.stringify(payload));
+        localStorage.setItem("userRole", "restaurant_owner");
+        window.location.href = "./restaurant-signup.html";
+        return;
+      }
+
+      const result = await registerUser(payload);
+
+      if (typeof showMessage === "function") {
+        showMessage(result.message, result.success ? "success" : "error");
+      }
+
+      if (result.success) {
+        localStorage.setItem("userRole", payload.role || "customer");
+        registerForm.reset();
+
+        if (typeof tabButtons !== "undefined" && tabButtons[0]) {
+          tabButtons[0].click();
+        }
+      }
+    } catch (error) {
+      if (typeof showMessage === "function") {
+        showMessage("Could not connect to backend", "error");
+      }
+      console.error(error);
+    }
+  });
 }
 
-tabButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    tabButtons.forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
+function getCurrentUserRole() {
+  return localStorage.getItem("userRole") || "customer";
+}
 
-    const tab = btn.dataset.tab;
-    loginTab.classList.toggle("active", tab === "login");
-    registerTab.classList.toggle("active", tab === "register");
-  });
-});
+function requireOwnerAuth() {
+  const role = getCurrentUserRole();
 
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  try {
-    const result = await loginUser(
-      document.getElementById("loginEmail").value.trim(),
-      document.getElementById("loginPassword").value
-    );
-
-    showMessage(result.message, result.success ? "success" : "error");
-
-    if (result.success) {
-      if (result.data.role === "admin") {
-        window.location.href = "./admin.html";
-      } else {
-        window.location.href = "./index.html";
-      }
-    }
-  } catch (error) {
-    showMessage("Could not connect to backend", "error");
-    console.error(error);
+  if (role !== "restaurant_owner") {
+    alert("Owner access only. Redirecting to customer dashboard.");
+    window.location.href = "dashboard.html";
+    return false;
   }
-});
 
-document.getElementById("registerForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+  return true;
+}
 
-  try {
-    const payload = {
-      name: document.getElementById("registerName").value.trim(),
-      email: document.getElementById("registerEmail").value.trim(),
-      password: document.getElementById("registerPassword").value,
-      phone: document.getElementById("registerPhone").value.trim(),
-      address: document.getElementById("registerAddress").value.trim(),
-      role: document.getElementById("registerRole").value
-    };
+function requireCustomerAuth() {
+  const role = getCurrentUserRole();
 
-    const result = await registerUser(payload);
-    showMessage(result.message, result.success ? "success" : "error");
-
-    if (result.success) {
-      document.getElementById("registerForm").reset();
-      tabButtons[0].click();
-    }
-  } catch (error) {
-    showMessage("Could not connect to backend", "error");
-    console.error(error);
+  if (role === "restaurant_owner") {
+    alert("Customer access only. Redirecting to owner dashboard.");
+    window.location.href = "ownerdashboard.html";
+    return false;
   }
-});
+
+  return true;
+}
+
+window.getCurrentUserRole = getCurrentUserRole;
+window.requireOwnerAuth = requireOwnerAuth;
+window.requireCustomerAuth = requireCustomerAuth;

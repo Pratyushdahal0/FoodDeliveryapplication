@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Rider Dashboard - FoodExpress</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/rider-layout.css" />
+    <link rel="stylesheet" href="../css/rider.css" />
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <!-- Sidebar comes from rider-sidebar.js -->
+    <div id="sidebar"></div>
+
+    <main class="main">
+      <!-- TOP BAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn" id="menuToggle">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+        </div>
+
+        <div class="topbar-right">
+          <span class="online-pill"> <span></span> Online </span>
+
+          <button class="notification-btn">
+            <i class="fa-regular fa-bell"></i>
+            <small>2</small>
+          </button>
+
+          <div class="rider-profile">
+            <img src="https://i.pravatar.cc/80?img=12" alt="Rider profile" />
+            <div>
+              <h4>Ramesh Tamang</h4>
+              <p>Rider ID: RID-1001</p>
+            </div>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+        </div>
+      </header>
+
+      <!-- HERO -->
+      <section class="dashboard-hero">
+        <div>
+          <h1>Good evening, Ramesh! 👋</h1>
+          <p>Ready to deliver happiness today?</p>
+        </div>
+
+        <div class="hero-illustration">
+          <span class="hero-badge">Kathmandu delivery zone</span>
+          <span class="building b1"></span>
+          <span class="building b2"></span>
+          <span class="building b3"></span>
+          <span class="road-dot d1"></span>
+          <span class="road-dot d2"></span>
+          <span class="road-dot d3"></span>
+          <i class="fa-solid fa-motorcycle"></i>
+          <span class="pin"></span>
+        </div>
+      </section>
+
+      <!-- STATS CARDS -->
+      <section class="cards">
+        <div class="card stat-card">
+          <div class="stat-icon orange">
+            <i class="fa-solid fa-clipboard-check"></i>
+          </div>
+          <div>
+            <p>Today Deliveries</p>
+            <h2>8</h2>
+            <span>Completed</span>
+          </div>
+        </div>
+
+        <div class="card stat-card">
+          <div class="stat-icon green">
+            <i class="fa-solid fa-truck-fast"></i>
+          </div>
+          <div>
+            <p>Active Delivery</p>
+            <h2>1</h2>
+            <span class="green-text">In Progress</span>
+          </div>
+        </div>
+
+        <div class="card stat-card">
+          <div class="stat-icon yellow">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+          <div>
+            <p>Today Earnings</p>
+            <h2>Rs. 720</h2>
+            <span>View Details</span>
+          </div>
+        </div>
+
+        <div class="card stat-card">
+          <div class="stat-icon purple">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+          <div>
+            <p>This Week</p>
+            <h2>32</h2>
+            <span>Deliveries</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- MAIN DASHBOARD GRID -->
+      <section class="dashboard-grid">
+        <!-- LEFT SIDE -->
+        <div class="left-column">
+          <!-- ACTIVE DELIVERY -->
+          <div class="panel active-delivery">
+            <div class="panel-header">
+              <h3>Active Delivery</h3>
+              <span>Order #ORD12845</span>
+            </div>
+
+            <div class="delivery-route">
+              <div class="route-point">
+                <div class="route-icon restaurant">
+                  <i class="fa-solid fa-store"></i>
+                </div>
+                <small>Restaurant</small>
+                <h4>Burger House</h4>
+                <p>
+                  <i class="fa-solid fa-location-dot"></i> New Baneshwor,
+                  Kathmandu
+                </p>
+              </div>
+
+              <div class="route-middle">
+                <div class="dashed-line"></div>
+                <i class="fa-solid fa-motorcycle"></i>
+                <strong>2.4 km</strong>
+              </div>
+
+              <div class="route-point right">
+                <div class="route-icon customer">
+                  <i class="fa-solid fa-user"></i>
+                </div>
+                <small>Customer</small>
+                <h4>Pratyush Dahal</h4>
+                <p>
+                  <i class="fa-solid fa-location-dot"></i> Koteshwor, Kathmandu
+                </p>
+              </div>
+            </div>
+
+            <div class="progress-steps">
+              <div class="step done">
+                <span><i class="fa-solid fa-check"></i></span>
+                <p>Accepted</p>
+              </div>
+
+              <div class="step done">
+                <span><i class="fa-solid fa-check"></i></span>
+                <p>Arrived at Restaurant</p>
+              </div>
+
+              <div class="step">
+                <span></span>
+                <p>Picked Up</p>
+              </div>
+
+              <div class="step">
+                <span></span>
+                <p>On The Way</p>
+              </div>
+
+              <div class="step">
+                <span></span>
+                <p>Delivered</p>
+              </div>
+            </div>
+
+            <div class="delivery-actions">
+              <button class="outline">View Details</button>
+              <button class="outline">Picked Up</button>
+              <button class="outline">On The Way</button>
+              <button class="primary">Delivered</button>
+            </div>
+
+            <div class="note-box">
+              <i class="fa-solid fa-circle-info"></i>
+              Please follow the steps in order and update the status.
+            </div>
+          </div>
+
+          <!-- ZONE CARD -->
+          <div class="panel zone-card">
+            <div class="zone-left">
+              <i class="fa-solid fa-location-dot"></i>
+              <div>
+                <small>Current Zone</small>
+                <h4>New Baneshwor Area</h4>
+                <p>High order volume area</p>
+              </div>
+            </div>
+
+            <div class="zone-right">
+              <small>Zone Incentive</small>
+              <h4>+Rs. 20</h4>
+              <p>Extra per delivery</p>
+            </div>
+
+            <i class="fa-solid fa-chevron-right"></i>
+          </div>
+        </div>
+
+        <!-- RIGHT SIDE -->
+        <aside class="right-panel">
+          <!-- AVAILABLE ORDERS -->
+          <div class="panel">
+            <div class="panel-header">
+              <h3>Available Deliveries</h3>
+              <button class="refresh-btn">
+                <i class="fa-solid fa-rotate-right"></i>
+              </button>
+            </div>
+
+            <div class="order-card">
+              <div>
+                <span>#ORD12846</span>
+                <h4>Pizza Point</h4>
+                <p>Lazimpat, Kathmandu</p>
+              </div>
+
+              <div class="order-meta">
+                <small>2.1 km</small>
+                <strong>Rs. 95</strong>
+                <button class="accept-btn">Accept</button>
+              </div>
+            </div>
+
+            <div class="order-card">
+              <div>
+                <span>#ORD12847</span>
+                <h4>Momo Hub</h4>
+                <p>Thamel, Kathmandu</p>
+              </div>
+
+              <div class="order-meta">
+                <small>3.6 km</small>
+                <strong>Rs. 120</strong>
+                <button class="accept-btn">Accept</button>
+              </div>
+            </div>
+
+            <a class="view-all" href="#"
+              >View All Available Orders <i class="fa-solid fa-arrow-right"></i
+            ></a>
+          </div>
+
+          <!-- RECENT DELIVERIES -->
+          <div class="panel recent-panel">
+            <div class="panel-header">
+              <h3>Recent Deliveries</h3>
+              <a href="#">View All</a>
+            </div>
+
+            <div class="recent-item">
+              <div class="recent-left">
+                <i class="fa-solid fa-circle-check"></i>
+                <div>
+                  <h4>#ORD12844</h4>
+                  <p>Biryani House</p>
+                </div>
+              </div>
+
+              <strong>Rs. 110</strong>
+              <span>Delivered</span>
+              <small>2:45 PM</small>
+            </div>
+
+            <div class="recent-item">
+              <div class="recent-left">
+                <i class="fa-solid fa-circle-check"></i>
+                <div>
+                  <h4>#ORD12843</h4>
+                  <p>Sandwich Corner</p>
+                </div>
+              </div>
+
+              <strong>Rs. 95</strong>
+              <span>Delivered</span>
+              <small>1:15 PM</small>
+            </div>
+          </div>
+        </aside>
+      </section>
+      <div id="toast" class="toast"></div>
+    </main>
+
+    <script src="../js/components/rider-sidebar.js"></script>
+    <script src="../js/components/rider-notifications.js?v=rider-notifications-1"></script>
+    <script src="../js/rider-dashboard.js?v=real-dashboard-1"></script>
+  </body>
+</html>

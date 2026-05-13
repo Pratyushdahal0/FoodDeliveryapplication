@@ -3,318 +3,214 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FoodExpress Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <title>FoodExpress - Dashboard</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../assets/images/brand/foodexpress-favicon-32.png"
     />
     <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      rel="icon"
+      type="image/png"
+      sizes="64x64"
+      href="../assets/images/brand/foodexpress-favicon-64.png"
     />
-    <link rel="stylesheet" href="dashboard.css" />
+
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/dashboard.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
   </head>
   <body>
-    <header class="navbar">
-      <div class="logo">FoodExpress</div>
+    <script>
+      if (!localStorage.getItem("isLoggedIn")) {
+        alert("Please login first");
+        window.location.href = "login.html";
+      }
+    </script>
 
-      <nav class="nav-links">
-        <a href="#" class="active">Home</a>
-        <a href="#">About</a>
-        <a href="#">Shop</a>
-        <a href="#">Food</a>
-        <a href="#">Recipes</a>
-        <a href="#">Contact</a>
-      </nav>
+    <div id="navbarContainer"></div>
 
-      <div class="nav-actions">
-        <div class="search-box">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" placeholder="Search food..." />
-        </div>
-        <button class="login-btn">
-          <i class="fa-regular fa-user"></i>
-          Login
-        </button>
-      </div>
-    </header>
-
-    <main class="dashboard-page">
-      <section class="hero-panel">
-        <div class="profile-left">
-          <div class="avatar-wrap">
-            <div class="avatar">JD</div>
-            <span class="online-dot"></span>
-          </div>
-
-          <div class="profile-info">
-            <h1>Welcome back, <span>John Doe</span>!</h1>
-            <p class="email">john.doe@example.com</p>
-            <div class="member-row">
-              <span class="member-badge">
-                <i class="fa-solid fa-star"></i>
-                Gold Member
-              </span>
-              <span class="divider-dot">•</span>
-              <span class="member-since">Member since Jan 2024</span>
-            </div>
-          </div>
+    <div class="dashboard-container">
+      <div class="welcome-card">
+        <div class="avatar" id="welcomeAvatar" data-profile-avatar>
+          <span id="welcomeAvatarText">JD</span>
+          <div class="avatar-online"></div>
         </div>
 
-        <div class="hero-stats">
-          <div class="stat-item">
-            <h3>127</h3>
+        <div class="welcome-info">
+          <h2>Welcome back, <span id="welcomeName"></span>!</h2>
+          <p class="email" id="welcomeEmail">pratyushdahal33@gmail.com</p>
+        </div>
+
+        <div class="welcome-stats">
+          <div class="stat">
+            <h3 id="ordersCount"></h3>
             <p>Orders</p>
           </div>
-          <div class="stat-item">
-            <h3>850</h3>
+          <div class="stat">
+            <h3 id="pointsCount"></h3>
             <p>Points</p>
           </div>
-          <div class="stat-item">
-            <h3>$25</h3>
+          <div class="stat">
+            <h3 id="savingsAmount">Rs. 0.00</h3>
             <p>Saved</p>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section class="content-grid">
-        <div class="left-column">
-          <section class="rewards-card">
-            <div class="rewards-top">
-              <div>
-                <h2>Rewards Program</h2>
-                <p>You're 150 points away from a free meal!</p>
+      <div class="dashboard-grid">
+        <div class="left-col">
+          <div class="rewards-card">
+            <div class="rewards-header">
+              <h3>Rewards Program</h3>
+              <span class="rewards-icon">🎁</span>
+            </div>
+            <p id="rewardsSubtitle">You're 150 points away from a free meal!</p>
+            <div class="progress-bar">
+              <div class="progress-fill" id="rewardsProgressFill"></div>
+            </div>
+            <div class="rewards-footer">
+              <span id="rewardsProgressText">850 / 1000 points</span>
+              <button
+                class="rewards-btn"
+                id="viewRewardsBtn"
+                onclick="window.location.href = 'rewards.html'"
+              >
+                View Rewards
+              </button>
+            </div>
+          </div>
+
+          <div class="orders-card">
+            <div class="tabs">
+              <button class="tab-btn active" id="recentTab" type="button">
+                <i class="fa-solid fa-bag-shopping"></i> Recent Orders
+              </button>
+              <button class="tab-btn" id="favoriteTab" type="button">
+                <i class="fa-regular fa-heart"></i> Favorites
+              </button>
+            </div>
+
+            <div id="ordersContent">
+              <div id="recentOrdersList"></div>
+              <p id="noRecentOrdersMsg" class="empty-msg" style="display: none">
+                No recent orders yet. Place an order to see it here.
+              </p>
+            </div>
+
+            <button class="view-all-btn" id="viewAllOrdersBtn" type="button">
+              View All Orders <i class="fa-solid fa-chevron-right"></i>
+            </button>
+
+            <div
+              class="favorites-content"
+              id="favoritesContent"
+              style="display: none"
+            >
+              <div id="favoritesList"></div>
+              <p id="noFavoritesMsg" class="empty-msg" style="display: none">
+                No favorites yet. Add items from Shop or Food.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="right-col">
+          <div class="card quick-actions">
+            <h3>Quick Actions</h3>
+
+            <div class="action-item" id="actionBrowseMenu">
+              <div class="action-icon red">🛒</div>
+              <span class="action-label">Browse Menu</span>
+              <i class="fa-solid fa-chevron-right action-arrow"></i>
+            </div>
+
+            <div class="action-item" id="actionTrackOrder">
+              <div class="action-icon dark">
+                <i class="fa-solid fa-box"></i>
               </div>
-              <div class="gift-icon">
+              <span class="action-label">Track Order</span>
+              <i class="fa-solid fa-chevron-right action-arrow"></i>
+            </div>
+
+            <div class="action-item" id="actionRedeemPoints">
+              <div class="action-icon dark">
                 <i class="fa-solid fa-gift"></i>
               </div>
+              <span class="action-label">Redeem Points</span>
+              <i class="fa-solid fa-chevron-right action-arrow"></i>
             </div>
+          </div>
 
-            <div class="progress-bar">
-              <div class="progress-fill"></div>
-            </div>
+          <div class="card account-card">
+            <h3>Account</h3>
 
-            <div class="rewards-bottom">
-              <span>850 / 1000 points</span>
-              <button>View Rewards</button>
-            </div>
-          </section>
-
-          <section class="orders-card">
-            <div class="orders-tabs">
-              <button class="tab active">
-                <i class="fa-solid fa-bag-shopping"></i>
-                Recent Orders
-              </button>
-              <button class="tab">
-                <i class="fa-regular fa-heart"></i>
-                Favorites
-              </button>
-            </div>
-
-            <div class="order-item">
-              <div class="order-main">
-                <img
-                  src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=300&q=80"
-                  alt="Burger"
-                />
-                <div class="order-details">
-                  <h3>Gourmet Burger &amp; Fries</h3>
-                  <p class="restaurant">Burger Palace</p>
-                  <p class="time">
-                    <i class="fa-regular fa-clock"></i>
-                    Today, 2:30 PM
-                  </p>
-                </div>
-              </div>
-
-              <div class="order-actions">
-                <div class="price">$24.99</div>
-                <div class="action-buttons">
-                  <button class="icon-btn">
-                    <i class="fa-solid fa-rotate"></i>
-                  </button>
-                  <button class="reorder-btn">Reorder</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="order-item">
-              <div class="order-main">
-                <img
-                  src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=300&q=80"
-                  alt="Pizza"
-                />
-                <div class="order-details">
-                  <h3>Margherita Pizza</h3>
-                  <p class="restaurant">Italian Bistro</p>
-                  <p class="time">
-                    <i class="fa-regular fa-clock"></i>
-                    Yesterday, 7:15 PM
-                  </p>
-                </div>
-              </div>
-
-              <div class="order-actions">
-                <div class="price">$18.99</div>
-                <div class="action-buttons">
-                  <button class="icon-btn">
-                    <i class="fa-solid fa-rotate"></i>
-                  </button>
-                  <button class="reorder-btn">Reorder</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="order-item">
-              <div class="order-main">
-                <img
-                  src="https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=300&q=80"
-                  alt="Sushi"
-                />
-                <div class="order-details">
-                  <h3>Sushi Platter</h3>
-                  <p class="restaurant">Tokyo Sushi</p>
-                  <p class="time">
-                    <i class="fa-regular fa-clock"></i>
-                    Apr 2, 6:45 PM
-                  </p>
-                </div>
-              </div>
-
-              <div class="order-actions">
-                <div class="price">$32.99</div>
-                <div class="action-buttons">
-                  <button class="icon-btn">
-                    <i class="fa-solid fa-rotate"></i>
-                  </button>
-                  <button class="reorder-btn">Reorder</button>
-                </div>
-              </div>
-            </div>
-
-            <button class="view-all-btn">
-              View All Orders
-              <i class="fa-solid fa-chevron-right"></i>
-            </button>
-          </section>
-        </div>
-
-        <aside class="right-column">
-          <section class="side-card">
-            <h2>Quick Actions</h2>
-
-            <a href="#" class="quick-link pink">
-              <div class="quick-left">
-                <span class="quick-icon red">
-                  <i class="fa-solid fa-bag-shopping"></i>
-                </span>
-                <span>Browse Menu</span>
-              </div>
-              <i class="fa-solid fa-chevron-right"></i>
-            </a>
-
-            <a href="#" class="quick-link">
-              <div class="quick-left">
-                <span class="quick-icon dark">
-                  <i class="fa-solid fa-cube"></i>
-                </span>
-                <span>Track Order</span>
-              </div>
-              <i class="fa-solid fa-chevron-right"></i>
-            </a>
-
-            <a href="#" class="quick-link">
-              <div class="quick-left">
-                <span class="quick-icon dark">
-                  <i class="fa-solid fa-gift"></i>
-                </span>
-                <span>Redeem Points</span>
-              </div>
-              <i class="fa-solid fa-chevron-right"></i>
-            </a>
-          </section>
-
-          <section class="side-card account-card">
-            <h2>Account</h2>
-
-            <a href="#" class="account-link">
+            <div class="account-item" id="actionEditProfile">
               <i class="fa-regular fa-user"></i>
               <span>Edit Profile</span>
-            </a>
+            </div>
 
-            <a href="#" class="account-link">
+            <div class="account-item" id="actionAddresses">
               <i class="fa-solid fa-location-dot"></i>
-              <span>Addresses</span>
-            </a>
+              <span>Delivery Address</span>
+            </div>
 
-            <a href="#" class="account-link">
+            <div class="account-item" id="actionPaymentMethods">
               <i class="fa-regular fa-credit-card"></i>
-              <span>Payment Methods</span>
-            </a>
+              <span>Payment & Checkout</span>
+            </div>
 
-            <a href="#" class="account-link">
+            <div class="account-item" id="actionNotifications">
               <i class="fa-regular fa-bell"></i>
               <span>Notifications</span>
-            </a>
+            </div>
 
-            <a href="#" class="account-link">
-              <i class="fa-solid fa-gear"></i>
-              <span>Settings</span>
-            </a>
+            <div class="account-item" id="actionSettings">
+              <i class="fa-solid fa-sliders"></i>
+              <span>Account Settings</span>
+            </div>
 
-            <hr />
-
-            <a href="#" class="account-link logout">
+            <div class="account-item logout" id="actionLogout">
               <i class="fa-solid fa-right-from-bracket"></i>
               <span>Log Out</span>
-            </a>
-          </section>
-
-          <section class="offer-card">
-            <div class="offer-icon">
-              <i class="fa-solid fa-arrow-trend-up"></i>
             </div>
+          </div>
+
+          <div class="offer-card">
+            <div class="offer-icon">📈</div>
             <h3>Special Offer!</h3>
-            <p>Get 20% off your next order over $30</p>
-            <button>Claim Offer</button>
-          </section>
-        </aside>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <div class="footer-grid">
-        <div>
-          <h3>FoodExpress</h3>
-          <p>Delivering happiness to your doorstep, one meal at a time.</p>
-        </div>
-
-        <div>
-          <h4>Quick Links</h4>
-          <a href="#">Home</a>
-          <a href="#">About Us</a>
-          <a href="#">Our Menu</a>
-          <a href="#">Recipes</a>
-        </div>
-
-        <div>
-          <h4>Support</h4>
-          <a href="#">Help Center</a>
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms of Service</a>
-        </div>
-
-        <div>
-          <h4>Contact</h4>
-          <p>
-            <i class="fa-solid fa-location-dot"></i> 123 Food Street, Culinary
-            City, FC 12345
-          </p>
+            <p>Get 20% off your next order with code FOOD20</p>
+            <button class="offer-btn" type="button" onclick="window.location.href='rewards.html'">Claim Offer</button>
+          </div>
         </div>
       </div>
-    </footer>
+    </div>
+    <footer class="footer" id="footer"></footer>
+
+    <script src="../js/shared.js"></script>
+    <script src="../js/modules/cart.js"></script>
+    <script src="../js/profile.js?v=profilesync2"></script>
+    <script src="../js/components/notifications.js?v=routefix4"></script>
+    <script src="../js/components/navbar.js?v=brandlogo4"></script>
+    <script src="../js/components/footer.js"></script>
+    <script src="../js/dashboard.js?v=dashboard-db-orders-3"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        if (typeof window.renderNavbar === "function") {
+          window.renderNavbar("dashboard");
+        }
+
+        if (typeof window.renderFooter === "function") {
+          window.renderFooter("app");
+        }
+      });
+    </script>
   </body>
 </html>

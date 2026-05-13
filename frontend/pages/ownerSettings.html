@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FoodExpress - Restaurant Settings</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/ownerSettings.css" />
+  </head>
+
+  <body>
+    <!-- NAV -->
+    <nav class="navbar" id="navbar">
+      <div class="container">
+        <div class="navbar-brand">FoodExpress</div>
+
+        <div class="navbar-nav">
+          <a href="ownerdashboard.html" class="nav-link">Dashboard</a>
+          <a href="ownermanagement.html" class="nav-link">Orders</a>
+          <a href="ownerMenu.html" class="nav-link">Menu</a>
+          <a href="ownerearning.html" class="nav-link">Earnings</a>
+          <a href="ownerSettings.html" class="nav-link active">Settings</a>
+        </div>
+
+        <div class="navbar-right">
+          <div class="search-box">
+            <input type="text" placeholder="Search settings..." />
+          </div>
+
+          <div class="hamburger" id="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+          <button class="login-btn" type="button" onclick="logout()">
+            <i class="fa-regular fa-user"></i>
+            Log Out
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="settings-shell">
+      <section class="settings-hero">
+        <div>
+          <span class="eyebrow">Restaurant Control Center</span>
+          <h1 id="settingsTitle">Restaurant Settings</h1>
+          <p>
+            Manage restaurant profile, availability, opening hours, and smart
+            kitchen preparation timing for customer ETA.
+          </p>
+        </div>
+
+        <div class="status-card" id="statusSummary">
+          <span class="status-dot"></span>
+          <strong>Loading...</strong>
+          <small>Checking restaurant status</small>
+        </div>
+      </section>
+
+      <form id="ownerSettingsForm" class="settings-grid">
+        <!-- RESTAURANT PROFILE -->
+        <section class="settings-card wide">
+          <div class="card-heading">
+            <div>
+              <h2>Restaurant Profile</h2>
+              <p>These details appear on the customer shop and menu pages.</p>
+            </div>
+            <i class="fa-solid fa-store"></i>
+          </div>
+
+          <div class="form-grid two">
+            <label>
+              Restaurant Name
+              <input type="text" id="restaurantName" required />
+            </label>
+
+            <label>
+              Cuisine Type
+              <input
+                type="text"
+                id="cuisineType"
+                placeholder="Fast Food, Nepali, Cafe"
+                required
+              />
+            </label>
+
+            <label>
+              City
+              <input type="text" id="city" placeholder="Kathmandu" />
+            </label>
+
+            <label>
+              Phone
+              <input type="text" id="phone" placeholder="98XXXXXXXX" />
+            </label>
+
+            <label>
+              Email
+              <input
+                type="email"
+                id="email"
+                placeholder="restaurant@email.com"
+              />
+            </label>
+
+            <label>
+              Location
+              <input
+                type="text"
+                id="location"
+                placeholder="Street / Area / City"
+                required
+              />
+            </label>
+          </div>
+
+          <label class="full-label">
+            Description
+            <textarea
+              id="description"
+              rows="4"
+              placeholder="Short restaurant description"
+            ></textarea>
+          </label>
+        </section>
+
+        <!-- AVAILABILITY -->
+        <section class="settings-card">
+          <div class="card-heading">
+            <div>
+              <h2>Availability</h2>
+              <p>Control whether customers can order right now.</p>
+            </div>
+            <i class="fa-solid fa-toggle-on"></i>
+          </div>
+
+          <div class="switch-list">
+            <label class="switch-row">
+              <span>
+                <strong>Restaurant Open</strong>
+                <small>Show restaurant as open or closed.</small>
+              </span>
+              <input type="checkbox" id="isOpen" />
+            </label>
+
+            <label class="switch-row">
+              <span>
+                <strong>Accepting Orders</strong>
+                <small>Allow customers to place new orders.</small>
+              </span>
+              <input type="checkbox" id="acceptingOrders" />
+            </label>
+
+            <label class="switch-row">
+              <span>
+                <strong>Busy Mode</strong>
+                <small>Add extra ETA time during kitchen rush.</small>
+              </span>
+              <input type="checkbox" id="busyMode" />
+            </label>
+
+            <label class="switch-row">
+              <span>
+                <strong>Delivery Available</strong>
+                <small>Show delivery availability on shop page.</small>
+              </span>
+              <input type="checkbox" id="deliveryAvailable" />
+            </label>
+          </div>
+        </section>
+
+        <!-- HOURS + ETA -->
+        <section class="settings-card">
+          <div class="card-heading">
+            <div>
+              <h2>Hours & Smart ETA</h2>
+              <p>Used for customer opening time and estimated delivery.</p>
+            </div>
+            <i class="fa-solid fa-clock"></i>
+          </div>
+
+          <div class="form-grid two compact">
+            <label>
+              Opening Time
+              <input type="time" id="openingTime" />
+            </label>
+
+            <label>
+              Closing Time
+              <input type="time" id="closingTime" />
+            </label>
+          </div>
+
+          <label class="full-label">
+            Estimated Kitchen Prep Time
+            <input type="number" id="estimatedPrepMinutes" min="5" max="120" />
+          </label>
+
+          <label class="full-label">
+            Average Rider Handoff Time
+            <input type="number" id="avgHandoffMinutes" min="1" max="60" />
+          </label>
+
+          <div class="eta-preview" id="etaPreview">
+            Smart customer ETA will be calculated using prep time, busy mode,
+            active orders, and rider status.
+          </div>
+        </section>
+
+        <!-- CUSTOMER EXPERIENCE -->
+        <section class="settings-card wide">
+          <div class="card-heading">
+            <div>
+              <h2>Customer Experience</h2>
+              <p>Control what customers see and how ordering works.</p>
+            </div>
+            <i class="fa-solid fa-users"></i>
+          </div>
+
+          <div class="form-grid three">
+            <label>
+              Minimum Order Amount
+              <input type="number" id="minOrderAmount" min="0" step="1" />
+            </label>
+
+            <label>
+              Packaging Fee
+              <input type="number" id="packagingFee" min="0" step="1" />
+            </label>
+
+            <label>
+              Delivery Radius KM
+              <input
+                type="number"
+                id="deliveryRadiusKm"
+                min="1"
+                max="50"
+                step="0.5"
+              />
+            </label>
+          </div>
+
+          <div class="switch-list compact-switches">
+            <label class="switch-row">
+              <span>
+                <strong>Show on Customer Shop</strong>
+                <small
+                  >If off, customers will not see this restaurant in the shop
+                  list.</small
+                >
+              </span>
+              <input type="checkbox" id="showOnShop" />
+            </label>
+
+            <label class="switch-row">
+              <span>
+                <strong>Show Busy Banner</strong>
+                <small
+                  >Show “Kitchen busy, longer ETA” message to customers.</small
+                >
+              </span>
+              <input type="checkbox" id="showBusyBanner" />
+            </label>
+
+            <label class="switch-row">
+              <span>
+                <strong>Preorder Allowed</strong>
+                <small
+                  >Allow customers to place orders outside opening hours.</small
+                >
+              </span>
+              <input type="checkbox" id="preorderAllowed" />
+            </label>
+
+            <label class="switch-row">
+              <span>
+                <strong>Pickup Available</strong>
+                <small>Allow pickup mode if you add pickup later.</small>
+              </span>
+              <input type="checkbox" id="pickupAvailable" />
+            </label>
+
+            <label class="switch-row">
+              <span>
+                <strong>Auto Pause Overload</strong>
+                <small
+                  >Automatically pause new orders when kitchen load is too
+                  high.</small
+                >
+              </span>
+              <input type="checkbox" id="autoPauseOverload" />
+            </label>
+          </div>
+
+          <label class="full-label">
+            Out of Stock Behaviour
+            <select id="outOfStockPolicy">
+              <option value="hide">Hide unavailable items</option>
+              <option value="show_unavailable">Show as unavailable</option>
+            </select>
+          </label>
+        </section>
+
+        <!-- NOTIFICATIONS -->
+        <section class="settings-card wide">
+          <div class="card-heading">
+            <div>
+              <h2>Notifications</h2>
+              <p>
+                Choose which operational alerts the restaurant should receive.
+              </p>
+            </div>
+            <i class="fa-solid fa-bell"></i>
+          </div>
+
+          <div class="switch-list compact-switches">
+            <label class="switch-row">
+              <span>
+                <strong>New Order Alerts</strong>
+                <small>Notify when a new customer order arrives.</small>
+              </span>
+              <input type="checkbox" id="notifyNewOrders" />
+            </label>
+
+            <label class="switch-row">
+              <span>
+                <strong>Cancellation Alerts</strong>
+                <small>Notify when an order is cancelled.</small>
+              </span>
+              <input type="checkbox" id="notifyCancellations" />
+            </label>
+
+            <label class="switch-row">
+              <span>
+                <strong>Low Stock Alerts</strong>
+                <small>Notify when menu stock handling is added later.</small>
+              </span>
+              <input type="checkbox" id="notifyLowStock" />
+            </label>
+
+            <label class="switch-row">
+              <span>
+                <strong>Support Alerts</strong>
+                <small
+                  >Notify when customers contact support about this
+                  restaurant.</small
+                >
+              </span>
+              <input type="checkbox" id="notifySupport" />
+            </label>
+          </div>
+        </section>
+
+        <!-- BRAND IMAGES -->
+        <section class="settings-card wide">
+          <div class="card-heading">
+            <div>
+              <h2>Brand Images</h2>
+              <p>Use hosted image links for logo and restaurant cover photo.</p>
+            </div>
+            <i class="fa-solid fa-image"></i>
+          </div>
+
+          <div class="form-grid two">
+            <label>
+              Logo URL
+              <input type="url" id="logoUrl" placeholder="https://..." />
+            </label>
+
+            <label>
+              Cover Image URL
+              <input type="url" id="coverImageUrl" placeholder="https://..." />
+            </label>
+          </div>
+        </section>
+
+        <!-- ACTIONS -->
+        <section class="settings-actions">
+          <p id="settingsMessage">Loading restaurant settings...</p>
+
+          <div>
+            <button type="button" class="btn-secondary" id="resetBtn">
+              Reset
+            </button>
+
+            <button type="submit" class="btn-primary" id="saveSettingsBtn">
+              <i class="fa-solid fa-floppy-disk"></i>
+              Save Settings
+            </button>
+          </div>
+        </section>
+      </form>
+    </main>
+
+    <!-- Help Button -->
+    <button class="help-btn" type="button">?</button>
+
+    <script src="../js/shared.js"></script>
+    <script src="../js/ownerSettings.js?v=owner-settings-real-1"></script>
+  </body>
+</html>

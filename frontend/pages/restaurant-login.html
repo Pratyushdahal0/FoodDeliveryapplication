@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Restaurant Owner Login - FoodExpress</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg: #f6f8fb;
+        --card: #ffffff;
+        --text: #111827;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --primary: #ff5a1f;
+        --primary-dark: #e14a12;
+        --success: #16a34a;
+        --danger: #dc2626;
+        --shadow: 0 18px 50px rgba(17, 24, 39, 0.08);
+        --radius-lg: 26px;
+        --radius-md: 18px;
+        --radius-sm: 14px;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(180deg, #fff7f2 0%, var(--bg) 26%);
+        color: var(--text);
+      }
+
+      .login-shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+      }
+
+      .login-left {
+        padding: 56px 44px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(255, 90, 31, 0.12),
+            transparent 38%
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(255, 90, 31, 0.08),
+            transparent 30%
+          );
+      }
+
+      .brand-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .brand {
+        font-size: 1.7rem;
+        font-weight: 800;
+        color: var(--primary);
+      }
+
+      .brand-link {
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .top-links {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .top-links a {
+        text-decoration: none;
+        color: var(--text);
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+
+      .hero-copy {
+        max-width: 560px;
+        margin: 48px 0;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 90, 31, 0.1);
+        color: var(--primary);
+        border: 1px solid rgba(255, 90, 31, 0.18);
+        padding: 10px 14px;
+        border-radius: 999px;
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .hero-copy h1 {
+        margin: 18px 0 14px;
+        font-size: clamp(2.4rem, 5vw, 4rem);
+        line-height: 1.06;
+        font-weight: 800;
+      }
+
+      .hero-copy p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 1.02rem;
+        line-height: 1.7;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        max-width: 720px;
+      }
+
+      .feature-card {
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        border-radius: 22px;
+        padding: 18px;
+        box-shadow: 0 12px 35px rgba(17, 24, 39, 0.05);
+      }
+
+      .feature-card h3 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .feature-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.55;
+      }
+
+      .login-right {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 24px;
+      }
+
+      .login-card {
+        width: 100%;
+        max-width: 520px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+        padding: 32px;
+      }
+
+      .login-card h2 {
+        margin: 0 0 8px;
+        font-size: 2rem;
+        font-weight: 800;
+      }
+
+      .login-card .subtitle {
+        margin: 0 0 26px;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .demo-note {
+        margin-bottom: 20px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        color: #9a3412;
+        font-size: 0.92rem;
+        line-height: 1.55;
+      }
+
+      .form-group {
+        margin-bottom: 18px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+
+      .input-wrap {
+        position: relative;
+      }
+
+      .form-group input {
+        width: 100%;
+        min-height: 56px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 14px 16px;
+        font: inherit;
+        color: var(--text);
+        background: #fff;
+        transition:
+          border-color 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: rgba(255, 90, 31, 0.5);
+        box-shadow: 0 0 0 4px rgba(255, 90, 31, 0.12);
+      }
+
+      .password-toggle {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+
+      .row-between {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .remember-me {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.93rem;
+      }
+
+      .forgot-link {
+        color: var(--primary);
+        font-weight: 700;
+        text-decoration: none;
+        font-size: 0.93rem;
+      }
+
+      .login-btn {
+        width: 100%;
+        min-height: 58px;
+        border: none;
+        border-radius: 999px;
+        background: var(--primary);
+        color: white;
+        font-size: 1rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition:
+          transform 0.2s ease,
+          background 0.2s ease,
+          opacity 0.2s ease;
+      }
+
+      .login-btn:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+      }
+
+      .login-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .message-box {
+        display: none;
+        margin-top: 18px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        font-size: 0.93rem;
+        font-weight: 600;
+        line-height: 1.55;
+      }
+
+      .message-box.success {
+        display: block;
+        background: #ecfdf3;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+      }
+
+      .message-box.error {
+        display: block;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+      }
+
+      .bottom-link {
+        margin-top: 22px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .bottom-link a {
+        color: var(--primary);
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .footer-note {
+        margin-top: 16px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 1100px) {
+        .login-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .feature-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .login-left {
+          padding-bottom: 20px;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .login-left,
+        .login-right {
+          padding: 24px 16px;
+        }
+
+        .login-card {
+          padding: 24px 18px;
+          border-radius: 22px;
+        }
+
+        .hero-copy h1 {
+          font-size: 2.2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="login-shell">
+      <section class="login-left">
+        <div>
+          <div class="brand-row">
+            <a href="landingpage.html" class="brand-link">
+              <div class="brand">FoodExpress</div>
+            </a>
+
+            <div class="top-links">
+              <a href="landingpage.html">Home</a>
+              <a href="about.html">About</a>
+              <a href="contact.html">Contact</a>
+            </div>
+          </div>
+
+          <div class="hero-copy">
+            <div class="eyebrow">Restaurant Partner Portal</div>
+            <h1>Run your restaurant like a real delivery business.</h1>
+            <p>
+              Log in to manage incoming orders, update delivery status, track
+              performance, and grow your restaurant on FoodExpress like a modern
+              food delivery platform.
+            </p>
+          </div>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h3>Live order flow</h3>
+              <p>
+                Move orders from pending to confirmed, preparing, on the way,
+                and delivered like a real marketplace.
+              </p>
+            </div>
+
+            <div class="feature-card">
+              <h3>Restaurant-specific dashboard</h3>
+              <p>
+                Each owner should see only their own restaurant’s orders,
+                earnings, and menu.
+              </p>
+            </div>
+
+            <div class="feature-card">
+              <h3>Startup-ready structure</h3>
+              <p>
+                Build now with localStorage, then move the same logic to backend
+                APIs and database later.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="login-right">
+        <div class="login-card">
+          <div id="signupSuccessBanner" style="display:none;background:#dcfce7;border:1px solid #86efac;color:#166534;border-radius:14px;padding:14px 18px;margin-bottom:18px;font-size:14px;font-weight:600;line-height:1.5;"></div>
+          <h2>Owner login</h2>
+          <p class="subtitle">
+            Sign in with your restaurant account to access your management
+            dashboard.
+          </p>
+
+          <div class="demo-note">
+            Use the same email and password that were used during restaurant
+            signup.
+          </div>
+
+          <form id="restaurantLoginForm">
+            <div class="form-group">
+              <label for="ownerEmail">Restaurant email</label>
+              <input
+                type="email"
+                id="ownerEmail"
+                placeholder="restaurant@example.com"
+                autocomplete="email"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="ownerPassword">Password</label>
+              <div class="input-wrap">
+                <input
+                  type="password"
+                  id="ownerPassword"
+                  placeholder="Enter your password"
+                  autocomplete="current-password"
+                />
+                <button
+                  type="button"
+                  class="password-toggle"
+                  id="togglePasswordBtn"
+                >
+                  👁️
+                </button>
+              </div>
+            </div>
+
+            <div class="row-between">
+              <label class="remember-me">
+                <input type="checkbox" id="rememberOwner" />
+                <span>Keep me signed in</span>
+              </label>
+
+              <a href="restaurant-signup.html" class="forgot-link">
+                Need account?
+              </a>
+            </div>
+
+            <button type="submit" class="login-btn" id="ownerLoginBtn">
+              Sign In to Dashboard
+            </button>
+
+            <div id="loginMessage" class="message-box"></div>
+          </form>
+
+          <div class="bottom-link">
+            Don’t have a restaurant account?
+            <a href="restaurant-signup.html">Register your restaurant</a>
+          </div>
+
+          <div class="footer-note">
+            FoodExpress owner access is only for restaurant partners.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="../js/restaurant-login.js?v=db-owner-login-1"></script>
+    <script>
+      (function () {
+        const msg = localStorage.getItem("restaurantSignupSuccess");
+        if (msg) {
+          const banner = document.getElementById("signupSuccessBanner");
+          if (banner) { banner.textContent = msg; banner.style.display = "block"; }
+          localStorage.removeItem("restaurantSignupSuccess");
+        }
+      })();
+    </script>
+  </body>
+</html>

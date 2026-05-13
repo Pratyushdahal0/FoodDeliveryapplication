@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Track Order - FoodExpress</title>
+
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../assets/images/brand/foodexpress-favicon-32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="64x64"
+      href="../assets/images/brand/foodexpress-favicon-64.png"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/track-order.css" />
+    <style>
+      .track-action-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 22px;
+        background: rgba(15, 23, 42, 0.48);
+        backdrop-filter: blur(10px);
+      }
+
+      .track-action-modal.show {
+        display: flex;
+        animation: trackModalFade 0.22s ease;
+      }
+
+      .track-action-box {
+        width: min(420px, 100%);
+        border-radius: 28px;
+        background: #fff;
+        padding: 30px;
+        text-align: center;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+      }
+
+      .track-action-icon {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 18px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #dcfce7;
+        color: #16a34a;
+        font-size: 30px;
+      }
+
+      .track-action-icon.warning {
+        background: #fff7ed;
+        color: #f97316;
+      }
+
+      .track-action-box h3 {
+        margin: 0 0 10px;
+        color: #111827;
+        font-size: 1.45rem;
+        font-weight: 900;
+      }
+
+      .track-action-box p {
+        margin: 0;
+        color: #6b7280;
+        line-height: 1.55;
+        font-weight: 600;
+      }
+
+      @keyframes trackModalFade {
+        from {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="navbarContainer"></div>
+    <div id="trackActionModal" class="track-action-modal">
+      <div class="track-action-box">
+        <div id="trackActionIcon" class="track-action-icon">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h3 id="trackActionTitle">Done</h3>
+        <p id="trackActionMessage">Action completed successfully.</p>
+      </div>
+    </div>
+
+    <main class="track-shell">
+      <section id="emptyOrderState" class="empty-order">
+        <h1>No recent order to track</h1>
+        <p>
+          Once you place an order on FoodExpress, you’ll be able to follow its
+          progress here from restaurant confirmation to delivery at your
+          doorstep.
+        </p>
+        <a href="shop.html">Start a new order</a>
+      </section>
+
+      <section id="trackContent" class="track-content">
+        <div class="track-hero">
+          <div class="track-hero-left">
+            <button
+              class="track-back-btn"
+              type="button"
+              onclick="goBackToDashboard()"
+            >
+              <i class="fa-solid fa-arrow-left"></i>
+              Back to dashboard
+            </button>
+
+            <span class="track-eyebrow">Live delivery tracking</span>
+
+            <h1>Track your latest order</h1>
+            <p>
+              Stay updated as your restaurant prepares your order and your rider
+              gets assigned for delivery.
+            </p>
+          </div>
+
+          <div class="track-hero-right">
+            <div class="track-hero-actions">
+              <a href="dashboard.html" class="track-link-btn">
+                <i class="fa-solid fa-house"></i>
+                Dashboard
+              </a>
+
+              <a href="shop.html" class="track-link-btn">
+                <i class="fa-solid fa-utensils"></i>
+                Browse menu
+              </a>
+
+              <a href="loggedContact.html" class="track-link-btn">
+                <i class="fa-solid fa-headset"></i>
+                Support
+              </a>
+            </div>
+
+            <div class="order-pill" id="orderNumberBadge">#ORDER</div>
+          </div>
+        </div>
+
+        <div class="track-layout">
+          <div class="main-stack">
+            <section class="card">
+              <div class="order-top">
+                <div>
+                  <h2 id="restaurantName">Restaurant</h2>
+                  <p id="deliveryAddress">Delivery address will appear here</p>
+                </div>
+
+                <div class="status-pill status-pending" id="statusPill">
+                  Pending
+                </div>
+              </div>
+
+              <div class="meta-grid">
+                <div class="meta-box">
+                  <span class="label">Estimated arrival</span>
+                  <span class="value" id="etaValue">30–40 min</span>
+                </div>
+
+                <div class="meta-box">
+                  <span class="label">Payment method</span>
+                  <span class="value" id="paymentMethodValue">
+                    Cash on Delivery
+                  </span>
+                </div>
+
+                <div class="meta-box">
+                  <span class="label">Items</span>
+                  <span class="value" id="itemCountValue">0 items</span>
+                </div>
+
+                <div class="meta-box">
+                  <span class="label">Order placed</span>
+                  <span class="value" id="placedTimeValue">Just now</span>
+                </div>
+              </div>
+
+              <div class="timeline-wrap">
+                <div class="progress-track">
+                  <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <div class="steps" id="stepsList">
+                  <div class="step-item" data-step="pending">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Order received</h3>
+                      <p>
+                        Your order has been placed successfully and is waiting
+                        for restaurant confirmation.
+                      </p>
+                      <div class="step-time" id="time-pending"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="confirmed">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Order confirmed</h3>
+                      <p>
+                        The restaurant has accepted your order and is getting
+                        ready to prepare it.
+                      </p>
+                      <div class="step-time" id="time-confirmed"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="preparing">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Preparing your food</h3>
+                      <p>
+                        Your dishes are being freshly prepared in the kitchen.
+                      </p>
+                      <div class="step-time" id="time-preparing"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="rider_assigned">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Rider assigned</h3>
+                      <p>
+                        A nearby rider has accepted your delivery and is waiting
+                        for the restaurant to finish preparing your order.
+                      </p>
+                      <div class="step-time" id="time-rider_assigned"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="ready_for_pickup">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Ready for pickup</h3>
+                      <p>
+                        Your food is ready and waiting for a rider to pick it
+                        up.
+                      </p>
+                      <div class="step-time" id="time-ready_for_pickup"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="picked_up">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Picked up by rider</h3>
+                      <p>
+                        Your rider has picked up the order from the restaurant.
+                      </p>
+                      <div class="step-time" id="time-picked_up"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="on_the_way">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>On the way</h3>
+                      <p>
+                        Your rider is heading to your location with your order.
+                      </p>
+                      <div class="step-time" id="time-on_the_way"></div>
+                    </div>
+                  </div>
+
+                  <div class="step-item" data-step="delivered">
+                    <div class="step-dot"></div>
+                    <div class="step-copy">
+                      <h3>Delivered</h3>
+                      <p>
+                        Your order has arrived. Enjoy your meal and come back
+                        for your next craving.
+                      </p>
+                      <div class="step-time" id="time-delivered"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="live-note" id="liveNote">
+                Your order is now in progress. FoodExpress will keep this page
+                updated as your restaurant and delivery flow moves forward.
+              </div>
+            </section>
+
+            <section class="card delivery-card">
+              <h3>Delivery destination</h3>
+              <p id="deliveryFullText">
+                Delivery details will appear here once your order is placed.
+              </p>
+            </section>
+
+            <section class="card beta-map-card">
+              <div class="beta-map-head">
+                <div>
+                  <h3>Delivery route</h3>
+                  <p id="routeStatusText">
+                    Route details will appear once your order is ready.
+                  </p>
+                </div>
+
+                <span id="routeStagePill" class="route-stage-pill"
+                  >Preparing</span
+                >
+              </div>
+
+              <div class="beta-route-map">
+                <div class="route-line"></div>
+
+                <div class="route-point pickup">
+                  <i class="fa-solid fa-store"></i>
+                  <span id="pickupLabel">Pickup</span>
+                </div>
+
+                <div id="simulatedRouteRider" class="route-rider">
+                  <i class="fa-solid fa-motorcycle"></i>
+                </div>
+
+                <div class="route-point dropoff">
+                  <i class="fa-solid fa-location-dot"></i>
+                  <span id="dropoffLabel">Drop-off</span>
+                </div>
+              </div>
+
+              <div class="route-mini-grid">
+                <div>
+                  <span>ETA</span>
+                  <strong id="routeEtaMini">30–40 min</strong>
+                </div>
+
+                <div>
+                  <span>Rider</span>
+                  <strong id="routeRiderMini">Waiting</strong>
+                </div>
+              </div>
+
+              <a
+                id="openGoogleMapsLink"
+                class="google-directions-btn"
+                href="#"
+                target="_blank"
+                rel="noopener"
+              >
+                <i class="fa-solid fa-map-location-dot"></i>
+                Open route in Google Maps
+              </a>
+            </section>
+          </div>
+
+          <aside class="sidebar">
+            <section class="card">
+              <h2 class="summary-title">Order summary</h2>
+
+              <div id="summaryItems" class="summary-items"></div>
+
+              <div class="divider"></div>
+
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <strong id="subtotalValue">Rs. 0.00</strong>
+              </div>
+
+              <div class="summary-row">
+                <span>Tax</span>
+                <strong id="taxValue">Rs. 0.00</strong>
+              </div>
+
+              <div class="summary-row">
+                <span>Delivery fee</span>
+                <strong id="deliveryFeeValue">Rs. 0.00</strong>
+              </div>
+
+              <div class="summary-row" id="discountRow" style="display: none">
+                <span>Discount</span>
+                <strong id="discountValue">-Rs. 0.00</strong>
+              </div>
+
+              <div class="summary-row total">
+                <span>Total</span>
+                <span id="totalValue">Rs. 0.00</span>
+              </div>
+            </section>
+
+            <section class="card track-help-card">
+              <h3>Need help?</h3>
+              <p>
+                If your order is delayed or details look wrong, contact support
+                with your order number.
+              </p>
+
+              <div class="action-stack">
+                <button
+                  class="primary-btn"
+                  type="button"
+                  onclick="reorderLatestOrder()"
+                >
+                  Reorder these items
+                </button>
+
+                <button
+                  class="secondary-btn cancel-order-btn"
+                  type="button"
+                  id="cancelOrderBtn"
+                  onclick="openCancelOrderModal()"
+                  style="
+                    display: none;
+                    background: #fff0ef;
+                    color: #dc2626;
+                    border: 1.5px solid #fca5a5;
+                  "
+                >
+                  <i class="fa-solid fa-xmark"></i> Cancel order
+                </button>
+
+                <a
+                  class="secondary-btn track-action-link"
+                  href="loggedContact.html"
+                >
+                  Contact support
+                </a>
+
+                <button
+                  class="secondary-btn"
+                  type="button"
+                  onclick="goBackToDashboard()"
+                >
+                  Back to dashboard
+                </button>
+              </div>
+
+              <!-- Cancel order modal -->
+              <div
+                id="cancelOrderModal"
+                style="
+                  display: none;
+                  position: fixed;
+                  inset: 0;
+                  z-index: 9999;
+                  background: rgba(15, 23, 42, 0.5);
+                  backdrop-filter: blur(8px);
+                  align-items: center;
+                  justify-content: center;
+                  padding: 20px;
+                "
+              >
+                <div
+                  style="
+                    background: #fff;
+                    border-radius: 24px;
+                    padding: 36px;
+                    max-width: 420px;
+                    width: 100%;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+                  "
+                >
+                  <div
+                    style="
+                      width: 56px;
+                      height: 56px;
+                      background: #fee2e2;
+                      border-radius: 50%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      margin: 0 auto 20px;
+                      font-size: 24px;
+                      color: #dc2626;
+                    "
+                  >
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                  </div>
+                  <h3
+                    style="
+                      text-align: center;
+                      font-size: 20px;
+                      color: #12203a;
+                      margin-bottom: 10px;
+                    "
+                  >
+                    Cancel this order?
+                  </h3>
+                  <p
+                    style="
+                      text-align: center;
+                      color: #6b7280;
+                      font-size: 14px;
+                      margin-bottom: 20px;
+                    "
+                  >
+                    You can only cancel before the restaurant confirms. This
+                    cannot be undone.
+                  </p>
+                  <textarea
+                    id="cancelReasonInput"
+                    placeholder="Reason for cancelling (optional)"
+                    style="
+                      width: 100%;
+                      padding: 12px;
+                      border: 1.5px solid #e5e7eb;
+                      border-radius: 12px;
+                      font-size: 14px;
+                      resize: none;
+                      height: 80px;
+                      margin-bottom: 16px;
+                      font-family: inherit;
+                    "
+                  ></textarea>
+                  <div style="display: flex; gap: 10px">
+                    <button
+                      onclick="closeCancelOrderModal()"
+                      style="
+                        flex: 1;
+                        padding: 12px;
+                        border-radius: 999px;
+                        border: 1.5px solid #e5e7eb;
+                        background: #f9fafb;
+                        font-weight: 700;
+                        cursor: pointer;
+                      "
+                    >
+                      Keep order
+                    </button>
+                    <button
+                      onclick="confirmCancelOrder()"
+                      id="confirmCancelBtn"
+                      style="
+                        flex: 1;
+                        padding: 12px;
+                        border-radius: 999px;
+                        border: none;
+                        background: #dc2626;
+                        color: #fff;
+                        font-weight: 700;
+                        cursor: pointer;
+                      "
+                    >
+                      Yes, cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <!-- ── Rider Location Map ────────────────────────── -->
+        <section
+          class="fe-rider-map-section"
+          id="riderMapSection"
+          style="display: none"
+        >
+          <div class="fe-rider-map-header">
+            <div class="fe-rider-map-header-info">
+              <h3><i class="fa-solid fa-location-dot"></i> Rider Location</h3>
+              <p id="riderMapLabel">Locating your rider…</p>
+            </div>
+            <span class="fe-rider-map-live"><span></span> Live</span>
+          </div>
+          <div class="fe-rider-map-frame-wrap">
+            <iframe
+              id="riderMapIframe"
+              frameborder="0"
+              scrolling="no"
+              marginheight="0"
+              marginwidth="0"
+              style="
+                width: 100%;
+                height: 280px;
+                border-radius: 16px;
+                border: 1.5px solid #e5e7eb;
+                display: block;
+              "
+              title="Rider location map"
+              src="about:blank"
+            ></iframe>
+            <div
+              id="riderMapNoGps"
+              style="
+                display: none;
+                text-align: center;
+                padding: 40px 20px;
+                color: #9ca3af;
+              "
+            >
+              <i
+                class="fa-solid fa-satellite-dish"
+                style="
+                  font-size: 28px;
+                  opacity: 0.4;
+                  display: block;
+                  margin-bottom: 10px;
+                "
+              ></i>
+              <p style="margin: 0; font-size: 13px">
+                Rider location not available yet
+              </p>
+            </div>
+          </div>
+        </section>
+        <!-- ── /Rider Location Map ───────────────────────── -->
+
+        <!-- ── Order Chat ─────────────────────────────────── -->
+        <section
+          class="fe-chat-section"
+          id="orderChatSection"
+          style="display: none"
+        >
+          <div class="fe-chat-header">
+            <div class="fe-chat-header-info">
+              <h3><i class="fa-solid fa-comments"></i> Order Chat</h3>
+              <p>Chat with your delivery rider</p>
+            </div>
+            <span class="fe-chat-unread" id="chatUnreadBadge">0</span>
+          </div>
+
+          <div class="fe-chat-messages" id="chatMessages"></div>
+
+          <div class="fe-chat-quick">
+            <button
+              type="button"
+              class="fe-chat-quick-btn"
+              data-quick-msg="I'm outside, please come to the door."
+            >
+              <i class="fa-solid fa-door-open"></i> I'm outside
+            </button>
+            <button
+              type="button"
+              class="fe-chat-quick-btn"
+              data-quick-msg="Where is my order?"
+            >
+              <i class="fa-solid fa-map-marker-alt"></i> Where is my order?
+            </button>
+            <button
+              type="button"
+              class="fe-chat-quick-btn"
+              data-quick-msg="Please call me."
+            >
+              <i class="fa-solid fa-phone"></i> Please call me
+            </button>
+          </div>
+
+          <div class="fe-chat-input-row">
+            <input
+              type="text"
+              class="fe-chat-input"
+              placeholder="Message your rider…"
+              maxlength="500"
+              autocomplete="off"
+            />
+            <button type="button" class="fe-chat-send-btn" title="Send message">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </section>
+        <!-- ── /Order Chat ────────────────────────────────── -->
+      </section>
+    </main>
+
+    <footer class="footer" id="footer"></footer>
+
+    <script src="../js/profile.js?v=profile1"></script>
+    <script src="../js/shared.js?v=shared1"></script>
+    <script src="../js/modules/cart.js?v=cartstable1"></script>
+    <script src="../js/components/notifications.js?v=routefix3"></script>
+    <script src="../js/components/navbar.js?v=navtrack2"></script>
+    <script src="../js/reward.js?v=reward1"></script>
+    <script src="../js/track-order.js?v=route-beta-1"></script>
+    <script src="../js/components/footer.js"></script>
+    <script src="../js/components/chat.js"></script>
+
+    <style>
+      .fe-rider-map-section {
+        border-radius: 24px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        padding: 22px;
+        box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06);
+        margin-top: 20px;
+      }
+      .fe-rider-map-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        gap: 10px;
+      }
+      .fe-rider-map-header-info h3 {
+        font-size: 1rem;
+        font-weight: 900;
+        color: #111827;
+        margin: 0 0 3px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .fe-rider-map-header-info h3 i {
+        color: #f97316;
+      }
+      .fe-rider-map-header-info p {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+      }
+      .fe-rider-map-live {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #16a34a;
+        background: #dcfce7;
+        border: 1.5px solid #86efac;
+        border-radius: 999px;
+        padding: 4px 12px;
+        flex-shrink: 0;
+      }
+      .fe-rider-map-live span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #16a34a;
+        display: inline-block;
+        animation: mapLivePulse 1.5s ease-in-out infinite;
+      }
+      @keyframes mapLivePulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.35;
+        }
+      }
+      .fe-rider-map-frame-wrap {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+    </style>
+
+    <script>
+      /* ── Rider location map polling ──────────────────────── */
+      (function () {
+        var LOCATION_API =
+          "../../backend/controllers/RiderLocationController.php";
+        var _mapTimer = null;
+        var _mapAttempts = 0;
+        var _lastSrc = "";
+
+        function osmUrl(lat, lng) {
+          var d = 0.003;
+          return (
+            "https://www.openstreetmap.org/export/embed.html" +
+            "?bbox=" +
+            (lng - d) +
+            "," +
+            (lat - d) +
+            "," +
+            (lng + d) +
+            "," +
+            (lat + d) +
+            "&layer=mapnik&marker=" +
+            lat +
+            "," +
+            lng
+          );
+        }
+
+        function updateMap(lat, lng, riderName) {
+          var section = document.getElementById("riderMapSection");
+          var iframe = document.getElementById("riderMapIframe");
+          var label = document.getElementById("riderMapLabel");
+          var noGps = document.getElementById("riderMapNoGps");
+          if (!section) return;
+
+          section.style.display = "";
+          if (label)
+            label.textContent = riderName
+              ? riderName + " is on the way"
+              : "Rider is on the way";
+
+          var src = osmUrl(lat, lng);
+          if (src !== _lastSrc) {
+            _lastSrc = src;
+            if (iframe) iframe.src = src;
+          }
+          if (iframe) iframe.style.display = "block";
+          if (noGps) noGps.style.display = "none";
+        }
+
+        function showNoGps(riderName) {
+          var section = document.getElementById("riderMapSection");
+          var iframe = document.getElementById("riderMapIframe");
+          var label = document.getElementById("riderMapLabel");
+          var noGps = document.getElementById("riderMapNoGps");
+          if (!section) return;
+
+          section.style.display = "";
+          if (label)
+            label.textContent = riderName
+              ? riderName + " assigned"
+              : "Rider assigned";
+          if (iframe) iframe.style.display = "none";
+          if (noGps) noGps.style.display = "block";
+        }
+
+        async function pollLocation(orderId) {
+          try {
+            var resp = await fetch(
+              LOCATION_API +
+                "?action=get_location&order_id=" +
+                orderId +
+                "&_=" +
+                Date.now(),
+            );
+            var data = await resp.json();
+            if (!data.success) return;
+            if (data.has_location) {
+              updateMap(data.latitude, data.longitude, data.rider_name);
+            } else {
+              showNoGps(data.rider_name);
+            }
+          } catch (e) {}
+        }
+
+        function tryInitMap() {
+          var order = null;
+          try {
+            order = JSON.parse(localStorage.getItem("lastOrder") || "null");
+          } catch (e) {}
+          var orderId = order && (order.id || order.orderId || order.order_id);
+          if (!orderId) {
+            if (++_mapAttempts < 20) setTimeout(tryInitMap, 1000);
+            return;
+          }
+
+          pollLocation(orderId);
+          _mapTimer = setInterval(function () {
+            pollLocation(orderId);
+          }, 10000);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+          setTimeout(tryInitMap, 2000);
+        });
+
+        window.addEventListener("beforeunload", function () {
+          if (_mapTimer) clearInterval(_mapTimer);
+        });
+      })();
+    </script>
+
+    <script>
+      /* ── Customer chat init ──────────────────────────────── */
+      (function () {
+        var _chatAttempts = 0;
+        function tryInitCustomerChat() {
+          var order = null;
+          try {
+            order = JSON.parse(localStorage.getItem("lastOrder") || "null");
+          } catch (e) {}
+          var orderId = order && (order.id || order.orderId || order.order_id);
+          if (!orderId) {
+            if (++_chatAttempts < 15) setTimeout(tryInitCustomerChat, 1000);
+            return;
+          }
+          var section = document.getElementById("orderChatSection");
+          if (section) section.style.display = "";
+          window.FoodExpressChat.init({
+            containerId: "orderChatSection",
+            orderId: Number(orderId),
+            senderRole: "customer",
+            senderName: localStorage.getItem("userName") || "Customer",
+            senderEmail: localStorage.getItem("userEmail") || "",
+          });
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+          setTimeout(tryInitCustomerChat, 1500);
+        });
+      })();
+    </script>
+
+    <script>
+      function initTrackNavbar(attempt = 0) {
+        const container = document.getElementById("navbarContainer");
+        if (!container) return;
+
+        if (typeof window.renderNavbar === "function") {
+          window.renderNavbar("track");
+        } else if (typeof window.getLoggedInNavbar === "function") {
+          container.innerHTML = window.getLoggedInNavbar("track");
+        }
+
+        if (!container.innerHTML.trim() && attempt < 15) {
+          setTimeout(function () {
+            initTrackNavbar(attempt + 1);
+          }, 100);
+          return;
+        }
+
+        if (typeof window.initializeCartCount === "function") {
+          window.initializeCartCount();
+        }
+
+        if (typeof window.bindNotificationBell === "function") {
+          window.bindNotificationBell();
+        }
+      }
+
+      function initTrackFooter(attempt = 0) {
+        if (typeof window.renderFooter === "function") {
+          window.renderFooter("none");
+          return;
+        }
+
+        if (attempt < 10) {
+          setTimeout(function () {
+            initTrackFooter(attempt + 1);
+          }, 100);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initTrackNavbar();
+        initTrackFooter();
+      });
+    </script>
+  </body>
+</html>

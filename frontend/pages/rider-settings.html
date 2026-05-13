@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings - FoodExpress</title>
+
+    <link rel="stylesheet" href="../css/rider-layout.css" />
+    <link rel="stylesheet" href="../css/rider-settings.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <div id="sidebar"></div>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn" id="menuToggle">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <div class="topbar-right">
+          <span class="online-pill" id="onlinePill">
+            <span></span>
+            <b id="onlineText">Online</b>
+          </span>
+
+          <button class="notification-btn">
+            <i class="fa-regular fa-bell"></i>
+            <small>2</small>
+          </button>
+
+          <div class="rider-profile">
+            <img
+              id="topbarAvatar"
+              src="https://i.pravatar.cc/80?img=12"
+              alt="Rider profile"
+            />
+            <div>
+              <h4 id="topbarName">Ramesh Tamang</h4>
+              <p id="topbarId">Rider ID: RID-1001</p>
+            </div>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+        </div>
+      </header>
+
+      <section class="settings-page">
+        <div class="page-header">
+          <div>
+            <span class="eyebrow">Rider Control Center</span>
+            <h1>Settings</h1>
+            <p>
+              Manage your availability, payout method, notifications, security,
+              and app preferences.
+            </p>
+          </div>
+
+          <div class="page-actions">
+            <button class="reset-btn" id="resetSettingsBtn">
+              <i class="fa-solid fa-rotate-left"></i>
+              Reset
+            </button>
+
+            <button class="save-btn" id="saveSettingsTopBtn">
+              <i class="fa-solid fa-check"></i>
+              Save Changes
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-alert" id="settingsAlert">
+          <i class="fa-solid fa-circle-info"></i>
+          <span id="settingsAlertText">
+            Your availability status controls whether you receive new delivery
+            requests.
+          </span>
+        </div>
+
+        <section class="settings-layout">
+          <div class="settings-left">
+            <!-- Availability -->
+            <section class="settings-card">
+              <div class="card-header">
+                <div>
+                  <h3>Availability Settings</h3>
+                  <p>Control when and how you receive delivery requests.</p>
+                </div>
+
+                <span class="status-badge" id="availabilityBadge">Online</span>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-icon green">
+                    <i class="fa-solid fa-signal"></i>
+                  </div>
+                  <div>
+                    <h4>Online Status</h4>
+                    <p>Turn off when you do not want to receive new orders.</p>
+                  </div>
+                </div>
+
+                <label class="switch">
+                  <input type="checkbox" id="onlineToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-icon orange">
+                    <i class="fa-solid fa-bolt"></i>
+                  </div>
+                  <div>
+                    <h4>Auto Accept Orders</h4>
+                    <p>
+                      Automatically accept suitable jobs inside your radius.
+                    </p>
+                  </div>
+                </div>
+
+                <label class="switch">
+                  <input type="checkbox" id="autoAcceptToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-icon yellow">
+                    <i class="fa-solid fa-mug-hot"></i>
+                  </div>
+                  <div>
+                    <h4>Break Mode</h4>
+                    <p>Pause new requests while staying logged in.</p>
+                  </div>
+                </div>
+
+                <label class="switch">
+                  <input type="checkbox" id="breakModeToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="deliveryRadius">Delivery Radius</label>
+                  <select id="deliveryRadius">
+                    <option value="3">3 km</option>
+                    <option value="5">5 km</option>
+                    <option value="8">8 km</option>
+                    <option value="10">10 km</option>
+                    <option value="15">15 km</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="preferredArea">Preferred Area</label>
+                  <input
+                    type="text"
+                    id="preferredArea"
+                    placeholder="Kathmandu"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <!-- Notifications -->
+            <section class="settings-card">
+              <div class="card-header">
+                <div>
+                  <h3>Notification Preferences</h3>
+                  <p>Choose what alerts you want to receive.</p>
+                </div>
+              </div>
+
+              <div class="mini-setting">
+                <div>
+                  <h4>New Order Alerts</h4>
+                  <p>Notify when a new delivery request is available.</p>
+                </div>
+                <label class="switch small">
+                  <input type="checkbox" id="newOrdersToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="mini-setting">
+                <div>
+                  <h4>Payout Alerts</h4>
+                  <p>Notify when payouts are processed or failed.</p>
+                </div>
+                <label class="switch small">
+                  <input type="checkbox" id="payoutAlertsToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="mini-setting">
+                <div>
+                  <h4>Support Messages</h4>
+                  <p>Notify when support replies to your ticket.</p>
+                </div>
+                <label class="switch small">
+                  <input type="checkbox" id="supportMessagesToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="mini-setting">
+                <div>
+                  <h4>Promotions</h4>
+                  <p>Receive bonus campaign and incentive updates.</p>
+                </div>
+                <label class="switch small">
+                  <input type="checkbox" id="promotionsToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="mini-setting">
+                <div>
+                  <h4>Sound Alerts</h4>
+                  <p>Play sound for urgent delivery requests.</p>
+                </div>
+                <label class="switch small">
+                  <input type="checkbox" id="soundToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="mini-setting">
+                <div>
+                  <h4>Email Notifications</h4>
+                  <p>Send important updates to your email.</p>
+                </div>
+                <label class="switch small">
+                  <input type="checkbox" id="emailToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="mini-setting">
+                <div>
+                  <h4>SMS Notifications</h4>
+                  <p>Send urgent updates to your phone number.</p>
+                </div>
+                <label class="switch small">
+                  <input type="checkbox" id="smsToggle" />
+                  <span></span>
+                </label>
+              </div>
+            </section>
+
+            <!-- Security -->
+            <section class="settings-card">
+              <div class="card-header">
+                <div>
+                  <h3>Security Settings</h3>
+                  <p>Protect your rider account.</p>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-icon blue">
+                    <i class="fa-solid fa-shield-halved"></i>
+                  </div>
+                  <div>
+                    <h4>Two-step Verification</h4>
+                    <p>Add extra security before sensitive actions.</p>
+                  </div>
+                </div>
+
+                <label class="switch">
+                  <input type="checkbox" id="twoFactorToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-icon purple">
+                    <i class="fa-solid fa-location-dot"></i>
+                  </div>
+                  <div>
+                    <h4>Login Alerts</h4>
+                    <p>Get alerts when login happens from a new device.</p>
+                  </div>
+                </div>
+
+                <label class="switch">
+                  <input type="checkbox" id="loginAlertsToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="security-actions">
+                <button class="outline-btn" id="changePasswordBtn">
+                  <i class="fa-solid fa-lock"></i>
+                  Change Password
+                </button>
+
+                <button
+                  class="outline-btn danger-outline"
+                  id="logoutDevicesBtn"
+                >
+                  <i class="fa-solid fa-right-from-bracket"></i>
+                  Logout All Devices
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <aside class="settings-right">
+            <!-- Payout -->
+            <section class="settings-card payout-card">
+              <div class="card-header">
+                <div>
+                  <h3>Payout Settings</h3>
+                  <p>Manage your withdrawal method.</p>
+                </div>
+
+                <span class="verified-badge">
+                  <i class="fa-solid fa-circle-check"></i>
+                  Verified
+                </span>
+              </div>
+
+              <div class="form-group">
+                <label for="payoutMethod">Preferred Payout Method</label>
+                <select id="payoutMethod">
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="eSewa">eSewa</option>
+                  <option value="Khalti">Khalti</option>
+                </select>
+              </div>
+
+              <div class="form-group bank-field">
+                <label for="bankName">Bank Name</label>
+                <input type="text" id="bankName" placeholder="Nabil Bank" />
+              </div>
+
+              <div class="form-group bank-field">
+                <label for="accountName">Account Holder Name</label>
+                <input
+                  type="text"
+                  id="accountName"
+                  placeholder="Ramesh Tamang"
+                />
+              </div>
+
+              <div class="form-group bank-field">
+                <label for="accountNumber">Account Number</label>
+                <input
+                  type="text"
+                  id="accountNumber"
+                  placeholder="XXXXXXXX1234"
+                />
+              </div>
+
+              <div class="form-group wallet-field" id="walletField">
+                <label for="walletNumber">Wallet Number</label>
+                <input
+                  type="text"
+                  id="walletNumber"
+                  placeholder="+977 9800000000"
+                />
+              </div>
+
+              <div class="payout-note">
+                <i class="fa-solid fa-circle-info"></i>
+                Withdrawals may be reviewed before final approval.
+              </div>
+            </section>
+
+            <!-- Preferences -->
+            <section class="settings-card">
+              <div class="card-header">
+                <div>
+                  <h3>App Preferences</h3>
+                  <p>Customize your dashboard experience.</p>
+                </div>
+              </div>
+
+              <div class="mini-setting">
+                <div>
+                  <h4>Dark Mode</h4>
+                  <p>Use darker interface for night shifts.</p>
+                </div>
+                <label class="switch small">
+                  <input type="checkbox" id="darkModeToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="mini-setting">
+                <div>
+                  <h4>Compact Dashboard</h4>
+                  <p>Show more data with reduced spacing.</p>
+                </div>
+                <label class="switch small">
+                  <input type="checkbox" id="compactModeToggle" />
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label for="languageSelect">Language</label>
+                <select id="languageSelect">
+                  <option value="English">English</option>
+                  <option value="Nepali">Nepali</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="currencySelect">Currency</label>
+                <select id="currencySelect">
+                  <option value="NPR">NPR / Rs.</option>
+                </select>
+              </div>
+            </section>
+
+            <!-- Account Actions -->
+            <section class="settings-card danger-card">
+              <div class="card-header">
+                <div>
+                  <h3>Account Actions</h3>
+                  <p>Manage sensitive account actions carefully.</p>
+                </div>
+              </div>
+
+              <button class="danger-action" id="downloadDataBtn">
+                <span>
+                  <i class="fa-solid fa-download"></i>
+                  Download Account Data
+                </span>
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+
+              <button class="danger-action" id="deleteAccountBtn">
+                <span>
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  Request Account Deletion
+                </span>
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </section>
+
+            <button class="save-bottom-btn" id="saveSettingsBottomBtn">
+              <i class="fa-solid fa-floppy-disk"></i>
+              Save Settings
+            </button>
+          </aside>
+        </section>
+      </section>
+    </main>
+
+    <div class="toast" id="toast">
+      <i class="fa-solid fa-circle-check"></i>
+      <span id="toastMessage">Settings saved successfully.</span>
+    </div>
+
+    <script src="../js/components/rider-sidebar.js"></script>
+    <script src="../js/components/rider-notifications.js?v=rider-notifications-1"></script>
+    <script src="../js/rider-settings.js"></script>
+  </body>
+</html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Users - FoodExpress</title>
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <nav class="admin-navbar">
+      <div class="container">
+        <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+
+        <div class="admin-nav-links">
+          <a href="admin-dashboard.html">Dashboard</a>
+          <a href="admin-restaurants.html">Restaurants</a>
+          <a href="admin-orders.html">Orders</a>
+          <a href="admin-users.html" class="active">Users</a>
+          <a href="admin-messages.html">Messages</a>
+        </div>
+
+        <button class="admin-logout-btn" type="button" onclick="adminLogout()">
+          Log out
+        </button>
+      </div>
+    </nav>
+
+    <main class="page-shell">
+      <div class="page-header">
+        <div>
+          <h1>User Management</h1>
+          <p>
+            Manage customers, restaurant owners, delivery riders, and account
+            status from one place.
+          </p>
+        </div>
+
+        <div class="page-pill">
+          <i class="fa-solid fa-users"></i>
+          Platform Users
+        </div>
+      </div>
+
+      <div id="messageBar" class="message-bar"></div>
+
+      <section class="controls-card">
+        <div class="controls-row users-controls-row">
+          <input
+            id="searchInput"
+            class="search-input"
+            type="text"
+            placeholder="Search name, email, phone..."
+          />
+
+          <select id="roleFilter" class="filter-select">
+            <option value="all">All Roles</option>
+            <option value="customer">Customers</option>
+            <option value="restaurant-owner">Restaurant Owners</option>
+            <option value="delivery-rider">Delivery Riders</option>
+            <option value="admin">Admins</option>
+          </select>
+
+          <select id="statusFilter" class="filter-select">
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="blocked">Blocked</option>
+          </select>
+
+          <button id="refreshBtn" class="refresh-btn" type="button">
+            Refresh Users
+          </button>
+        </div>
+      </section>
+
+      <section class="table-card">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Contact</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="6">
+                  <div class="loading-state">
+                    <h3>Loading users...</h3>
+                    <p>Please wait while FoodExpress fetches user accounts.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div id="userOrdersModal" class="modal">
+      <div class="modal-content">
+        <button id="closeUserOrdersModal" class="modal-close" type="button">
+          &times;
+        </button>
+        <div id="userOrdersBody"></div>
+      </div>
+    </div>
+
+    <script>
+      function adminLogout() {
+        localStorage.removeItem("foodExpressCurrentAdmin");
+        localStorage.removeItem("isAdminLoggedIn");
+        window.location.href = "login.html";
+      }
+    </script>
+
+    <script src="../js/admin-users.js"></script>
+  </body>
+</html>

@@ -1,0 +1,341 @@
+/* ===== HOME CSS - Landing Page Styles ===== */
+
+/* ===== HERO SECTION ===== */
+.hero {
+  background: var(--bg-light);
+  padding: 70px 0 80px;
+  overflow: hidden;
+}
+
+.hero .container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.hero-content { animation: fadeInLeft 0.7s ease; }
+
+.hero-title {
+  font-size: 3.2rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--text-dark);
+  margin-bottom: 20px;
+  letter-spacing: -0.03em;
+}
+.hero-title span { color: var(--primary); }
+
+.hero-subtitle {
+  font-size: 1.05rem;
+  color: var(--text-gray);
+  margin-bottom: 36px;
+  line-height: 1.75;
+  max-width: 420px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.hero-image {
+  animation: fadeInRight 0.7s ease;
+}
+.hero-image img {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+}
+
+/* ===== STATS STRIP ===== */
+.stats-strip {
+  padding: 40px 0;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.stats-strip .container {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  flex-wrap: wrap;
+}
+.stat-item {
+  text-align: center;
+}
+.stat-number {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--primary);
+  display: block;
+}
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-gray);
+  font-weight: 500;
+}
+
+/* ===== CATEGORIES ===== */
+.categories {
+  padding: 72px 0;
+}
+.section-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.section-header p {
+  color: var(--text-gray);
+  margin-top: 10px;
+  font-size: 1rem;
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+
+.category-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 16px;
+  border-radius: var(--radius-md);
+  background: #fff;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: center;
+}
+.category-card:hover, .category-card.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+.category-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+.category-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+/* ===== FEATURED FOODS ===== */
+.featured-foods {
+  padding: 72px 0;
+  background: var(--bg-light);
+}
+
+.featured-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 40px;
+}
+.view-all {
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: gap var(--transition);
+}
+.view-all:hover { gap: 8px; }
+
+.foods-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+/* ===== FOOD CARD ===== */
+.food-card {
+  background: #fff;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition);
+  cursor: pointer;
+}
+.food-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+}
+
+.food-card-image {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+.food-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.food-card:hover .food-card-image img { transform: scale(1.07); }
+.food-card-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+}
+.food-card-heart {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.food-card-body {
+  padding: 16px;
+}
+.food-card-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+.food-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.82rem;
+  color: var(--text-gray);
+  margin-bottom: 14px;
+}
+.food-card-rating { color: #f59e0b; font-weight: 600; }
+.food-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.food-card-price {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+.add-btn {
+  width: 34px;
+  height: 34px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all var(--transition);
+  font-weight: 700;
+}
+.add-btn:hover { background: var(--primary-dark); transform: scale(1.12); }
+
+/* ===== HOW IT WORKS ===== */
+.how-it-works {
+  padding: 80px 0;
+}
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  margin-top: 48px;
+  position: relative;
+}
+.step-card {
+  text-align: center;
+  padding: 32px 20px;
+  position: relative;
+}
+.step-number {
+  width: 52px;
+  height: 52px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0 auto 16px;
+}
+.step-icon {
+  font-size: 2.2rem;
+  margin-bottom: 14px;
+}
+.step-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.step-desc {
+  font-size: 0.88rem;
+  color: var(--text-gray);
+  line-height: 1.6;
+}
+
+/* ===== CTA BANNER ===== */
+.cta-banner {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  padding: 64px 0;
+  text-align: center;
+  color: #fff;
+}
+.cta-banner h2 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+.cta-banner p {
+  font-size: 1.05rem;
+  opacity: 0.9;
+  margin-bottom: 32px;
+}
+.btn-white {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  color: var(--primary);
+  padding: 13px 32px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all var(--transition);
+}
+.btn-white:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.18); }
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .categories-grid { grid-template-columns: repeat(3, 1fr); }
+  .foods-grid { grid-template-columns: repeat(2, 1fr); }
+  .steps-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .hero .container { grid-template-columns: 1fr; gap: 32px; }
+  .hero-title { font-size: 2.2rem; }
+  .hero-image { display: none; }
+  .stats-strip .container { gap: 28px; }
+  .featured-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+@media (max-width: 480px) {
+  .categories-grid { grid-template-columns: repeat(2, 1fr); }
+  .foods-grid { grid-template-columns: 1fr; }
+  .steps-grid { grid-template-columns: 1fr; }
+}
