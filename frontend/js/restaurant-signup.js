@@ -8,8 +8,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const nextButtons = document.querySelectorAll("[data-next]");
   const prevButtons = document.querySelectorAll("[data-prev]");
 
+  const OWNER_SETTINGS_API = "../../backend/controllers/OwnerSettingsController.php";
+
   let currentStep   = 1;
   let pendingEmail  = "";
+  let pendingUserId = 0;
   let emailVerified = false;
 
   /* ── restore any partially filled step 1 data ── */
@@ -217,7 +220,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      pendingEmail = s1.restaurantEmail;
+      pendingEmail  = s1.restaurantEmail;
+      pendingUserId = Number(result.data?.id || result.data?.user_id || 0);
 
       /* update info-box to show the actual email */
       const infoBox = document.querySelector('[data-panel="3"] .info-box');
@@ -345,32 +349,57 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     if (!validateStep(5)) return;
 
+    if (!emailVerified) {
+      showStepError("Please complete email verification before submitting.");
+      return;
+    }
+
     const submitBtn = form.querySelector('[type="submit"]');
     const origLabel = submitBtn?.textContent?.trim() || "Register Restaurant";
     if (submitBtn) setBtnLoading(submitBtn, true);
 
-    /* compile full application payload for admin review */
-    const application = {
-      step1: JSON.parse(localStorage.getItem("restaurantSignupStep1") || "{}"),
-      step2: JSON.parse(localStorage.getItem("restaurantSignupStep2") || "{}"),
-      step4: JSON.parse(localStorage.getItem("restaurantSignupStep4") || "{}"),
-      step5: JSON.parse(localStorage.getItem("restaurantSignupStep5") || "{}"),
-      submittedAt:    new Date().toISOString(),
-      emailVerified,
-    };
+    const s1 = JSON.parse(localStorage.getItem("restaurantSignupStep1") || "{}");
+    const s4 = JSON.parse(localStorage.getItem("restaurantSignupStep4") || "{}");
 
-    localStorage.setItem("restaurantPendingApplication", JSON.stringify(application));
+    try {
+      const resp = await fetch(`${OWNER_SETTINGS_API}?action=create`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          owner_user_id:      pendingUserId,
+          restaurant_name:    s1.restaurantName    || "",
+          location:           s1.restaurantLocation || "",
+          phone:              s1.restaurantPhone    || "",
+          email:              s1.restaurantEmail    || "",
+          description:        s4.restaurantDescription || "",
+          cuisine_type:       s4.cuisineType        || "",
+          opening_time:       s4.openingTime        || "09:00",
+          closing_time:       s4.closingTime        || "22:00",
+          delivery_available: s4.deliveryAvailable  ? 1 : 0,
+        }),
+      });
+
+      const result = await resp.json();
+
+      if (!result.success) {
+        showStepError(result.message || "Could not register restaurant. Please try again.");
+        return;
+      }
+    } catch (err) {
+      showStepError("Network error while saving restaurant. Please check your connection.");
+      return;
+    } finally {
+      if (submitBtn) setBtnLoading(submitBtn, false, origLabel);
+    }
 
     /* clear signup temp keys */
     ["restaurantSignupStep1","restaurantSignupStep2","restaurantSignupStep3",
      "restaurantSignupStep4","restaurantSignupStep5","restaurantOwnerBasicInfo"]
       .forEach((k) => localStorage.removeItem(k));
 
-    if (submitBtn) setBtnLoading(submitBtn, false, origLabel);
-
     localStorage.setItem("restaurantSignupSuccess",
       "Your restaurant application has been submitted and is under review. " +
-      "You will be notified within 24-48 hours once approved.");
+      "You will be notified within 24–48 hours once approved.");
 
     window.location.href = "restaurant-login.html";
   });
