@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cancellation Logs - FoodExpress</title>
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  </head>
+  <body>
+    <nav class="admin-navbar">
+      <div class="container">
+        <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+        <div class="admin-nav-links">
+          <a href="admin-dashboard.html">Dashboard</a>
+          <a href="admin-restaurants.html">Restaurants</a>
+          <a href="admin-orders.html">Orders</a>
+          <a href="admin-users.html">Users</a>
+          <a href="admin-messages.html">Messages</a>
+          <a href="admin-cancellations.html" class="active">Cancellations</a>
+          <a href="admin-refunds.html">Refunds</a>
+        </div>
+        <button class="admin-logout-btn" type="button" onclick="adminLogout()">Log out</button>
+      </div>
+    </nav>
+
+    <main class="page-shell">
+      <div class="page-header">
+        <div>
+          <h1>Cancellation Logs</h1>
+          <p>View all order cancellations across the platform.</p>
+        </div>
+        <div class="page-pill">
+          <i class="fa-solid fa-ban"></i>
+          Cancellations
+        </div>
+      </div>
+
+      <div id="messageBar" class="message-bar"></div>
+
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Cancellations</div>
+          <div class="stat-value" id="statTotal">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">By Customer</div>
+          <div class="stat-value" id="statCustomer">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">By Restaurant</div>
+          <div class="stat-value" id="statOwner">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">By Rider</div>
+          <div class="stat-value" id="statRider">0</div>
+        </div>
+      </section>
+
+      <section class="controls-card">
+        <div class="controls-row">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search order number..." />
+          <select id="cancelledByFilter" class="filter-select">
+            <option value="all">All</option>
+            <option value="customer">Customer</option>
+            <option value="restaurant-owner">Restaurant</option>
+            <option value="delivery-rider">Rider</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button id="refreshBtn" class="refresh-btn" type="button">Refresh</button>
+        </div>
+      </section>
+
+      <section class="table-card">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Cancelled By</th>
+                <th>Reason</th>
+                <th>Order Status</th>
+                <th>Refund Eligible</th>
+                <th>Refund Amount</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="cancellationsTableBody">
+              <tr>
+                <td colspan="7">
+                  <div class="loading-state">
+                    <h3>Loading cancellations...</h3>
+                    <p>Please wait.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      function adminLogout() {
+        localStorage.removeItem("foodExpressCurrentAdmin");
+        localStorage.removeItem("isAdminLoggedIn");
+        localStorage.removeItem("authToken");
+        window.location.href = "admin-login.html";
+      }
+    </script>
+    <script src="../js/admin-cancellations.js"></script>
+  </body>
+</html>

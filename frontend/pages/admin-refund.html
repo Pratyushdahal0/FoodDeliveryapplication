@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Refund Management - FoodExpress</title>
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  </head>
+  <body>
+    <nav class="admin-navbar">
+      <div class="container">
+        <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+        <div class="admin-nav-links">
+          <a href="admin-dashboard.html">Dashboard</a>
+          <a href="admin-restaurants.html">Restaurants</a>
+          <a href="admin-orders.html">Orders</a>
+          <a href="admin-users.html">Users</a>
+          <a href="admin-messages.html">Messages</a>
+          <a href="admin-cancellations.html">Cancellations</a>
+          <a href="admin-refunds.html" class="active">Refunds</a>
+        </div>
+        <button class="admin-logout-btn" type="button" onclick="adminLogout()">Log out</button>
+      </div>
+    </nav>
+
+    <main class="page-shell">
+      <div class="page-header">
+        <div>
+          <h1>Refund Management</h1>
+          <p>Review and process customer refund requests.</p>
+        </div>
+        <div class="page-pill">
+          <i class="fa-solid fa-rotate-left"></i>
+          Refunds
+        </div>
+      </div>
+
+      <div id="messageBar" class="message-bar"></div>
+
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Refunds</div>
+          <div class="stat-value" id="statTotal">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value" id="statPending">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Approved</div>
+          <div class="stat-value" id="statApproved">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Processed</div>
+          <div class="stat-value" id="statProcessed">0</div>
+        </div>
+      </section>
+
+      <section class="controls-card">
+        <div class="controls-row">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search order number..." />
+          <select id="statusFilter" class="filter-select">
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="processed">Processed</option>
+          </select>
+          <button id="refreshBtn" class="refresh-btn" type="button">Refresh</button>
+        </div>
+      </section>
+
+      <section class="table-card">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Amount</th>
+                <th>Type</th>
+                <th>Payment Gateway</th>
+                <th>Status</th>
+                <th>Reason</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="refundsTableBody">
+              <tr>
+                <td colspan="8">
+                  <div class="loading-state">
+                    <h3>Loading refunds...</h3>
+                    <p>Please wait.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Confirm Modal -->
+    <div id="refundModal" class="modal">
+      <div class="modal-content">
+        <button id="closeRefundModal" class="modal-close" type="button">&times;</button>
+        <h3 id="refundModalTitle">Process Refund</h3>
+        <p id="refundModalMsg" style="margin:12px 0;color:#6b7280;"></p>
+        <textarea id="refundNotes" placeholder="Notes (optional)" style="width:100%;height:80px;margin-top:8px;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:inherit;font-size:14px;resize:none;"></textarea>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button id="confirmRefundBtn" class="action-btn btn-approve" type="button">Confirm</button>
+          <button id="cancelRefundBtn" class="action-btn" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function adminLogout() {
+        localStorage.removeItem("foodExpressCurrentAdmin");
+        localStorage.removeItem("isAdminLoggedIn");
+        localStorage.removeItem("authToken");
+        window.location.href = "admin-login.html";
+      }
+    </script>
+    <script src="../js/admin-refunds.js"></script>
+  </body>
+</html>
