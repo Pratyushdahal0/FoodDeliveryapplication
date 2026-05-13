@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Messages - FoodExpress</title>
+
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/layout.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <nav class="admin-navbar">
+      <div class="container">
+        <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+
+        <div class="admin-nav-links">
+          <a href="admin-dashboard.html">Dashboard</a>
+          <a href="admin-restaurants.html">Restaurants</a>
+          <a href="admin-orders.html">Orders</a>
+          <a href="admin-users.html">Users</a>
+          <a href="admin-messages.html" class="active">Messages</a>
+        </div>
+
+        <button class="admin-logout-btn" type="button" onclick="adminLogout()">
+          Log out
+        </button>
+      </div>
+    </nav>
+
+    <main class="page-shell">
+      <div class="page-header">
+        <div>
+          <h1>Support Inbox</h1>
+          <p>
+            Manage customer inquiries, reply to issues, and track ticket status.
+          </p>
+        </div>
+
+        <div class="page-pill">
+          <i class="fa-solid fa-message"></i>
+          Support System
+        </div>
+      </div>
+
+      <div id="messageBar" class="message-bar"></div>
+
+      <section class="controls-card">
+        <div class="controls-row">
+          <input
+            id="searchInput"
+            class="search-input"
+            type="text"
+            placeholder="Search name, email, subject..."
+          />
+
+          <select id="statusFilter" class="filter-select">
+            <option value="all">All Status</option>
+            <option value="received">Received</option>
+            <option value="in_progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="emailed">Emailed</option>
+            <option value="email_failed">Email Failed</option>
+          </select>
+
+          <button id="refreshBtn" class="refresh-btn" type="button">
+            Refresh Messages
+          </button>
+        </div>
+      </section>
+
+      <section class="table-card">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Sender</th>
+                <th>Subject</th>
+                <th>Status</th>
+                <th>Received</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody id="messagesTableBody">
+              <tr>
+                <td colspan="5">
+                  <div class="loading-state">
+                    <h3>Loading messages...</h3>
+                    <p>
+                      Please wait while FoodExpress fetches support tickets.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div id="messageViewModal" class="modal">
+      <div class="modal-content">
+        <button id="closeMessageModal" class="modal-close" type="button">
+          &times;
+        </button>
+
+        <div id="messageModalBody"></div>
+
+        <div class="reply-section">
+          <h3>Reply to Customer</h3>
+
+          <textarea
+            id="adminReplyText"
+            placeholder="Write your reply here..."
+          ></textarea>
+
+          <button
+            id="sendReplyBtn"
+            class="action-btn btn-approve"
+            type="button"
+          >
+            <i class="fa-solid fa-paper-plane"></i>
+            Send Reply
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function adminLogout() {
+        localStorage.removeItem("foodExpressCurrentAdmin");
+        localStorage.removeItem("isAdminLoggedIn");
+        window.location.href = "login.html";
+      }
+    </script>
+
+    <script src="../js/admin-messages.js"></script>
+  </body>
+</html>
