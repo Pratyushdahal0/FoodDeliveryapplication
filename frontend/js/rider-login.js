@@ -37,7 +37,7 @@ console.log("[rider-login.js] Loaded - DB-based rider login v1");
     });
 
     if (isRiderAlreadyLoggedIn()) {
-      window.location.href = "rider-dashboard.html";
+      window.location.href = "rider-deliveries.html";
     }
   }
 
@@ -90,14 +90,6 @@ console.log("[rider-login.js] Loaded - DB-based rider login v1");
         return;
       }
 
-      if (!payload.email_verified && !user.email_verified_at) {
-        showMessage(
-          "Please verify your rider email before signing in.",
-          "error"
-        );
-        return;
-      }
-
       const status = String(user.status || "active").toLowerCase();
 
       if (status === "blocked" || status === "rejected") {
@@ -108,12 +100,12 @@ console.log("[rider-login.js] Loaded - DB-based rider login v1");
         return;
       }
 
-      saveRiderSession(user, remember ? email : null);
+      saveRiderSession(user, remember ? email : null, payload.token || "");
 
       showMessage("Login successful. Redirecting to rider panel...", "success");
 
       setTimeout(() => {
-        window.location.href = "rider-dashboard.html";
+        window.location.href = "rider-deliveries.html";
       }, 700);
     } catch (error) {
       console.error("[rider-login.js] Login error:", error);
@@ -145,7 +137,7 @@ console.log("[rider-login.js] Loaded - DB-based rider login v1");
     }
   }
 
-  function saveRiderSession(user, rememberEmail) {
+  function saveRiderSession(user, rememberEmail, token) {
     const riderId = user.id || user.user_id || "";
     const riderName = user.name || user.full_name || "FoodExpress Rider";
     const riderEmail = String(user.email || "").trim().toLowerCase();
@@ -188,7 +180,9 @@ console.log("[rider-login.js] Loaded - DB-based rider login v1");
     localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(canonicalUser));
 
     localStorage.setItem("foodExpressRiderLoggedIn", "true");
+    localStorage.setItem("isRiderLoggedIn", "true");
     localStorage.setItem("foodExpressRiderStatus", "online");
+    if (token) localStorage.setItem("authToken", token);
     localStorage.setItem("foodExpressRiderEmail", riderEmail);
     localStorage.setItem("foodExpressRiderName", riderName);
     localStorage.setItem("foodExpressRiderPhone", riderPhone);

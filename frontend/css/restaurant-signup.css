@@ -297,11 +297,21 @@ body {
 .otp-input {
   width: 56px !important;
   height: 56px !important;
+  border: 2px solid #d7dbe3 !important;
   border-radius: 14px !important;
+  background: #f9f9fb !important;
   text-align: center;
   font-size: 22px !important;
   font-weight: 700;
+  color: #1f2937 !important;
   padding: 0 !important;
+  outline: none !important;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.otp-input:focus {
+  border-color: #ff3131 !important;
+  background: #fff !important;
 }
 
 .resend-text {

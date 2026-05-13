@@ -73,6 +73,7 @@
             <i class="fa-solid fa-motorcycle"></i>
           </div>
 
+          <div id="signupSuccessBanner" style="display:none;background:#dcfce7;border:1px solid #86efac;color:#166534;border-radius:14px;padding:14px 18px;margin-bottom:18px;font-size:14px;font-weight:600;line-height:1.5;"></div>
           <h2>Rider Login</h2>
           <p class="subtitle">
             Use your approved rider account to access the FoodExpress rider
@@ -146,6 +147,16 @@
       </section>
     </main>
 
-    <script src="../js/rider-login.js?v=db-rider-login-1"></script>
+    <script src="../js/rider-login.js?v=db-rider-login-2"></script>
+    <script>
+      (function () {
+        const msg = localStorage.getItem("riderSignupSuccess");
+        if (msg) {
+          const banner = document.getElementById("signupSuccessBanner");
+          if (banner) { banner.textContent = msg; banner.style.display = "block"; }
+          localStorage.removeItem("riderSignupSuccess");
+        }
+      })();
+    </script>
   </body>
 </html>

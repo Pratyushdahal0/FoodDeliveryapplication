@@ -1,5 +1,6 @@
 const RIDER_APPLICATIONS_KEY = "foodExpressRiderApplications";
 const CURRENT_RIDER_APPLICATION_KEY = "foodExpressCurrentRiderApplication";
+const AUTH_API = "../../backend/controllers/AuthController.php";
 
 document.addEventListener("DOMContentLoaded", () => {
   bindStepButtons();
@@ -166,7 +167,7 @@ function updatePayoutFields() {
   }
 }
 
-function handleSubmit(event) {
+async function handleSubmit(event) {
   event.preventDefault();
 
   if (!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
@@ -204,25 +205,55 @@ function handleSubmit(event) {
     return;
   }
 
-  const application = collectApplication();
+  const submitBtn = document.querySelector(".submit-application-btn");
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Submitting..."; }
 
-  const applications = getApplications();
-  applications.unshift(application);
+  try {
+    const response = await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "register",
+        name: getValue("fullName"),
+        email: getValue("email"),
+        password: getValue("password"),
+        phone: getValue("phone"),
+        address: getValue("address"),
+        role: "delivery-rider",
+      }),
+    });
 
-  localStorage.setItem(RIDER_APPLICATIONS_KEY, JSON.stringify(applications));
-  localStorage.setItem(
-    CURRENT_RIDER_APPLICATION_KEY,
-    JSON.stringify(application)
-  );
+    let payload;
+    try { payload = await response.json(); } catch (_) { payload = null; }
 
-  showToast("Rider application submitted successfully.", "success");
+    if (!payload || payload.success !== true) {
+      const msg = (payload && payload.message) || "Registration failed. Please try again.";
+      showToast(msg, "error");
+      return;
+    }
 
-  setTimeout(() => {
-    alert(
-      "Your rider application has been submitted. Admin review usually takes 24–48 hours. For demo, you can login using rider@foodexpress.com / rider123."
+    const application = collectApplication();
+    const applications = getApplications();
+    applications.unshift(application);
+    localStorage.setItem(RIDER_APPLICATIONS_KEY, JSON.stringify(applications));
+    localStorage.setItem(CURRENT_RIDER_APPLICATION_KEY, JSON.stringify(application));
+
+    localStorage.setItem(
+      "riderSignupSuccess",
+      "Account created! Check your email to verify before signing in. Admin review takes 24–48 hours."
     );
-    window.location.href = "rider-login.html";
-  }, 900);
+
+    showToast("Application submitted successfully!", "success");
+
+    setTimeout(() => {
+      window.location.href = "rider-login.html";
+    }, 1000);
+  } catch (err) {
+    console.error("[rider-signup.js] Submit error:", err);
+    showToast("Something went wrong. Please check your connection.", "error");
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Submit Application"; }
+  }
 }
 
 function collectApplication() {
@@ -307,7 +338,7 @@ function showToast(message, type = "success") {
   const icon = toast?.querySelector("i");
 
   if (!toast || !text || !icon) {
-    alert(message);
+    console.warn("[rider-signup] Toast elements missing:", message);
     return;
   }
 

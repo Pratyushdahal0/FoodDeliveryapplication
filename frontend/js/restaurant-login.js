@@ -189,6 +189,7 @@
         user: userData,
         restaurant,
         rememberEmail: rememberMe ? email : null,
+        token: loginPayload.token || "",
       });
 
       // ---- Step 7: friendly redirect with feedback ----
@@ -228,7 +229,7 @@
      Session helpers
   ========================================================= */
 
-  function saveOwnerSession({ user, restaurant, rememberEmail }) {
+  function saveOwnerSession({ user, restaurant, rememberEmail, token }) {
     const ownerEmail = String(user.email || "").trim().toLowerCase();
     const ownerName = user.name || user.full_name || "Owner";
     const ownerId = user.id || user.user_id || "";
@@ -267,6 +268,8 @@
       restaurantName: restaurantName,
       email_verified_at: user.email_verified_at || null,
     };
+
+    if (token) localStorage.setItem("authToken", token);
 
     // Owner-specific keys (consumed by ownerdashboard.js etc.)
     localStorage.setItem(CURRENT_OWNER_KEY, JSON.stringify(ownerSession));
