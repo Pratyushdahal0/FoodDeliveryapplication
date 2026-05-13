@@ -1,3 +1,8 @@
+//
+/**
+ * FoodExpress — Admin Messages Management
+ * Handles support ticket listing, viewing, replying, and status updates for admin dashboard.
+ */
 const ADMIN_MESSAGES_API =
   "../../backend/controllers/AdminMessagesController.php";
 
@@ -5,17 +10,27 @@ let allMessages = [];
 let currentMessageId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("refreshBtn")?.addEventListener("click", loadMessages);
-  document.getElementById("searchInput")?.addEventListener("input", renderMessages);
-  document.getElementById("statusFilter")?.addEventListener("change", renderMessages);
+  document
+    .getElementById("refreshBtn")
+    ?.addEventListener("click", loadMessages);
+  document
+    .getElementById("searchInput")
+    ?.addEventListener("input", renderMessages);
+  document
+    .getElementById("statusFilter")
+    ?.addEventListener("change", renderMessages);
 
-  document.getElementById("closeMessageModal")?.addEventListener("click", closeMessageModal);
+  document
+    .getElementById("closeMessageModal")
+    ?.addEventListener("click", closeMessageModal);
 
-  document.getElementById("messageViewModal")?.addEventListener("click", (event) => {
-    if (event.target.id === "messageViewModal") {
-      closeMessageModal();
-    }
-  });
+  document
+    .getElementById("messageViewModal")
+    ?.addEventListener("click", (event) => {
+      if (event.target.id === "messageViewModal") {
+        closeMessageModal();
+      }
+    });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
@@ -94,7 +109,7 @@ function renderMessages() {
       item.email,
       item.phone,
       item.subject,
-      item.message
+      item.message,
     ]
       .map((value) => String(value || "").toLowerCase())
       .join(" ");
@@ -260,7 +275,7 @@ async function loadReplyHistory(messageId) {
 
   try {
     const response = await fetch(
-      `${ADMIN_MESSAGES_API}?action=replies&message_id=${messageId}`
+      `${ADMIN_MESSAGES_API}?action=replies&message_id=${messageId}`,
     );
     const result = await response.json();
 
@@ -336,12 +351,12 @@ async function sendReply() {
     const response = await fetch(`${ADMIN_MESSAGES_API}?action=reply`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         id: currentMessageId,
-        reply: text
-      })
+        reply: text,
+      }),
     });
 
     const result = await response.json();
@@ -375,12 +390,12 @@ async function updateMessageStatus(id, status, successMessage) {
     const response = await fetch(`${ADMIN_MESSAGES_API}?action=update_status`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         id,
-        status
-      })
+        status,
+      }),
     });
 
     const result = await response.json();
@@ -399,7 +414,7 @@ async function updateMessageStatus(id, status, successMessage) {
 
 async function deleteMessage(id) {
   const confirmDelete = confirm(
-    "Are you sure you want to delete this support ticket?"
+    "Are you sure you want to delete this support ticket?",
   );
 
   if (!confirmDelete) return;
@@ -408,9 +423,9 @@ async function deleteMessage(id) {
     const response = await fetch(`${ADMIN_MESSAGES_API}?action=delete`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ id })
+      body: JSON.stringify({ id }),
     });
 
     const result = await response.json();
@@ -436,7 +451,10 @@ function closeMessageModal() {
 }
 
 function getFullName(item) {
-  return `${item.first_name || ""} ${item.last_name || ""}`.trim() || "Unknown Sender";
+  return (
+    `${item.first_name || ""} ${item.last_name || ""}`.trim() ||
+    "Unknown Sender"
+  );
 }
 
 function getInitials(name) {
@@ -450,12 +468,18 @@ function getInitials(name) {
 }
 
 function normalizeStatus(status) {
-  const value = String(status || "received").toLowerCase().trim();
+  const value = String(status || "received")
+    .toLowerCase()
+    .trim();
 
   if (
-    !["received", "in_progress", "resolved", "emailed", "email_failed"].includes(
-      value
-    )
+    ![
+      "received",
+      "in_progress",
+      "resolved",
+      "emailed",
+      "email_failed",
+    ].includes(value)
   ) {
     return "received";
   }
