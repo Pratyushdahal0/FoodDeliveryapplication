@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Refunds — FoodExpress Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/admin-shared.css" />
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    /* Refund modal */
+    .refund-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .refund-modal-overlay.show,
+    .refund-modal-overlay[style*="flex"] {
+      display: flex;
+    }
+
+    .refund-modal-box {
+      background: var(--surface);
+      border-radius: var(--radius);
+      width: min(460px, 100%);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+
+    .refund-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .refund-modal-header h2 { font-size: 1rem; font-weight: 600; }
+
+    .refund-modal-body { padding: 20px 22px; }
+
+    .refund-modal-body p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .refund-modal-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding: 14px 22px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Status badges for refunds */
+    .status-confirmed  { background: #dcfce7; color: #166534; }
+    .status-cancelled  { background: #fee2e2; color: #991b1b; }
+    .status-delivered  { background: #dbeafe; color: #1e40af; }
+
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="admin-navbar">
+  <div class="nav-inner">
+    <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+    <div class="nav-links">
+      <a href="admin-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+      <a href="admin-restaurants.html"><i class="fa-solid fa-store"></i> Restaurants</a>
+      <a href="admin-orders.html"><i class="fa-solid fa-receipt"></i> Orders</a>
+      <a href="admin-users.html"><i class="fa-solid fa-users"></i> Users</a>
+      <a href="admin-messages.html"><i class="fa-solid fa-envelope"></i> Messages</a>
+      <a href="admin-refunds.html" class="active"><i class="fa-solid fa-rotate-left"></i> Refunds</a>
+    </div>
+    <div class="nav-right">
+      <div class="admin-pill"><i class="fa-solid fa-user-shield"></i> Platform Admin</div>
+      <button class="logout-btn" onclick="adminLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Log out
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="main">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Refunds</h1>
+      <p>Review and process customer refund requests for cancelled orders.</p>
+    </div>
+    <div class="header-actions">
+      <button class="refresh-btn" id="refreshBtn">
+        <i class="fa-solid fa-rotate-right"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <div id="messageBar" class="message-bar"></div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label"><i class="fa-solid fa-rotate-left"></i> Total Refunds</div>
+      <div class="stat-value" id="statTotal">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i class="fa-solid fa-hourglass-half"></i> Pending</div>
+      <div class="stat-value" id="statPending">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i class="fa-solid fa-circle-check"></i> Approved</div>
+      <div class="stat-value" id="statApproved">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i class="fa-solid fa-money-bill-wave"></i> Processed</div>
+      <div class="stat-value" id="statProcessed">—</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-bar">
+    <input id="searchInput" class="search-input" type="text"
+      placeholder="Search by order number..." />
+    <select id="statusFilter" class="filter-select">
+      <option value="all">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+      <option value="processed">Processed</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="table-panel">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Amount</th>
+            <th>Type</th>
+            <th>Gateway</th>
+            <th>Status</th>
+            <th>Reason</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="refundsTableBody">
+          <tr>
+            <td colspan="8">
+              <div class="loading-state">
+                <h3>Loading refunds...</h3>
+                <p>Please wait while FoodExpress fetches refund records.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Refund Action Modal -->
+<div id="refundModal" class="refund-modal-overlay">
+  <div class="refund-modal-box">
+    <div class="refund-modal-header">
+      <h2 id="refundModalTitle">Process Refund</h2>
+      <button id="closeRefundModal" class="modal-close" type="button">&times;</button>
+    </div>
+    <div class="refund-modal-body">
+      <p id="refundModalMsg"></p>
+      <div class="form-group">
+        <label>Notes (optional)</label>
+        <textarea id="refundNotes" placeholder="Add internal notes about this decision..." rows="3"></textarea>
+      </div>
+    </div>
+    <div class="refund-modal-footer">
+      <button id="cancelRefundBtn" class="btn-secondary-modal">Cancel</button>
+      <button id="confirmRefundBtn" class="btn-primary">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/admin-refunds.js"></script>
+</body>
+</html>

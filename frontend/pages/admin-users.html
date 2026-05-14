@@ -1,143 +1,176 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Users - FoodExpress</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Users — FoodExpress Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/admin-shared.css" />
+</head>
+<body>
 
-    <link rel="stylesheet" href="../css/global.css" />
-    <link rel="stylesheet" href="../css/layout.css" />
-    <link rel="stylesheet" href="../css/admin.css" />
+<!-- NAVBAR -->
+<nav class="admin-navbar">
+  <div class="nav-inner">
+    <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+    <div class="nav-links">
+      <a href="admin-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+      <a href="admin-restaurants.html"><i class="fa-solid fa-store"></i> Restaurants</a>
+      <a href="admin-orders.html"><i class="fa-solid fa-receipt"></i> Orders</a>
+      <a href="admin-users.html" class="active"><i class="fa-solid fa-users"></i> Users</a>
+      <a href="admin-messages.html"><i class="fa-solid fa-envelope"></i> Messages</a>
+      <a href="admin-refunds.html"><i class="fa-solid fa-rotate-left"></i> Refunds</a>
+    </div>
+    <div class="nav-right">
+      <div class="admin-pill"><i class="fa-solid fa-user-shield"></i> Platform Admin</div>
+      <button class="logout-btn" onclick="adminLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Log out
+      </button>
+    </div>
+  </div>
+</nav>
 
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    />
-  </head>
+<main class="main">
 
-  <body>
-    <nav class="admin-navbar">
-      <div class="container">
-        <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Users</h1>
+      <p>Manage customers, restaurant owners, delivery riders, and account status.</p>
+    </div>
+    <div class="header-actions">
+      <button class="refresh-btn" id="refreshBtn">
+        <i class="fa-solid fa-rotate-right"></i> Refresh Users
+      </button>
+    </div>
+  </div>
 
-        <div class="admin-nav-links">
-          <a href="admin-dashboard.html">Dashboard</a>
-          <a href="admin-restaurants.html">Restaurants</a>
-          <a href="admin-orders.html">Orders</a>
-          <a href="admin-users.html" class="active">Users</a>
-          <a href="admin-messages.html">Messages</a>
-        </div>
+  <div id="messageBar" class="message-bar"></div>
 
-        <button class="admin-logout-btn" type="button" onclick="adminLogout()">
-          Log out
-        </button>
+  <!-- Controls -->
+  <div class="controls-bar">
+    <input id="searchInput" class="search-input" type="text" placeholder="Search name, email, phone..." />
+    <select id="roleFilter" class="filter-select">
+      <option value="all">All Roles</option>
+      <option value="customer">Customers</option>
+      <option value="restaurant-owner">Restaurant Owners</option>
+      <option value="delivery-rider">Delivery Riders</option>
+      <option value="admin">Admins</option>
+    </select>
+    <select id="statusFilter" class="filter-select">
+      <option value="all">All Status</option>
+      <option value="active">Active</option>
+      <option value="blocked">Blocked</option>
+    </select>
+    <select id="approvalFilter" class="filter-select">
+      <option value="all">All Approvals</option>
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+      <option value="suspended">Suspended</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="table-panel">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Contact</th>
+            <th>Role</th>
+            <th>Account Status</th>
+            <th>Approval Status</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <tr>
+            <td colspan="7">
+              <div class="loading-state">
+                <h3>Loading users...</h3>
+                <p>Please wait while FoodExpress fetches user accounts.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- User Orders Modal -->
+<div id="userOrdersModal" class="modal-overlay">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h2>User Order History</h2>
+      <button id="closeUserOrdersModal" class="modal-close" type="button">&times;</button>
+    </div>
+    <div id="userOrdersBody" class="modal-body"></div>
+  </div>
+</div>
+
+<!-- Block/Unblock Confirm Modal -->
+<div id="blockConfirmModal" class="modal-overlay">
+  <div class="modal-content" style="max-width:460px">
+    <div class="modal-header">
+      <h2 id="blockModalTitle">Block User</h2>
+      <button id="closeBlockModal" class="modal-close" type="button">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="blockModalDesc" style="color:var(--text-muted);font-size:0.875rem;margin-bottom:14px">
+        Blocking this user will prevent them from logging in.
+      </p>
+      <div class="form-group">
+        <label>Reason (optional)</label>
+        <textarea id="blockReasonInput" class="block-reason-textarea" placeholder="Reason..."></textarea>
       </div>
-    </nav>
-
-    <main class="page-shell">
-      <div class="page-header">
-        <div>
-          <h1>User Management</h1>
-          <p>
-            Manage customers, restaurant owners, delivery riders, and account
-            status from one place.
-          </p>
-        </div>
-
-        <div class="page-pill">
-          <i class="fa-solid fa-users"></i>
-          Platform Users
-        </div>
-      </div>
-
-      <div id="messageBar" class="message-bar"></div>
-
-      <section class="controls-card">
-        <div class="controls-row users-controls-row">
-          <input
-            id="searchInput"
-            class="search-input"
-            type="text"
-            placeholder="Search name, email, phone..."
-          />
-
-          <select id="roleFilter" class="filter-select">
-            <option value="all">All Roles</option>
-            <option value="customer">Customers</option>
-            <option value="restaurant-owner">Restaurant Owners</option>
-            <option value="delivery-rider">Delivery Riders</option>
-            <option value="admin">Admins</option>
-          </select>
-
-          <select id="statusFilter" class="filter-select">
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="blocked">Blocked</option>
-          </select>
-
-          <button id="refreshBtn" class="refresh-btn" type="button">
-            Refresh Users
-          </button>
-        </div>
-      </section>
-
-      <section class="table-card">
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Contact</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Joined</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody id="usersTableBody">
-              <tr>
-                <td colspan="6">
-                  <div class="loading-state">
-                    <h3>Loading users...</h3>
-                    <p>Please wait while FoodExpress fetches user accounts.</p>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-
-    <div id="userOrdersModal" class="modal">
-      <div class="modal-content">
-        <button id="closeUserOrdersModal" class="modal-close" type="button">
-          &times;
-        </button>
-        <div id="userOrdersBody"></div>
+      <div class="modal-action-row" style="margin-top:14px">
+        <button id="cancelBlockBtn" class="btn-secondary-modal">Cancel</button>
+        <button id="confirmBlockBtn" class="btn-primary">Confirm</button>
       </div>
     </div>
+  </div>
+</div>
 
-    <div id="blockConfirmModal" class="modal">
-      <div class="modal-content" style="max-width:460px">
-        <button id="closeBlockModal" class="modal-close" type="button">&times;</button>
-        <div class="block-confirm-modal-body">
-          <h3 id="blockModalTitle">Block User</h3>
-          <p id="blockModalDesc">Blocking this user will prevent them from logging in. You can unblock them at any time.</p>
-          <textarea
-            id="blockReasonInput"
-            class="block-reason-textarea"
-            placeholder="Reason (optional)..."
-          ></textarea>
-          <div class="modal-action-row">
-            <button id="cancelBlockBtn"  class="action-btn btn-view">Cancel</button>
-            <button id="confirmBlockBtn" class="action-btn btn-reject">Confirm</button>
-          </div>
-        </div>
+<!-- Approval Modal -->
+<div id="approvalModal" class="modal-overlay">
+  <div class="modal-content" style="max-width:480px">
+    <div class="modal-header">
+      <h2>Review User Application</h2>
+      <button type="button" class="modal-close" onclick="closeApprovalModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:16px;font-size:0.875rem;color:var(--text-muted)">
+        User: <strong id="approvalUserName" style="color:var(--text)"></strong>
+      </p>
+      <div class="form-group">
+        <label>Decision</label>
+        <select id="approvalStatus">
+          <option value="approved">Approve</option>
+          <option value="rejected">Reject</option>
+          <option value="suspended">Suspend</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Reason (optional)</label>
+        <textarea id="approvalReason" placeholder="Reason for rejection or suspension..." rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Admin Notes (internal only)</label>
+        <textarea id="approvalNotes" placeholder="Internal notes..." rows="2"></textarea>
       </div>
     </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary-modal" onclick="closeApprovalModal()">Cancel</button>
+      <button type="button" class="btn-primary" onclick="submitApprovalDecision()">Submit Decision</button>
+    </div>
+  </div>
+</div>
 
-    <script src="../js/admin-users.js"></script>
-  </body>
+<script src="../js/admin-users.js"></script>
+</body>
 </html>

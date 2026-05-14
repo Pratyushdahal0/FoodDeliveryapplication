@@ -502,23 +502,42 @@ try {
 
         // Sync refund_status in orders table
         if ($affected > 0) {
-            $rowStmt = $conn->prepare("SELECT order_id FROM refund_logs WHERE id = ?");
-            if ($rowStmt) {
-                $rowStmt->bind_param('i', $refundId);
-                $rowStmt->execute();
-                $row = $rowStmt->get_result()->fetch_assoc();
-                $rowStmt->close();
+    // Get refund log details
+    $rowStmt = $conn->prepare("
+        SELECT rl.order_id, rl.amount, rl.refund_type, o.customer_name, 
+               o.customer_email, o.order_number, o.payment_gateway
+        FROM refund_logs rl
+        LEFT JOIN orders o ON rl.order_id = o.id
+        WHERE rl.id = ?
+    ");
+    if ($rowStmt) {
+        $rowStmt->bind_param('i', $refundId);
+        $rowStmt->execute();
+        $refundRow = $rowStmt->get_result()->fetch_assoc();
+        $rowStmt->close();
 
-                if ($row) {
-                    $syncStmt = $conn->prepare("UPDATE orders SET refund_status = ? WHERE id = ?");
-                    if ($syncStmt) {
-                        $syncStmt->bind_param('si', $newStatus, $row['order_id']);
-                        $syncStmt->execute();
-                        $syncStmt->close();
-                    }
-                }
+        if ($refundRow) {
+            // Sync refund_status in orders
+            $syncStmt = $conn->prepare("UPDATE orders SET refund_status = ? WHERE id = ?");
+            if ($syncStmt) {
+                $syncStmt->bind_param('si', $newStatus, $refundRow['order_id']);
+                $syncStmt->execute();
+                $syncStmt->close();
             }
+
+            // Send email notification to customer
+            sendRefundNotificationEmail(
+                $refundRow['customer_email'],
+                $refundRow['customer_name'],
+                $refundRow['order_number'],
+                $refundRow['amount'],
+                $refundRow['refund_type'],
+                $newStatus,
+                $notes
+            );
         }
+    }
+}
 
         jsonResp([
             'success' => $affected > 0,
@@ -592,4 +611,108 @@ try {
     $line = $e->getLine();
     error_log("[CancellationController] FATAL {$file}:{$line} — " . $e->getMessage());
     jsonResp(['success' => false, 'message' => 'Server error. Check server logs.'], 500);
+
+
+    function sendRefundNotificationEmail($toEmail, $customerName, $orderNumber, $amount, $refundType, $status, $notes = "") {
+    if (!$toEmail || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) return;
+
+    require_once __DIR__ . '/../helpers/MailHelper.php';
+
+    $name       = $customerName ?: "Customer";
+    $amountFmt  = "Rs. " . number_format((float)$amount, 2);
+    $typeLabel  = $refundType === "partial" ? "Partial" : "Full";
+
+    switch ($status) {
+        case 'approved':
+            $subject = "Your Refund Has Been Approved — FoodExpress";
+            $color   = "#16a34a";
+            $icon    = "✅";
+            $heading = "Refund Approved";
+            $body    = "
+                <p>Great news! Your {$typeLabel} refund of <strong>{$amountFmt}</strong> 
+                for order <strong>#{$orderNumber}</strong> has been approved.</p>
+                <p>The refund will be processed to your original payment method within 
+                <strong>5–7 business days</strong>.</p>
+            ";
+            break;
+
+        case 'rejected':
+            $subject = "Refund Request Update — FoodExpress";
+            $color   = "#dc2626";
+            $icon    = "❌";
+            $heading = "Refund Not Approved";
+            $body    = "
+                <p>Unfortunately, your refund request of <strong>{$amountFmt}</strong> 
+                for order <strong>#{$orderNumber}</strong> could not be approved.</p>
+                " . ($notes ? "<p><strong>Reason:</strong> {$notes}</p>" : "") . "
+                <p>If you believe this is an error, please contact our support team.</p>
+            ";
+            break;
+
+        case 'processed':
+            $subject = "Your Refund Has Been Processed — FoodExpress";
+            $color   = "#2563eb";
+            $icon    = "💸";
+            $heading = "Refund Processed";
+            $body    = "
+                <p>Your {$typeLabel} refund of <strong>{$amountFmt}</strong> 
+                for order <strong>#{$orderNumber}</strong> has been successfully processed.</p>
+                <p>The amount should reflect in your account within <strong>2–3 business days</strong> 
+                depending on your bank or payment provider.</p>
+            ";
+            break;
+
+        default:
+            return;
+    }
+
+    $html = "
+        <div style='font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px'>
+            <div style='background:{$color};padding:24px;border-radius:12px 12px 0 0;text-align:center'>
+                <div style='font-size:2.5rem'>{$icon}</div>
+                <h1 style='color:white;margin:10px 0 0;font-size:1.4rem'>{$heading}</h1>
+            </div>
+            <div style='background:#fff;border:1px solid #e5e7eb;border-top:none;
+                        border-radius:0 0 12px 12px;padding:28px'>
+                <p style='font-size:1rem;color:#111827'>Hi {$name},</p>
+                {$body}
+                <div style='background:#f4f5f7;border-radius:10px;padding:16px;margin:20px 0'>
+                    <table style='width:100%;font-size:0.875rem;color:#374151'>
+                        <tr>
+                            <td style='padding:4px 0;color:#6b7280'>Order Number</td>
+                            <td style='padding:4px 0;text-align:right;font-weight:600'>#{$orderNumber}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding:4px 0;color:#6b7280'>Refund Amount</td>
+                            <td style='padding:4px 0;text-align:right;font-weight:600'>{$amountFmt}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding:4px 0;color:#6b7280'>Refund Type</td>
+                            <td style='padding:4px 0;text-align:right;font-weight:600'>{$typeLabel}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding:4px 0;color:#6b7280'>Status</td>
+                            <td style='padding:4px 0;text-align:right;font-weight:700;color:{$color}'>
+                                " . ucfirst($status) . "
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <p style='font-size:0.875rem;color:#6b7280'>
+                    If you have any questions, reply to this email or contact 
+                    FoodExpress support.
+                </p>
+                <p style='font-size:0.875rem;color:#111827;margin-top:20px'>
+                    Thank you,<br><strong>FoodExpress Team</strong>
+                </p>
+            </div>
+        </div>
+    ";
+
+    try {
+        MailHelper::sendMail($toEmail, $name, $subject, $html);
+    } catch (Throwable $e) {
+        error_log("[CancellationController] Refund email failed: " . $e->getMessage());
+    }
+}
 }

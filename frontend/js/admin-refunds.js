@@ -128,7 +128,7 @@ console.log("[admin-refunds.js] Loaded");
     document.getElementById("refundModalMsg").textContent =
       `${newStatus === "approved" ? "Approve" : "Reject"} refund of Rs. ${amount.toFixed(2)} for order ${orderNumber}?`;
     document.getElementById("refundNotes").value = "";
-    modal.style.display = "flex";
+    modal.classList.add("show");
   };
 
   async function processRefund() {
@@ -154,7 +154,7 @@ console.log("[admin-refunds.js] Loaded");
       });
 
       const result = await resp.json();
-      document.getElementById("refundModal").style.display = "none";
+      document.getElementById("refundModal").classList.remove("show");
 
       if (result.success) {
         showMessage("Refund " + pendingAction.newStatus + " successfully.", "success");

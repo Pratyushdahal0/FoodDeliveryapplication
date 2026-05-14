@@ -42,20 +42,20 @@ function getOwnerRestaurantContext() {
     owner.restaurant_id ||
     currentUser.restaurantId ||
     currentUser.restaurant_id ||
-    "1";
+    null;  // ✅ null instead of "1"
 
-  const restaurantName =
+const restaurantName =
     localStorage.getItem("ownerRestaurantName") ||
     owner.restaurantName ||
     owner.restaurant_name ||
     currentUser.restaurantName ||
     currentUser.restaurant_name ||
-    "Spicy Grill";
+    "My Restaurant";  // ✅ generic fallback
 
-  return {
-    restaurantId: String(restaurantId || "1"),
-    restaurantName: String(restaurantName || "Spicy Grill"),
-  };
+return {
+    restaurantId: restaurantId ? String(restaurantId) : null,
+    restaurantName: String(restaurantName || "My Restaurant"),
+};
 }
 
 function renderOwnerShell() {
@@ -92,10 +92,17 @@ async function loadOwnerDashboard(options = {}) {
   const { silent = false } = options;
   const { restaurantId } = getOwnerRestaurantContext();
 
-  try {
+if (!restaurantId) {
+    renderDashboardError("No restaurant found for your account. Please contact support.");
+    return;
+}
+
+try {
     if (!silent) {
-      setDashboardLoading();
+        setDashboardLoading();
     }
+
+    const url = `${OWNER_DASHBOARD_API}?restaurant_id=${encodeURIComponent(restaurantId)}&_=${Date.now()}`;
 
     const url = `${OWNER_DASHBOARD_API}?restaurant_id=${encodeURIComponent(
       restaurantId

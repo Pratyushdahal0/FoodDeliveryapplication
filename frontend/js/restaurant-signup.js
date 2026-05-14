@@ -11,8 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const OWNER_SETTINGS_API = "../../backend/controllers/OwnerSettingsController.php";
 
   let currentStep   = 1;
-  let pendingEmail  = "";
-  let pendingUserId = 0;
+  let pendingEmail  = localStorage.getItem("pendingEmail") || "";
+  let pendingUserId = Number(localStorage.getItem("pendingUserId") || 0);
   let emailVerified = false;
 
   /* ── restore any partially filled step 1 data ── */
@@ -38,9 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const n = index + 1;
       item.classList.remove("active", "completed");
       const circle = item.querySelector(".step-circle");
-      if (n < step)       { item.classList.add("completed"); circle.textContent = "✓"; }
+      if (n < step)        { item.classList.add("completed"); circle.textContent = "✓"; }
       else if (n === step) { item.classList.add("active");    circle.textContent = n;   }
-      else                  { circle.textContent = n; }
+      else                 { circle.textContent = n; }
     });
 
     stepLines.forEach((line, i) => {
@@ -117,9 +117,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (step === 4) {
       localStorage.setItem("restaurantSignupStep4", JSON.stringify({
         restaurantDescription: (document.getElementById("restaurantDescription")?.value || "").trim(),
-        cuisineType:  document.getElementById("cuisineType")?.value || "",
-        openingTime:  document.getElementById("openingTime")?.value || "",
-        closingTime:  document.getElementById("closingTime")?.value || "",
+        cuisineType:       document.getElementById("cuisineType")?.value  || "",
+        openingTime:       document.getElementById("openingTime")?.value  || "",
+        closingTime:       document.getElementById("closingTime")?.value  || "",
         deliveryAvailable: document.getElementById("deliveryAvailable")?.checked ?? true,
       }));
     }
@@ -146,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.restaurantEmail)) {
         showStepError("Please enter a valid email address."); return false;
       }
-      if (!d.restaurantPassword)         { showStepError("Password is required.");                   return false; }
+      if (!d.restaurantPassword)           { showStepError("Password is required.");                    return false; }
       if (d.restaurantPassword.length < 6) { showStepError("Password must be at least 6 characters."); return false; }
       saveStepData(1);
       return true;
@@ -160,10 +160,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (step === 4) {
-      const desc = (document.getElementById("restaurantDescription")?.value || "").trim();
-      const cui  = document.getElementById("cuisineType")?.value || "";
-      const open = document.getElementById("openingTime")?.value || "";
-      const close = document.getElementById("closingTime")?.value || "";
+      const desc  = (document.getElementById("restaurantDescription")?.value || "").trim();
+      const cui   = document.getElementById("cuisineType")?.value  || "";
+      const open  = document.getElementById("openingTime")?.value  || "";
+      const close = document.getElementById("closingTime")?.value  || "";
       if (!desc)  { showStepError("Restaurant description is required."); return false; }
       if (!cui)   { showStepError("Cuisine type is required.");            return false; }
       if (!open)  { showStepError("Opening time is required.");            return false; }
@@ -222,8 +222,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       pendingEmail  = s1.restaurantEmail;
       pendingUserId = Number(result.data?.id || result.data?.user_id || 0);
+      localStorage.setItem("pendingUserId", pendingUserId);
+      localStorage.setItem("pendingEmail",  pendingEmail);
 
-      /* update info-box to show the actual email */
       const infoBox = document.querySelector('[data-panel="3"] .info-box');
       if (infoBox) {
         infoBox.innerHTML =
@@ -253,7 +254,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const origLabel = btn.textContent.trim();
     setBtnLoading(btn, true);
 
     try {
@@ -309,8 +309,6 @@ document.addEventListener("DOMContentLoaded", () => {
         p.textContent   = "A new code has been sent to your email.";
         document.querySelector(".verification-block")?.appendChild(p);
         setTimeout(() => p.remove(), 4000);
-
-        /* clear current inputs */
         document.querySelectorAll(".otp-input").forEach((i) => { i.value = ""; });
         focusFirstOtp();
       } else {
@@ -322,8 +320,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (resendSpan) {
         resendSpan.textContent = "Resend";
         resendSpan.style.pointerEvents = "";
-
-        /* 60-second cooldown */
         let secs = 60;
         resendSpan.style.pointerEvents = "none";
         resendSpan.style.opacity = "0.5";
@@ -359,23 +355,26 @@ document.addEventListener("DOMContentLoaded", () => {
     if (submitBtn) setBtnLoading(submitBtn, true);
 
     const s1 = JSON.parse(localStorage.getItem("restaurantSignupStep1") || "{}");
+    const s2 = JSON.parse(localStorage.getItem("restaurantSignupStep2") || "{}");
     const s4 = JSON.parse(localStorage.getItem("restaurantSignupStep4") || "{}");
+    const s5 = JSON.parse(localStorage.getItem("restaurantSignupStep5") || "{}");
 
     try {
+      // Step 1: Create restaurant
       const resp = await fetch(`${OWNER_SETTINGS_API}?action=create`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           owner_user_id:      pendingUserId,
-          restaurant_name:    s1.restaurantName    || "",
-          location:           s1.restaurantLocation || "",
-          phone:              s1.restaurantPhone    || "",
-          email:              s1.restaurantEmail    || "",
+          restaurant_name:    s1.restaurantName       || "",
+          location:           s1.restaurantLocation   || "",
+          phone:              s1.restaurantPhone       || "",
+          email:              s1.restaurantEmail       || "",
           description:        s4.restaurantDescription || "",
-          cuisine_type:       s4.cuisineType        || "",
-          opening_time:       s4.openingTime        || "09:00",
-          closing_time:       s4.closingTime        || "22:00",
-          delivery_available: s4.deliveryAvailable  ? 1 : 0,
+          cuisine_type:       s4.cuisineType           || "",
+          opening_time:       s4.openingTime           || "09:00",
+          closing_time:       s4.closingTime           || "22:00",
+          delivery_available: s4.deliveryAvailable ? 1 : 0,
         }),
       });
 
@@ -385,6 +384,34 @@ document.addEventListener("DOMContentLoaded", () => {
         showStepError(result.message || "Could not register restaurant. Please try again.");
         return;
       }
+
+      // Step 2: Save documents (PAN, business reg, images)
+      const restaurantId = result.data?.restaurant_id;
+      if (restaurantId) {
+        const docFormData = new FormData();
+        docFormData.append("restaurant_id",                restaurantId);
+        docFormData.append("owner_full_name",              s2.ownerFullName    || "");
+        docFormData.append("pan_number",                   s5.panNumber        || "");
+        docFormData.append("business_registration_number", s5.businessRegNumber || "");
+
+        // PAN image
+        const panImageFile = document.getElementById("panImage")?.files?.[0];
+        if (panImageFile) docFormData.append("pan_image", panImageFile);
+
+        // Citizenship/ID image
+        const citizenshipFile = document.getElementById("ownerIdUpload")?.files?.[0];
+        if (citizenshipFile) docFormData.append("citizenship_image", citizenshipFile);
+
+        // Logo image
+        const logoFile = document.getElementById("restaurantLogo")?.files?.[0];
+        if (logoFile) docFormData.append("logo", logoFile);
+
+        await fetch(`${OWNER_SETTINGS_API}?action=save_documents`, {
+          method: "POST",
+          body: docFormData
+        });
+      }
+
     } catch (err) {
       showStepError("Network error while saving restaurant. Please check your connection.");
       return;
@@ -392,10 +419,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (submitBtn) setBtnLoading(submitBtn, false, origLabel);
     }
 
-    /* clear signup temp keys */
-    ["restaurantSignupStep1","restaurantSignupStep2","restaurantSignupStep3",
-     "restaurantSignupStep4","restaurantSignupStep5","restaurantOwnerBasicInfo"]
-      .forEach((k) => localStorage.removeItem(k));
+    // Clear all signup temp keys
+    [
+      "restaurantSignupStep1", "restaurantSignupStep2", "restaurantSignupStep3",
+      "restaurantSignupStep4", "restaurantSignupStep5", "restaurantOwnerBasicInfo",
+      "pendingUserId", "pendingEmail"
+    ].forEach((k) => localStorage.removeItem(k));
 
     localStorage.setItem("restaurantSignupSuccess",
       "Your restaurant application has been submitted and is under review. " +
@@ -413,13 +442,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const nextStep = Number(btn.dataset.next);
       clearStepError();
 
-      /* Step 2 → 3: register + send OTP */
       if (currentStep === 2 && nextStep === 3) {
         await registerAndSendOtp(btn);
         return;
       }
 
-      /* Step 3 → 4: verify OTP */
       if (currentStep === 3 && nextStep === 4) {
         await verifyOtp(btn);
         return;
@@ -446,7 +473,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const otpInputs = document.querySelectorAll(".otp-input");
     otpInputs.forEach((input, index) => {
       input.addEventListener("input", () => {
-        /* only allow digits */
         input.value = input.value.replace(/\D/g, "").slice(0, 1);
         if (input.value && index < otpInputs.length - 1) {
           otpInputs[index + 1].focus();
@@ -476,12 +502,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   bindOtpInputs();
 
-  /* resend OTP link */
   document.querySelector(".resend-text span")?.addEventListener("click", resendOtp);
-
-  /* ══════════════════════════════════════════════
-     Utility
-  ══════════════════════════════════════════════ */
 
   function escapeHtml(str) {
     return String(str || "")
@@ -494,7 +515,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateStepUI(1);
 });
 
-/* ── password toggle (called from inline onclick) ── */
+/* ── password toggle ── */
 function toggleRestaurantPassword() {
   const input = document.getElementById("restaurantPassword");
   if (input) input.type = input.type === "password" ? "text" : "password";

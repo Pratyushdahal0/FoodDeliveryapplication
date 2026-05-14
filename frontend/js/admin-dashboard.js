@@ -1,11 +1,13 @@
 console.log("[admin-dashboard.js] Loaded");
 
 (function () {
-  const STATS_API   = "../../backend/controllers/AdminDashboardController.php?action=dashboard_stats";
-  const REVENUE_API = "../../backend/controllers/AdminDashboardController.php?action=revenue_stats";
+  const BASE_API    = "../../backend/controllers/AdminDashboardController.php";
+  const STATS_API   = BASE_API + "?action=dashboard_stats";
+  const REVENUE_API = BASE_API + "?action=revenue_stats";
+  const PENDING_API = BASE_API + "?action=pending_approvals";
 
-  let refreshTimer  = null;
-  let revenueChart  = null;
+  let refreshTimer = null;
+  let revenueChart = null;
 
   /* ── auth guard ── */
   if (!localStorage.getItem("isAdminLoggedIn")) {
@@ -15,26 +17,29 @@ console.log("[admin-dashboard.js] Loaded");
 
   document.addEventListener("DOMContentLoaded", () => {
     loadDashboard();
-
-    document
-      .getElementById("refreshBtn")
-      ?.addEventListener("click", () => loadDashboard());
-
+    document.getElementById("refreshBtn")?.addEventListener("click", () => {
+      loadDashboard();
+    });
     refreshTimer = setInterval(loadDashboard, 30_000);
   });
 
   /* ── main fetch ── */
   async function loadDashboard() {
+    const token = localStorage.getItem("authToken");
+    const headers = { "Authorization": `Bearer ${token}` };
+
     try {
-      const [statsRes, revenueRes] = await Promise.all([
-        fetch(STATS_API,   { cache: "no-store" }),
-        fetch(REVENUE_API, { cache: "no-store" }),
+      const [statsRes, revenueRes, pendingRes] = await Promise.all([
+        fetch(STATS_API,   { cache: "no-store", headers }),
+        fetch(REVENUE_API, { cache: "no-store", headers }),
+        fetch(PENDING_API, { cache: "no-store", headers }),
       ]);
 
       const statsPayload   = await statsRes.json();
       const revenuePayload = await revenueRes.json();
+      const pendingPayload = await pendingRes.json();
 
-      if (!statsPayload || statsPayload.success !== true) {
+      if (!statsPayload?.success) {
         showMessage(statsPayload?.message || "Failed to load dashboard data.", "error");
         return;
       }
@@ -46,6 +51,12 @@ console.log("[admin-dashboard.js] Loaded");
       if (revenuePayload?.success && Array.isArray(revenuePayload.data)) {
         renderRevenueChart(revenuePayload.data);
       }
+
+      if (pendingPayload?.success) {
+        renderPendingRestaurants(pendingPayload.data.pending_restaurants || []);
+        renderPendingUsers(pendingPayload.data.pending_users || []);
+      }
+
     } catch (err) {
       console.error("[admin-dashboard.js] Fetch error:", err);
       showMessage("Could not reach the server. Retrying in 30 seconds.", "error");
@@ -54,12 +65,12 @@ console.log("[admin-dashboard.js] Loaded");
 
   /* ── stats ── */
   function renderStats(data) {
-    setText("statTotalOrders",         fmt(data.total_orders));
-    setText("statTotalRevenue",        "Rs " + fmtMoney(data.total_revenue));
-    setText("statActiveRestaurants",   fmt(data.active_restaurants));
-    setText("statTotalUsers",          fmt(data.total_users));
-    setText("statPendingRestaurants",  fmt(data.pending_restaurants));
-    setText("statCancelledToday",      fmt(data.cancelled_today));
+    setText("statTotalOrders",        fmt(data.total_orders));
+    setText("statTotalRevenue",       "Rs " + fmtMoney(data.total_revenue));
+    setText("statActiveRestaurants",  fmt(data.active_restaurants));
+    setText("statTotalUsers",         fmt(data.total_users));
+    setText("statPendingRestaurants", fmt(data.pending_restaurants));
+    setText("statCancelledToday",     fmt(data.cancelled_today));
   }
 
   /* ── revenue chart ── */
@@ -83,16 +94,15 @@ console.log("[admin-dashboard.js] Loaded");
       type: "bar",
       data: {
         labels,
-        datasets: [
-          {
-            label: "Revenue (Rs)",
-            data: values,
-            backgroundColor: "rgba(229,57,53,0.18)",
-            borderColor: "rgba(229,57,53,0.85)",
-            borderWidth: 2,
-            borderRadius: 8,
-          },
-        ],
+        datasets: [{
+          label: "Revenue (Rs)",
+          data: values,
+          backgroundColor: "rgba(229,57,53,0.15)",
+          borderColor: "rgba(229,57,53,0.85)",
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+        }],
       },
       options: {
         responsive: true,
@@ -101,7 +111,7 @@ console.log("[admin-dashboard.js] Loaded");
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (ctx) => "Rs " + fmtMoney(ctx.parsed.y),
+              label: (ctx) => " Rs " + fmtMoney(ctx.parsed.y),
             },
           },
         },
@@ -123,64 +133,98 @@ console.log("[admin-dashboard.js] Loaded");
     });
   }
 
-  /* ── recent orders table (5 rows) ── */
+  /* ── recent orders ── */
   function renderRecentOrders(orders) {
     const tbody = document.getElementById("recentOrdersBody");
     if (!tbody) return;
 
-    const recent = orders.slice(0, 5);
-
-    if (!recent.length) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="6">
-            <div class="empty-state">
-              <h3>No orders yet</h3>
-              <p>Orders placed on the platform will appear here.</p>
-            </div>
-          </td>
-        </tr>`;
+    if (!orders.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><h3>No orders yet</h3><p>Orders placed on the platform will appear here.</p></div></td></tr>`;
       return;
     }
 
-    tbody.innerHTML = recent
-      .map((o) => {
-        const badge = statusBadge(o.status);
-        const date  = o.created_at
-          ? new Date(o.created_at).toLocaleDateString("en-GB", {
-              day: "2-digit", month: "short", year: "numeric",
-            })
-          : "—";
+    tbody.innerHTML = orders.map((o) => {
+      const badge = statusBadge(o.status);
+      const date  = o.created_at
+        ? new Date(o.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+        : "—";
 
-        return `
-          <tr>
-            <td><strong>${esc(o.order_number || "#" + o.id)}</strong></td>
-            <td>
-              <div>${esc(o.customer_name || "—")}</div>
-              <div style="color:var(--text-muted);font-size:0.85rem">${esc(o.customer_email || "")}</div>
-            </td>
-            <td>${esc(o.restaurant_name || "—")}</td>
-            <td>${badge}</td>
-            <td><strong>Rs ${fmtMoney(o.total)}</strong></td>
-            <td style="color:var(--text-muted);font-size:0.9rem">${date}</td>
-          </tr>`;
-      })
-      .join("");
+      return `
+        <tr>
+          <td><strong>${esc(o.order_number || "#" + o.id)}</strong></td>
+          <td>
+            <div style="font-weight:600">${esc(o.customer_name || "—")}</div>
+            <div style="color:var(--text-muted);font-size:0.8rem">${esc(o.customer_email || "")}</div>
+          </td>
+          <td>${esc(o.restaurant_name || "—")}</td>
+          <td>${badge}</td>
+          <td><strong>Rs ${fmtMoney(o.total)}</strong></td>
+          <td style="color:var(--text-muted);font-size:0.85rem">${date}</td>
+        </tr>`;
+    }).join("");
+  }
+
+  /* ── pending restaurants ── */
+  function renderPendingRestaurants(restaurants) {
+    const el = document.getElementById("pendingRestaurantsList");
+    if (!el) return;
+
+    if (!restaurants.length) {
+      el.innerHTML = `<div class="empty-state"><h3>No pending restaurants</h3><p>All caught up! ✅</p></div>`;
+      return;
+    }
+
+    el.innerHTML = restaurants.slice(0, 5).map((r) => {
+      const initials = (r.restaurant_name || "R").substring(0, 2).toUpperCase();
+      return `
+        <div class="pending-item">
+          <div class="pending-avatar">${esc(initials)}</div>
+          <div class="pending-info">
+            <strong>${esc(r.restaurant_name || "Unnamed")}</strong>
+            <span>${esc(r.location || r.city || "No location")}</span>
+          </div>
+          <span class="pending-badge">Pending</span>
+        </div>`;
+    }).join("");
+  }
+
+  /* ── pending users ── */
+  function renderPendingUsers(users) {
+    const el = document.getElementById("pendingUsersList");
+    if (!el) return;
+
+    if (!users.length) {
+      el.innerHTML = `<div class="empty-state"><h3>No pending users</h3><p>All caught up! ✅</p></div>`;
+      return;
+    }
+
+    el.innerHTML = users.slice(0, 5).map((u) => {
+      const initials = (u.name || "U").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+      const roleLabel = u.role === "restaurant-owner" ? "Owner" : "Rider";
+      return `
+        <div class="pending-item">
+          <div class="pending-avatar">${esc(initials)}</div>
+          <div class="pending-info">
+            <strong>${esc(u.name || "Unknown")}</strong>
+            <span>${esc(u.email || "")} · ${roleLabel}</span>
+          </div>
+          <span class="pending-badge">Pending</span>
+        </div>`;
+    }).join("");
   }
 
   /* ── helpers ── */
   function statusBadge(status) {
     const s   = String(status || "").toLowerCase();
     let cls   = "status-pending";
-    if (s === "delivered" || s === "completed") cls = "status-approved";
-    else if (s === "cancelled" || s === "rejected") cls = "status-rejected";
-    const label = s.replace(/_/g, " ");
-    return `<span class="status-badge ${cls}">${esc(label)}</span>`;
+    if (["delivered", "completed"].includes(s))  cls = "status-delivered";
+    else if (["cancelled", "rejected"].includes(s)) cls = "status-cancelled";
+    else if (s === "preparing") cls = "status-preparing";
+    else if (s === "out_for_delivery") cls = "status-out_for_delivery";
+    return `<span class="status-badge ${cls}">${esc(s.replace(/_/g, " "))}</span>`;
   }
 
-  function fmt(n) {
-    return n != null ? Number(n).toLocaleString() : "—";
-  }
+  function fmt(n) { return n != null ? Number(n).toLocaleString() : "—"; }
 
   function fmtMoney(n) {
     const v = parseFloat(n) || 0;
@@ -204,7 +248,7 @@ console.log("[admin-dashboard.js] Loaded");
     const bar = document.getElementById("messageBar");
     if (!bar) return;
     bar.textContent = msg;
-    bar.className   = `message-bar show ${type}`;
+    bar.className = `message-bar show ${type}`;
   }
 
   function clearMessage() {
@@ -214,7 +258,6 @@ console.log("[admin-dashboard.js] Loaded");
     bar.textContent = "";
   }
 
-  /* ── logout ── */
   window.adminLogout = function () {
     clearInterval(refreshTimer);
     localStorage.removeItem("foodExpressCurrentAdmin");

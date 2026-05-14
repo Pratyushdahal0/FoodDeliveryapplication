@@ -1,212 +1,211 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Dashboard - FoodExpress</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — FoodExpress</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/admin-dashboard.css" />
+</head>
+<body>
 
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    />
-    <link rel="stylesheet" href="../css/global.css" />
-    <link rel="stylesheet" href="../css/layout.css" />
-    <link rel="stylesheet" href="../css/admin.css" />
-  </head>
-  <body>
-    <nav class="admin-navbar">
-      <div class="container">
-        <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+<nav class="admin-navbar">
+  <div class="nav-inner">
+    <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+    <div class="nav-links">
+      <a href="admin-dashboard.html" class="active"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+      <a href="admin-restaurants.html"><i class="fa-solid fa-store"></i> Restaurants</a>
+      <a href="admin-orders.html"><i class="fa-solid fa-receipt"></i> Orders</a>
+      <a href="admin-users.html"><i class="fa-solid fa-users"></i> Users</a>
+      <a href="admin-messages.html"><i class="fa-solid fa-envelope"></i> Messages</a>
+      <a href="admin-refunds.html"><i class="fa-solid fa-rotate-left"></i> Refunds</a>
+    </div>
+    <div class="nav-right">
+      <div class="admin-pill"><i class="fa-solid fa-user-shield"></i> Platform Admin</div>
+      <button class="logout-btn" onclick="adminLogout()"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>
+    </div>
+  </div>
+</nav>
 
-        <div class="admin-nav-links">
-          <a href="admin-dashboard.html" class="active">Dashboard</a>
-          <a href="admin-restaurants.html">Restaurants</a>
-          <a href="admin-orders.html">Orders</a>
-          <a href="admin-users.html">Users</a>
-          <a href="admin-messages.html">Messages</a>
-        </div>
+<main class="main">
 
-        <div class="admin-nav-right">
-          <div class="admin-pill">
-            <i class="fa-solid fa-user-shield"></i>
-            Platform Admin
-          </div>
-          <button
-            class="admin-logout-btn"
-            type="button"
-            onclick="adminLogout()"
-          >
-            Log out
-          </button>
-        </div>
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Dashboard</h1>
+      <p>Platform-wide overview — orders, revenue, users, and restaurant pipeline.</p>
+    </div>
+    <div class="header-actions">
+      <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+      <button class="refresh-btn" id="refreshBtn">
+        <i class="fa-solid fa-rotate-right"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <div id="messageBar" class="message-bar"></div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card orders">
+      <div class="kpi-top">
+        <div class="kpi-label">Total Orders</div>
+        <div class="kpi-icon red"><i class="fa-solid fa-receipt"></i></div>
       </div>
-    </nav>
+      <div class="kpi-value" id="statTotalOrders">—</div>
+      <div class="kpi-sub">All time orders</div>
+    </div>
 
-    <main class="dashboard-shell">
-      <div class="dashboard-header">
+    <div class="kpi-card revenue">
+      <div class="kpi-top">
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-icon green"><i class="fa-solid fa-money-bill-wave"></i></div>
+      </div>
+      <div class="kpi-value" id="statTotalRevenue">—</div>
+      <div class="kpi-sub">Excluding cancelled</div>
+    </div>
+
+    <div class="kpi-card restaurants">
+      <div class="kpi-top">
+        <div class="kpi-label">Active Restaurants</div>
+        <div class="kpi-icon blue"><i class="fa-solid fa-store"></i></div>
+      </div>
+      <div class="kpi-value" id="statActiveRestaurants">—</div>
+      <div class="kpi-sub">Approved & live</div>
+    </div>
+
+    <div class="kpi-card users">
+      <div class="kpi-top">
+        <div class="kpi-label">Total Users</div>
+        <div class="kpi-icon orange"><i class="fa-solid fa-users"></i></div>
+      </div>
+      <div class="kpi-value" id="statTotalUsers">—</div>
+      <div class="kpi-sub">All platform users</div>
+    </div>
+  </div>
+
+  <!-- Alert Row -->
+  <div class="alert-row">
+    <div class="alert-card">
+      <div class="alert-icon warning"><i class="fa-solid fa-hourglass-half"></i></div>
+      <div class="alert-body">
+        <strong id="statPendingRestaurants">—</strong>
+        <span>Restaurants Awaiting Approval</span>
+      </div>
+      <a href="admin-restaurants.html" class="alert-link">Review →</a>
+    </div>
+
+    <div class="alert-card">
+      <div class="alert-icon danger"><i class="fa-solid fa-circle-xmark"></i></div>
+      <div class="alert-body">
+        <strong id="statCancelledToday">—</strong>
+        <span>Orders Cancelled Today</span>
+      </div>
+      <a href="admin-orders.html" class="alert-link">View →</a>
+    </div>
+  </div>
+
+  <!-- Chart + Quick Actions -->
+  <div class="content-grid">
+    <section class="panel">
+      <div class="panel-head">
         <div>
-          <h1>Dashboard</h1>
-          <p>
-            Platform-wide overview — orders, revenue, users, and restaurant
-            pipeline at a glance.
-          </p>
-        </div>
-        <div class="dashboard-pill">
-          <i class="fa-solid fa-chart-line"></i>
-          Live Stats
+          <h2>Revenue — Last 7 Days</h2>
+          <p>Subtotal from non-cancelled orders, by day.</p>
         </div>
       </div>
+      <div class="chart-wrap">
+        <canvas id="revenueChart"></canvas>
+      </div>
+    </section>
 
-      <div id="messageBar" class="message-bar"></div>
-
-      <!-- 4 KPI cards -->
-      <section class="stats-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr))">
-        <div class="stat-card">
-          <div class="stat-label">
-            <i class="fa-solid fa-receipt"></i>&nbsp; Total Orders
-          </div>
-          <div class="stat-value" id="statTotalOrders">—</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-label">
-            <i class="fa-solid fa-money-bill-wave"></i>&nbsp; Total Revenue
-          </div>
-          <div class="stat-value" id="statTotalRevenue">—</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-label">
-            <i class="fa-solid fa-store"></i>&nbsp; Active Restaurants
-          </div>
-          <div class="stat-value" id="statActiveRestaurants">—</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-label">
-            <i class="fa-solid fa-users"></i>&nbsp; Total Users
-          </div>
-          <div class="stat-value" id="statTotalUsers">—</div>
-        </div>
-      </section>
-
-      <!-- Alert row: pending restaurants + cancelled today -->
-      <div class="alert-row">
-        <div class="alert-card">
-          <div class="alert-card-icon warning">
-            <i class="fa-solid fa-store"></i>
-          </div>
-          <div class="alert-card-body">
-            <strong id="statPendingRestaurants">—</strong>
-            <span>Restaurants Awaiting Approval</span>
-          </div>
-          <a href="admin-restaurants.html" style="margin-left:auto; color:var(--primary); font-weight:900; font-size:0.9rem; text-decoration:none; white-space:nowrap;">
-            Review &rarr;
-          </a>
-        </div>
-
-        <div class="alert-card">
-          <div class="alert-card-icon danger">
-            <i class="fa-solid fa-circle-xmark"></i>
-          </div>
-          <div class="alert-card-body">
-            <strong id="statCancelledToday">—</strong>
-            <span>Orders Cancelled Today</span>
-          </div>
-          <a href="admin-orders.html" style="margin-left:auto; color:var(--primary); font-weight:900; font-size:0.9rem; text-decoration:none; white-space:nowrap;">
-            View &rarr;
-          </a>
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Quick Actions</h2>
+          <p>Jump to key admin sections.</p>
         </div>
       </div>
-
-      <!-- Main content: revenue chart + recent orders + quick actions -->
-      <div class="content-grid" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-        <!-- Revenue chart -->
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Revenue (Last 7 Days)</h2>
-              <p>Subtotal from non-cancelled orders, by day.</p>
-            </div>
-          </div>
-          <div class="chart-container">
-            <canvas id="revenueChart"></canvas>
-          </div>
-        </section>
-
-        <!-- Quick Actions -->
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Quick Actions</h2>
-              <p>Jump to key admin sections.</p>
-            </div>
-          </div>
-
-          <div class="quick-links">
-            <a href="admin-restaurants.html" class="quick-link">
-              <h3><i class="fa-solid fa-store"></i>&nbsp; Restaurants</h3>
-              <p>Review pending applications and manage all partners.</p>
-            </a>
-
-            <a href="admin-orders.html" class="quick-link">
-              <h3><i class="fa-solid fa-receipt"></i>&nbsp; Orders</h3>
-              <p>Monitor platform orders, payments, and delivery flow.</p>
-            </a>
-
-            <a href="admin-users.html" class="quick-link">
-              <h3><i class="fa-solid fa-users"></i>&nbsp; Users</h3>
-              <p>Manage customers, riders, and owner accounts.</p>
-            </a>
-
-            <a href="admin-messages.html" class="quick-link">
-              <h3><i class="fa-solid fa-envelope"></i>&nbsp; Messages</h3>
-              <p>Read and respond to contact and support messages.</p>
-            </a>
-          </div>
-        </section>
+      <div class="quick-links">
+        <a href="admin-restaurants.html" class="quick-link">
+          <h3><i class="fa-solid fa-store"></i> Restaurants</h3>
+          <p>Review pending applications and manage all partners.</p>
+        </a>
+        <a href="admin-orders.html" class="quick-link">
+          <h3><i class="fa-solid fa-receipt"></i> Orders</h3>
+          <p>Monitor platform orders, payments, and delivery flow.</p>
+        </a>
+        <a href="admin-users.html" class="quick-link">
+          <h3><i class="fa-solid fa-users"></i> Users</h3>
+          <p>Manage customers, riders, and owner accounts.</p>
+        </a>
+        <a href="admin-messages.html" class="quick-link">
+          <h3><i class="fa-solid fa-envelope"></i> Messages</h3>
+          <p>Read and respond to contact and support messages.</p>
+        </a>
       </div>
+    </section>
+  </div>
 
-      <!-- Recent Orders -->
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Recent Orders</h2>
-            <p>Latest 5 orders placed across the platform.</p>
-          </div>
-          <button class="refresh-btn" type="button" id="refreshBtn">
-            <i class="fa-solid fa-rotate-right"></i>&nbsp; Refresh
-          </button>
+  <!-- Pending Approvals + Pending Riders -->
+  <div class="pending-grid">
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Pending Restaurant Approvals</h2>
+          <p>Restaurants waiting for your review.</p>
         </div>
+        <a href="admin-restaurants.html" class="alert-link">View All →</a>
+      </div>
+      <div class="pending-list" id="pendingRestaurantsList">
+        <div class="loading-state"><i class="fa-solid fa-spinner"></i> Loading...</div>
+      </div>
+    </section>
 
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Order #</th>
-                <th>Customer</th>
-                <th>Restaurant</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody id="recentOrdersBody">
-              <tr>
-                <td colspan="6">
-                  <div class="loading-state">
-                    <h3>Loading orders…</h3>
-                    <p>Fetching recent platform orders.</p>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Pending User Approvals</h2>
+          <p>Owners and riders waiting for approval.</p>
         </div>
-      </section>
-    </main>
+        <a href="admin-users.html" class="alert-link">View All →</a>
+      </div>
+      <div class="pending-list" id="pendingUsersList">
+        <div class="loading-state"><i class="fa-solid fa-spinner"></i> Loading...</div>
+      </div>
+    </section>
+  </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="../js/admin-dashboard.js"></script>
-  </body>
+  <!-- Recent Orders -->
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Recent Orders</h2>
+        <p>Latest 10 orders placed across the platform.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Customer</th>
+            <th>Restaurant</th>
+            <th>Status</th>
+            <th>Amount</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="recentOrdersBody">
+          <tr><td colspan="6"><div class="loading-state"><i class="fa-solid fa-spinner"></i> Loading orders...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="../js/admin-dashboard.js"></script>
+</body>
 </html>
