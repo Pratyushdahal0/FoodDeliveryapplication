@@ -1,6 +1,6 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
@@ -334,8 +334,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     */
 
     if ($action === "login") {
+        error_log("STEP 1");
         $email = trim($body["email"] ?? "");
         $password = $body["password"] ?? "";
+
+        error_log("STEP 2");
 
         if ($email === "" || $password === "") {
             send_json([
@@ -353,7 +356,41 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         $result = $user->login($email, $password);
 
+        if (is_string($result) && in_array($result, ['pending', 'rejected', 'suspended'])) {
+    $messages = [
+        'pending'   => 'Your account is pending approval. Please wait for admin review.',
+        'rejected'  => 'Your account application was rejected. Please contact support.',
+        'suspended' => 'Your account has been suspended. Please contact support.',
+    ];
+    send_json(["success" => false, "message" => $messages[$result]], 403);
+}
+
+        error_log("STEP 3");
+
         if (!$result) {
+            // Check if user exists but is not approved
+            $userDataCheck = $user->getByEmail($email);
+            error_log("STEP 4");
+            if ($userDataCheck && in_array($userDataCheck['role'], ['restaurant-owner', 'delivery-rider'])) {
+                $approvalStatus = $userDataCheck['approval_status'] ?? 'approved';
+                if ($approvalStatus === 'pending') {
+                    send_json([
+                        "success" => false,
+                        "message" => "Your account is pending approval. Please wait for admin review."
+                    ], 403);
+                } elseif ($approvalStatus === 'rejected') {
+                    send_json([
+                        "success" => false,
+                        "message" => "Your account application was rejected. Please contact support."
+                    ], 403);
+                } elseif ($approvalStatus === 'suspended') {
+                    send_json([
+                        "success" => false,
+                        "message" => "Your account has been suspended. Please contact support."
+                    ], 403);
+                }
+            }
+
             send_json([
                 "success" => false,
                 "message" => "Invalid email or password"
@@ -361,6 +398,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         $userData = $user->getByEmail($email);
+        error_log("STEP 4");
 
         if (!$userData) {
             send_json([
