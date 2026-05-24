@@ -1,150 +1,341 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Orders Monitor - FoodExpress</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orders — FoodExpress Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/admin-shared.css" />
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
 
-    <link rel="stylesheet" href="../css/global.css" />
-    <link rel="stylesheet" href="../css/layout.css" />
-    <link rel="stylesheet" href="../css/admin.css" />
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+    }
 
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    />
-  </head>
+    .stat-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
 
-  <body>
-    <nav class="admin-navbar">
-      <div class="container">
-        <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
 
-        <div class="admin-nav-links">
-          <a href="admin-dashboard.html">Dashboard</a>
-          <a href="admin-restaurants.html">Restaurants</a>
-          <a href="admin-orders.html" class="active">Orders</a>
-          <a href="admin-users.html">Users</a>
-          <a href="admin-messages.html">Messages</a>
-        </div>
+    .date-range-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 10px;
+    }
 
-        <button class="admin-logout-btn" type="button" onclick="adminLogout()">
-          Log out
-        </button>
-      </div>
-    </nav>
+    .date-range-row label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
 
-    <main class="page-shell">
-      <div class="page-header">
-        <div>
-          <h1>Orders Monitor</h1>
-          <p>
-            Monitor platform-wide orders, customer issues, payment status, and
-            delivery flow.
-          </p>
-        </div>
+    .date-range-row input[type="date"] {
+      height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      font-family: inherit;
+      font-size: 0.875rem;
+      color: var(--text);
+      cursor: pointer;
+    }
 
-        <div class="page-pill">
-          <i class="fa-solid fa-receipt"></i>
-          Platform Orders
-        </div>
-      </div>
+    .date-range-row input[type="date"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
 
-      <div id="messageBar" class="message-bar"></div>
+    .payment-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: #dbeafe;
+      color: #1e40af;
+      white-space: nowrap;
+    }
 
-      <section class="controls-card">
-        <div class="controls-row">
-          <input
-            type="text"
-            id="searchInput"
-            class="search-input"
-            placeholder="Search order, customer, restaurant, rider..."
-          />
+    /* Order detail modal styles */
+    .order-detail-header {
+      margin-bottom: 20px;
+    }
 
-          <select id="statusFilter" class="filter-select">
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="preparing">Preparing</option>
-            <option value="ready">Ready</option>
-            <option value="out_for_delivery">Out for Delivery</option>
-            <option value="delivered">Delivered</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+    .order-detail-header h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
 
-          <select id="paymentFilter" class="filter-select">
-            <option value="all">All Payments</option>
-            <option value="cash">Cash</option>
-            <option value="cod">Cash on Delivery</option>
-            <option value="card">Card</option>
-            <option value="online">Online</option>
-          </select>
+    .order-detail-header p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
 
-          <select id="issueFilter" class="filter-select">
-            <option value="all">All Issues</option>
-            <option value="normal">Normal</option>
-            <option value="delayed">Delayed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+    .order-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
 
-          <button id="refreshBtn" class="refresh-btn" type="button">
-            Refresh Orders
-          </button>
-        </div>
-      </section>
+    .order-info-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
 
-      <section class="table-card">
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Customer</th>
-                <th>Restaurant</th>
-                <th>Rider</th>
-                <th>Payment</th>
-                <th>Status</th>
-                <th>Issue</th>
-                <th>Placed</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
+    .order-info-item label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
 
-            <tbody id="ordersTableBody">
-              <tr>
-                <td colspan="9">
-                  <div class="loading-state">
-                    <h3>Loading orders...</h3>
-                    <p>
-                      Please wait while FoodExpress fetches platform orders.
-                    </p>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
+    .order-info-item p {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      margin: 0;
+    }
 
-    <div id="orderViewModal" class="modal">
-      <div class="modal-content">
-        <button id="closeOrderModal" class="modal-close" type="button">
-          &times;
-        </button>
+    .order-items-section {
+      margin-top: 20px;
+    }
 
-        <div id="orderModalBody"></div>
-      </div>
+    .order-items-section h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .order-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .order-item-row:last-child { border-bottom: none; }
+
+    .order-item-name { font-size: 0.875rem; font-weight: 600; }
+    .order-item-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+    .order-item-meta { text-align: right; flex-shrink: 0; }
+    .order-item-meta strong { display: block; font-size: 0.875rem; }
+    .order-item-meta span { font-size: 0.78rem; color: var(--text-muted); }
+
+    .order-totals {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-top: 16px;
+    }
+
+    .order-total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      padding: 4px 0;
+      color: var(--text-muted);
+    }
+
+    .order-total-row.total {
+      font-weight: 700;
+      color: var(--text);
+      font-size: 1rem;
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
+      padding-top: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .order-info-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="admin-navbar">
+  <div class="nav-inner">
+    <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+    <div class="nav-links">
+      <a href="admin-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+      <a href="admin-restaurants.html"><i class="fa-solid fa-store"></i> Restaurants</a>
+      <a href="admin-orders.html" class="active"><i class="fa-solid fa-receipt"></i> Orders</a>
+      <a href="admin-users.html"><i class="fa-solid fa-users"></i> Users</a>
+      <a href="admin-messages.html"><i class="fa-solid fa-envelope"></i> Messages</a>
+      <a href="admin-refunds.html"><i class="fa-solid fa-rotate-left"></i> Refunds</a>
     </div>
+    <div class="nav-right">
+      <div class="admin-pill"><i class="fa-solid fa-user-shield"></i> Platform Admin</div>
+      <button class="logout-btn" onclick="adminLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Log out
+      </button>
+    </div>
+  </div>
+</nav>
 
-    <script>
-      function adminLogout() {
-        localStorage.removeItem("foodExpressCurrentAdmin");
-        localStorage.removeItem("isAdminLoggedIn");
-        window.location.href = "login.html";
-      }
-    </script>
+<main class="main">
 
-    <script src="../js/admin-orders.js"></script>
-  </body>
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Orders</h1>
+      <p>Monitor platform-wide orders, payment status, and delivery flow.</p>
+    </div>
+    <div class="header-actions">
+      <button class="refresh-btn" id="refreshBtn">
+        <i class="fa-solid fa-rotate-right"></i> Refresh Orders
+      </button>
+    </div>
+  </div>
+
+  <div id="messageBar" class="message-bar"></div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label"><i class="fa-solid fa-receipt"></i> Total Orders</div>
+      <div class="stat-value" id="statTotalOrders">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i class="fa-solid fa-circle-check"></i> Completed</div>
+      <div class="stat-value" id="statCompletedOrders">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i class="fa-solid fa-circle-xmark"></i> Cancelled</div>
+      <div class="stat-value" id="statCancelledOrders">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i class="fa-solid fa-coins"></i> Revenue Today</div>
+      <div class="stat-value" id="statRevenueToday">—</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-bar">
+    <input type="text" id="searchInput" class="search-input"
+      placeholder="Search order, customer, restaurant, rider..." />
+
+    <select id="statusFilter" class="filter-select">
+      <option value="all">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="preparing">Preparing</option>
+      <option value="ready">Ready</option>
+      <option value="out_for_delivery">Out for Delivery</option>
+      <option value="delivered">Delivered</option>
+      <option value="completed">Completed</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+
+    <select id="paymentFilter" class="filter-select">
+      <option value="all">All Payments</option>
+      <option value="cash">Cash</option>
+      <option value="card">Card</option>
+      <option value="online">Online</option>
+    </select>
+
+    <select id="issueFilter" class="filter-select">
+      <option value="all">All Issues</option>
+      <option value="normal">Normal</option>
+      <option value="delayed">Delayed</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+
+    <div class="date-range-row" style="border:none;padding:0;margin:0">
+      <label>From</label>
+      <input type="date" id="dateFrom" />
+      <label>To</label>
+      <input type="date" id="dateTo" />
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-panel">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Customer</th>
+            <th>Restaurant</th>
+            <th>Rider</th>
+            <th>Payment</th>
+            <th>Status</th>
+            <th>Issue</th>
+            <th>Placed</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTableBody">
+          <tr>
+            <td colspan="9">
+              <div class="loading-state">
+                <h3>Loading orders...</h3>
+                <p>Please wait while FoodExpress fetches platform orders.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Order View Modal -->
+<div id="orderViewModal" class="modal-overlay">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h2>Order Details</h2>
+      <button id="closeOrderModal" class="modal-close" type="button">&times;</button>
+    </div>
+    <div id="orderModalBody" class="modal-body"></div>
+  </div>
+</div>
+
+<script src="../js/admin-orders.js"></script>
+</body>
 </html>

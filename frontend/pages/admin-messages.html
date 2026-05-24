@@ -1,146 +1,267 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Messages - FoodExpress</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messages — FoodExpress Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/admin-shared.css" />
+  <style>
+    /* Message-specific styles */
+    .support-modal-eyebrow {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
 
-    <link rel="stylesheet" href="../css/global.css" />
-    <link rel="stylesheet" href="../css/layout.css" />
-    <link rel="stylesheet" href="../css/admin.css" />
+    .support-modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
 
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    />
-  </head>
+    .support-modal-header h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0;
+    }
 
-  <body>
-    <nav class="admin-navbar">
-      <div class="container">
-        <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+    .support-message-card {
+      display: flex;
+      gap: 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin-bottom: 20px;
+    }
 
-        <div class="admin-nav-links">
-          <a href="admin-dashboard.html">Dashboard</a>
-          <a href="admin-restaurants.html">Restaurants</a>
-          <a href="admin-orders.html">Orders</a>
-          <a href="admin-users.html">Users</a>
-          <a href="admin-messages.html" class="active">Messages</a>
-        </div>
+    .support-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
 
-        <button class="admin-logout-btn" type="button" onclick="adminLogout()">
-          Log out
+    .support-message-main { flex: 1; min-width: 0; }
+
+    .support-message-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .support-message-top h3 { font-size: 0.9rem; font-weight: 600; margin: 0 0 2px; }
+    .support-message-top p  { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
+    .support-message-top span { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+
+    .support-message-text {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
+
+    .reply-section {
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      margin-top: 20px;
+    }
+
+    .reply-section h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .reply-section textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.875rem;
+      resize: vertical;
+      background: var(--bg);
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .reply-section textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+    }
+
+    .reply-history-box {
+      margin-top: 20px;
+    }
+
+    .reply-history-box h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .reply-chat { display: flex; flex-direction: column; gap: 10px; }
+
+    .reply-bubble {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
+
+    .reply-item-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      gap: 10px;
+    }
+
+    .reply-item-head strong { font-size: 0.82rem; font-weight: 600; }
+
+    .reply-bubble p   { font-size: 0.875rem; line-height: 1.6; margin: 0; }
+    .reply-time       { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; }
+    .reply-error      { font-size: 0.78rem; color: var(--danger); margin-top: 6px; }
+    .reply-empty      { font-size: 0.875rem; color: var(--text-muted); }
+
+    .btn-warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .btn-warning:hover { background: #fde68a; }
+    .btn-warning:disabled { opacity: 0.5; cursor: not-allowed; }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="admin-navbar">
+  <div class="nav-inner">
+    <a href="admin-dashboard.html" class="admin-brand">FoodExpress</a>
+    <div class="nav-links">
+      <a href="admin-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+      <a href="admin-restaurants.html"><i class="fa-solid fa-store"></i> Restaurants</a>
+      <a href="admin-orders.html"><i class="fa-solid fa-receipt"></i> Orders</a>
+      <a href="admin-users.html"><i class="fa-solid fa-users"></i> Users</a>
+      <a href="admin-messages.html" class="active"><i class="fa-solid fa-envelope"></i> Messages</a>
+      <a href="admin-refunds.html"><i class="fa-solid fa-rotate-left"></i> Refunds</a>
+    </div>
+    <div class="nav-right">
+      <div class="admin-pill"><i class="fa-solid fa-user-shield"></i> Platform Admin</div>
+      <button class="logout-btn" onclick="adminLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Log out
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="main">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Messages</h1>
+      <p>Manage customer inquiries, reply to issues, and track ticket status.</p>
+    </div>
+    <div class="header-actions">
+      <button class="refresh-btn" id="refreshBtn">
+        <i class="fa-solid fa-rotate-right"></i> Refresh Messages
+      </button>
+    </div>
+  </div>
+
+  <div id="messageBar" class="message-bar"></div>
+
+  <!-- Controls -->
+  <div class="controls-bar">
+    <input id="searchInput" class="search-input" type="text"
+      placeholder="Search name, email, subject..." />
+    <select id="statusFilter" class="filter-select">
+      <option value="all">All Status</option>
+      <option value="received">Received</option>
+      <option value="in_progress">In Progress</option>
+      <option value="resolved">Resolved</option>
+      <option value="emailed">Emailed</option>
+      <option value="email_failed">Email Failed</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="table-panel">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Sender</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Received</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="messagesTableBody">
+          <tr>
+            <td colspan="5">
+              <div class="loading-state">
+                <h3>Loading messages...</h3>
+                <p>Please wait while FoodExpress fetches support tickets.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Message View Modal -->
+<div id="messageViewModal" class="modal-overlay">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h2>Support Ticket</h2>
+      <button id="closeMessageModal" class="modal-close" type="button">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="messageModalBody"></div>
+
+      <div class="reply-section">
+        <h3>Reply to Customer</h3>
+        <textarea id="adminReplyText" placeholder="Write your reply here..."></textarea>
+        <button id="sendReplyBtn" class="btn-primary" type="button">
+          <i class="fa-solid fa-paper-plane"></i> Send Reply
         </button>
-      </div>
-    </nav>
-
-    <main class="page-shell">
-      <div class="page-header">
-        <div>
-          <h1>Support Inbox</h1>
-          <p>
-            Manage customer inquiries, reply to issues, and track ticket status.
-          </p>
-        </div>
-
-        <div class="page-pill">
-          <i class="fa-solid fa-message"></i>
-          Support System
-        </div>
-      </div>
-
-      <div id="messageBar" class="message-bar"></div>
-
-      <section class="controls-card">
-        <div class="controls-row">
-          <input
-            id="searchInput"
-            class="search-input"
-            type="text"
-            placeholder="Search name, email, subject..."
-          />
-
-          <select id="statusFilter" class="filter-select">
-            <option value="all">All Status</option>
-            <option value="received">Received</option>
-            <option value="in_progress">In Progress</option>
-            <option value="resolved">Resolved</option>
-            <option value="emailed">Emailed</option>
-            <option value="email_failed">Email Failed</option>
-          </select>
-
-          <button id="refreshBtn" class="refresh-btn" type="button">
-            Refresh Messages
-          </button>
-        </div>
-      </section>
-
-      <section class="table-card">
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Sender</th>
-                <th>Subject</th>
-                <th>Status</th>
-                <th>Received</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody id="messagesTableBody">
-              <tr>
-                <td colspan="5">
-                  <div class="loading-state">
-                    <h3>Loading messages...</h3>
-                    <p>
-                      Please wait while FoodExpress fetches support tickets.
-                    </p>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-
-    <div id="messageViewModal" class="modal">
-      <div class="modal-content">
-        <button id="closeMessageModal" class="modal-close" type="button">
-          &times;
-        </button>
-
-        <div id="messageModalBody"></div>
-
-        <div class="reply-section">
-          <h3>Reply to Customer</h3>
-
-          <textarea
-            id="adminReplyText"
-            placeholder="Write your reply here..."
-          ></textarea>
-
-          <button
-            id="sendReplyBtn"
-            class="action-btn btn-approve"
-            type="button"
-          >
-            <i class="fa-solid fa-paper-plane"></i>
-            Send Reply
-          </button>
-        </div>
       </div>
     </div>
+  </div>
+</div>
 
-    <script>
-      function adminLogout() {
-        localStorage.removeItem("foodExpressCurrentAdmin");
-        localStorage.removeItem("isAdminLoggedIn");
-        window.location.href = "login.html";
-      }
-    </script>
-
-    <script src="../js/admin-messages.js"></script>
-  </body>
+<script src="../js/admin-messages.js"></script>
+</body>
 </html>

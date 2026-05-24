@@ -34,14 +34,20 @@ class User {
 
         $stmt->close();
 
+        // Determine approval status based on role
+        $approvalStatus = 'approved'; // Default for customers
+        if (in_array($role, ['restaurant-owner', 'delivery-rider'])) {
+            $approvalStatus = 'pending';
+        }
+
         // Hash password
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         $sql = "
             INSERT INTO users 
-            (name, email, password, phone, address, role, email_verified_at, verification_token, verification_token_expires_at)
+            (name, email, password, phone, address, role, approval_status, email_verified_at, verification_token, verification_token_expires_at)
             VALUES 
-            (?, ?, ?, ?, ?, ?, NULL, NULL, NULL)
+            (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)
         ";
 
         $stmt = $this->conn->prepare($sql);
@@ -51,13 +57,14 @@ class User {
         }
 
         $stmt->bind_param(
-            "ssssss",
+            "sssssss",
             $name,
             $email,
             $hashedPassword,
             $phone,
             $address,
-            $role
+            $role,
+            $approvalStatus
         );
 
         if ($stmt->execute()) {
@@ -76,21 +83,22 @@ class User {
         $email = trim($email);
 
         $sql = "
-            SELECT 
-                id,
-                name,
-                email,
-                password,
-                email_verified_at,
-                phone,
-                address,
-                role,
-                created_at,
-                status
-            FROM users
-            WHERE email = ?
-            LIMIT 1
-        ";
+    SELECT 
+        id,
+        name,
+        email,
+        password,
+        email_verified_at,
+        phone,
+        address,
+        role,
+        created_at,
+        status,
+        approval_status
+    FROM users
+    WHERE email = ?
+    LIMIT 1
+";
 
         $stmt = $this->conn->prepare($sql);
 
@@ -114,6 +122,14 @@ class User {
             return false;
         }
 
+        // Check approval status for restaurant owners and riders
+        if (in_array($user["role"], ['restaurant-owner', 'delivery-rider'])) {
+    $approvalStatus = $user["approval_status"] ?? "approved";
+    if ($approvalStatus !== "approved") {
+        return $approvalStatus; // Return status string instead of false
+    }
+}
+
         return password_verify($password, $user["password"]);
     }
 
@@ -131,7 +147,8 @@ class User {
                 address,
                 role,
                 created_at,
-                status
+                status,
+                approval_status
             FROM users
             WHERE email = ?
             LIMIT 1
@@ -159,20 +176,21 @@ class User {
         $id = intval($id);
 
         $sql = "
-            SELECT 
-                id,
-                name,
-                email,
-                email_verified_at,
-                phone,
-                address,
-                role,
-                created_at,
-                status
-            FROM users
-            WHERE id = ?
-            LIMIT 1
-        ";
+    SELECT 
+        id,
+        name,
+        email,
+        email_verified_at,
+        phone,
+        address,
+        role,
+        created_at,
+        status,
+        approval_status
+    FROM users
+    WHERE id = ?
+    LIMIT 1
+";
 
         $stmt = $this->conn->prepare($sql);
 
@@ -200,6 +218,91 @@ class User {
         }
 
         return !empty($user["email_verified_at"]);
+    }
+
+    // UPDATE APPROVAL STATUS
+    public function updateApprovalStatus($userId, $approvalStatus, $adminId = null, $reason = null, $notes = null) {
+        // Validate approval status
+        $validStatuses = ['pending', 'approved', 'rejected', 'suspended'];
+        if (!in_array($approvalStatus, $validStatuses)) {
+            return "Invalid approval status";
+        }
+
+        // Get current status for audit
+        $currentUser = $this->getById($userId);
+        if (!$currentUser) {
+            return "User not found";
+        }
+
+        $previousStatus = $currentUser['approval_status'];
+
+        // Update user
+        $sql = "
+            UPDATE users 
+            SET 
+                approval_status = ?,
+                approved_at = CASE WHEN ? = 'approved' THEN CURRENT_TIMESTAMP ELSE approved_at END,
+                approved_by_admin_id = CASE WHEN ? = 'approved' THEN ? ELSE approved_by_admin_id END,
+                rejection_reason = CASE WHEN ? IN ('rejected', 'suspended') THEN ? ELSE rejection_reason END,
+                admin_notes = ?,
+                approval_updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        if (!$stmt) {
+            return "Prepare failed: " . $this->conn->error;
+        }
+
+        $stmt->bind_param(
+            "sssssssi",
+            $approvalStatus,
+            $approvalStatus,
+            $approvalStatus,
+            $adminId,
+            $approvalStatus,
+            $reason,
+            $notes,
+            $userId
+        );
+
+        if (!$stmt->execute()) {
+            $stmt->close();
+            return "Update failed: " . $stmt->error;
+        }
+
+        $stmt->close();
+
+        // Log to audit table
+        $this->logApprovalAction('user', $userId, $approvalStatus, $adminId, $previousStatus, $reason, $notes);
+
+        return "Approval status updated successfully";
+    }
+
+    // LOG APPROVAL ACTION
+    private function logApprovalAction($entityType, $entityId, $action, $adminId, $previousStatus, $reason, $notes) {
+        $sql = "
+            INSERT INTO approval_audit_log 
+            (entity_type, entity_id, action, admin_id, previous_status, new_status, reason, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        if ($stmt) {
+            $stmt->bind_param(
+                "sisissss",
+                $entityType,
+                $entityId,
+                $action,
+                $adminId,
+                $previousStatus,
+                $action, // new_status is the action
+                $reason,
+                $notes
+            );
+            $stmt->execute();
+            $stmt->close();
+        }
     }
 }
 ?>
